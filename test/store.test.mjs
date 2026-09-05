@@ -1,0 +1,250 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, mkdir, writeFile, readFile, appendFile, rm, unlink } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
+import { createStore, validateDirectory } from '../lib/store.mjs';
+
+async function fixture(t) {
+  const root = await mkdtemp(join(tmpdir(), 'prime-studio-store-'));
+  const options = {
+    sessionDir: join(root, 'sessions'),
+    dataDir: join(root, 'local'),
+    initialCwd: join(root, 'projet é'),
+  };
+  await Promise.all([mkdir(options.sessionDir), mkdir(options.initialCwd)]);
+  t.after(async () => {
+    assert.equal(dirname(resolve(root)), resolve(tmpdir()));
+    await rm(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  });
+  const store = createStore(options);
+  async function native(id, entries, tail = '') {
+    const directory = join(options.sessionDir, 'native-project');
+    await mkdir(directory, { recursive: true });
+    const file = join(directory, `2026-09-04T00-00-00_${id}.jsonl`);
+    const header = { type: 'session', id, cwd: options.initialCwd, timestamp: '2026-09-04T00:00:00.000Z' };
+    await writeFile(
+      file,
+      [header, ...entries].map((entry) => JSON.stringify(entry)).join('\n') + '\n' + tail,
+    );
+    return file;
+  }
+  return { root, options, store, native };
+}
+
+const message = (id, parentId, role, content, extra = {}) => ({
+  type: 'message',
+  id,
+  parentId,
+  timestamp: '2026-09-04T00:01:00.000Z',
+  message: { role, content, ...extra },
+});
+
+test('native history follows the selected branch and attaches tool results to their call', async (t) => {
+  const { store, native } = await fixture(t);
+  const usage = { input: 12, output: 30, totalTokens: 42, cost: { total: 0.001 } };
+  await native(
+    'native-session',
+    [
+      message('root', null, 'user', 'Original task'),
+      message('abandoned', 'root', 'assistant', [{ type: 'text', text: 'Abandoned answer' }]),
+      message('revised', 'root', 'user', [{ type: 'text', text: 'Use this branch' }]),
+      message(
+        'answer',
+        'revised',
+        'assistant',
+        [
+          { type: 'thinking', thinking: 'Read the source first.' },
+          { type: 'text', text: 'Reading the source.' },
+          { type: 'toolCall', id: 'tool-1', name: 'read', arguments: { path: 'source.js' } },
+        ],
+        { provider: 'openai', model: 'gpt-5.6-luna', usage: { input: 1 } },
+      ),
+      message('result', 'answer', 'toolResult', 'source contents', {
+        toolCallId: 'tool-1',
+        toolName: 'read',
+      }),
+      { type: 'model_change', id: 'model', parentId: 'result', provider: 'openai', modelId: 'gpt-5.6-luna' },
+      { type: 'session_info', id: 'name', parentId: 'model', name: 'Native session name' },
+      { type: 'child_usage_attributed', targetId: 'answer', aggregateUsage: usage },
+    ],
+    'not json\n{"type":"message"',
+  );
+  const history = await store.history('native-session');
+  assert.equal(history.title, 'Native session name');
+  assert.equal(history.model, 'openai/gpt-5.6-luna');
+  assert.deepEqual(
+    history.messages.map((entry) => entry.id),
+    ['root', 'revised', 'answer'],
+  );
+  assert.equal(history.messages[0].text, 'Original task');
+  assert.equal(history.messages[2].thinking, 'Read the source first.');
+  assert.deepEqual(history.messages[2].usage, usage);
+  assert.deepEqual(history.messages[2].tools, [
+    {
+      id: 'tool-1',
+      name: 'read',
+      args: { path: 'source.js' },
+      status: 'done',
+      result: 'source contents',
+      isError: false,
+    },
+  ]);
+  const overview = await store.overview();
+  const summary = overview.projects[0].sessions[0];
+  assert.equal(summary.messageCount, 3);
+  assert.equal('messages' in summary, false);
+  assert.equal('file' in summary, false);
+});
+
+test('damaged JSON records and null content blocks do not make all native sessions unreadable', async (t) => {
+  const { store, native } = await fixture(t);
+  await native(
+    'recoverable-session',
+    [
+      null,
+      17,
+      'unexpected primitive',
+      [],
+      message('user', null, 'user', [null, { type: 'text', text: 'Readable task' }]),
+      message('assistant', 'user', 'assistant', [null, { type: 'text', text: 'Readable answer' }]),
+    ],
+    '{"unfinished":',
+  );
+  const history = await store.history('recoverable-session');
+  assert.deepEqual(
+    history.messages.map((entry) => entry.text),
+    ['Readable task', 'Readable answer'],
+  );
+  assert.equal((await store.overview()).totalSessions, 1);
+});
+
+test('model metadata follows the active branch and the latest assistant model', async (t) => {
+  const { store, native } = await fixture(t);
+  await native('model-branch-session', [
+    {
+      type: 'model_change',
+      id: 'model-initial',
+      parentId: null,
+      provider: 'openai',
+      modelId: 'gpt-5.6-luna',
+    },
+    message('root', 'model-initial', 'user', 'Initial task'),
+    {
+      type: 'model_change',
+      id: 'abandoned-model',
+      parentId: 'root',
+      provider: 'anthropic',
+      modelId: 'abandoned-model',
+    },
+    message('abandoned-answer', 'abandoned-model', 'assistant', 'Old branch', {
+      provider: 'anthropic',
+      model: 'abandoned-model',
+    }),
+    message('revised', 'root', 'user', 'Take another branch'),
+    message('active-answer', 'revised', 'assistant', 'Current answer', {
+      provider: 'openai',
+      model: 'gpt-5.6-sol',
+    }),
+  ]);
+  const history = await store.history('model-branch-session');
+  assert.equal(history.model, 'openai/gpt-5.6-sol');
+  assert.deepEqual(
+    history.messages.map((entry) => entry.id),
+    ['root', 'revised', 'active-answer'],
+  );
+});
+
+test('standalone tool results, failed shell commands and visible native notes survive history projection', async (t) => {
+  const { store, native } = await fixture(t);
+  await native('tool-session', [
+    {
+      type: 'message',
+      id: 'result',
+      message: {
+        role: 'toolResult',
+        toolCallId: 'missing-call',
+        toolName: 'read',
+        content: [{ type: 'text', text: 'No such file' }],
+        isError: true,
+      },
+    },
+    {
+      type: 'message',
+      id: 'shell',
+      message: { role: 'bashExecution', command: 'exit 1', output: 'failure', exitCode: 1 },
+    },
+    { type: 'compaction', id: 'compact', summary: 'Earlier context summary' },
+    { type: 'message', id: 'note', message: { role: 'custom', content: 'Visible note', display: true } },
+    { type: 'message', id: 'hidden', message: { role: 'custom', content: 'Hidden note', display: false } },
+    {
+      type: 'custom_message',
+      id: 'native-note',
+      content: 'Native extension note',
+      display: true,
+      customType: 'fixture',
+    },
+    {
+      type: 'custom_message',
+      id: 'native-hidden',
+      content: 'Hidden extension note',
+      display: false,
+      customType: 'fixture',
+    },
+  ]);
+  const { messages } = await store.history('tool-session');
+  assert.equal(messages.length, 5);
+  assert.equal(messages[0].tools[0].status, 'error');
+  assert.equal(messages[0].tools[0].result, 'No such file');
+  assert.equal(messages[1].tools[0].args.command, 'exit 1');
+  assert.equal(messages[1].tools[0].isError, true);
+  assert.equal(messages[2].text, 'Earlier context summary');
+  assert.equal(messages[3].text, 'Visible note');
+  assert.equal(messages[4].text, 'Native extension note');
+});
+
+test('local titles, pinning and archive status persist without rewriting the native session', async (t) => {
+  const { options, store, native } = await fixture(t);
+  const file = await native('metadata-session', [message('user', null, 'user', 'Original title')]);
+  const before = await readFile(file, 'utf8');
+  const updated = await store.patchSession({
+    id: 'metadata-session',
+    title: '  Renamed locally  ',
+    pinned: true,
+    archived: true,
+  });
+  assert.equal(updated.title, 'Renamed locally');
+  assert.equal(updated.pinned, true);
+  assert.equal('file' in updated, false);
+  assert.equal(await readFile(file, 'utf8'), before);
+  const reloaded = createStore(options);
+  const history = await reloaded.history('metadata-session');
+  assert.equal(history.title, 'Renamed locally');
+  assert.equal(history.archived, true);
+  assert.equal(history.pinned, true);
+});
+
+test('native files appended during a run refresh cached history and removed files disappear', async (t) => {
+  const { store, native } = await fixture(t);
+  const file = await native('growing-session', [message('user', null, 'user', 'First message')]);
+  assert.equal((await store.history('growing-session')).messages.length, 1);
+  await appendFile(file, JSON.stringify(message('answer', 'user', 'assistant', 'New answer')) + '\n');
+  assert.equal((await store.history('growing-session')).messages.length, 2);
+  await unlink(file);
+  assert.equal((await store.overview()).totalSessions, 0);
+  await assert.rejects(store.history('growing-session'), { status: 404 });
+});
+
+test('directory and session operations reject traversal, invalid types and nonexistent paths', async (t) => {
+  const { root, options, store, native } = await fixture(t);
+  const file = await native('validation-session', [message('user', null, 'user', 'Task')]);
+  for (const id of ['../secrets', '..\\secrets', '/absolute', '', null, {}, 10]) {
+    await assert.rejects(store.history(id), { status: 400 });
+  }
+  for (const cwd of ['relative/path', join(root, 'missing'), file, {}, 10, null]) {
+    await assert.rejects(validateDirectory(cwd), { status: 400 });
+  }
+  await assert.rejects(store.project({ cwd: options.initialCwd, pinned: 'yes' }), { status: 400 });
+  await assert.rejects(store.patchSession({ id: 'validation-session', archived: 'yes' }), { status: 400 });
+  await assert.rejects(store.patchSession({ id: 'validation-session', title: '   ' }), { status: 400 });
+});

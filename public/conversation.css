@@ -1,0 +1,194 @@
+.assistant-turn-body > * + * {
+  margin-top: 18px;
+}
+.assistant-turn .message-actions {
+  margin-left: 0;
+}
+.assistant-text {
+  min-width: 0;
+}
+.activity-stack {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 11px;
+  overflow: hidden;
+  margin: 14px 0;
+}
+.activity-stack > summary {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 14px;
+  min-height: 62px;
+  cursor: pointer;
+  list-style: none;
+}
+.activity-stack > summary::-webkit-details-marker {
+  display: none;
+}
+.activity-symbol {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.activity-symbol svg {
+  width: 17px;
+  height: 17px;
+  display: block;
+}
+.activity-titles {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+.activity-label {
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--text);
+}
+.activity-count {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.activity-state {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+.activity-stack.has-errors .activity-state {
+  color: var(--red);
+}
+.activity-stack.is-running .activity-state {
+  color: var(--accent-text);
+}
+.activity-chevron {
+  color: var(--faint);
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+.activity-chevron svg {
+  width: 13px;
+  height: 13px;
+  display: block;
+}
+.activity-stack[open] > summary .activity-chevron {
+  transform: rotate(90deg);
+}
+.activity-content {
+  border-top: 1px solid var(--line);
+  padding: 3px 14px 14px;
+}
+.activity-step {
+  padding-top: 14px;
+}
+.activity-step + .activity-step {
+  margin-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.activity-step-label {
+  font-size: 10px;
+  color: var(--faint);
+  letter-spacing: 0.4px;
+  margin-bottom: 8px;
+}
+.activity-step .thinking-block,
+.activity-step .tool-block {
+  margin: 8px 0 0;
+}
+.activity-waiting {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Keep model, effort and the action on one compact, shared toolbar. */
+#composer-form .composer-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  align-items: center;
+}
+#composer-form .model-controls {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+}
+#composer-form .model-controls select {
+  min-width: 0;
+}
+#composer-form #model-picker-button {
+  min-width: 0;
+}
+#composer-form #send-button,
+#composer-form #stop-button {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+}
+#composer-form #stop-button svg {
+  display: block;
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+@media (max-width: 760px) {
+  .activity-stack > summary {
+    padding: 12px;
+    gap: 9px;
+  }
+  .activity-content {
+    padding: 2px 11px 12px;
+  }
+  .activity-label {
+    font-size: 12px;
+  }
+  .activity-count,
+  .activity-state {
+    font-size: 10px;
+  }
+  #composer-form {
+    padding: 10px 10px 8px;
+  }
+  #composer-form textarea {
+    min-height: 40px;
+    font-size: 16px;
+    line-height: 1.5;
+    padding: 4px 2px;
+  }
+  #composer-form .composer-toolbar {
+    gap: 8px;
+    margin-top: 4px;
+  }
+  #composer-form .model-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(88px, 25vw, 112px);
+    gap: 6px;
+    width: 100%;
+  }
+  #composer-form .model-icon,
+  #composer-form .control-separator {
+    display: none;
+  }
+  #composer-form #model-picker-button,
+  #composer-form #model-select:not([hidden]) {
+    width: 100%;
+    max-width: 100%;
+    grid-column: 1;
+    grid-row: 1;
+    min-height: 44px;
+  }
+  #composer-form #thinking-select {
+    width: 100%;
+    max-width: 100%;
+    grid-column: 2;
+    grid-row: 1;
+    min-height: 44px;
+  }
+}

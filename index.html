@@ -1,0 +1,708 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#1b1c1e" />
+    <title>Prime Agent Studio</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='11' fill='%23b8b4ec'/%3E%3Cpath d='M12 28V12h10a6 6 0 0 1 0 12h-5v4zm5-11v2h5a1 1 0 0 0 0-2z' fill='%2324262b'/%3E%3C/svg%3E"
+    />
+    <script src="/public/theme.js"></script>
+    <link rel="stylesheet" href="/public/styles.css" />
+    <link rel="stylesheet" href="/public/conversation.css" />
+    <link rel="stylesheet" href="/public/live-messages.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#composer">Aller au message</a>
+    <div id="mobile-backdrop" class="mobile-backdrop" hidden></div>
+    <div class="app-shell">
+      <aside id="sidebar" class="sidebar" aria-label="Projets et sessions">
+        <a href="/" class="brand" aria-label="Prime Agent Studio, accueil"
+          ><span class="brand-mark" aria-hidden="true"
+            ><svg viewBox="0 0 32 32" fill="none">
+              <path
+                d="M9 24V8h10a6 6 0 0 1 0 12h-5v4M14 13h5a1 1 0 1 1 0 2h-5v-2Z"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linejoin="round"
+              /></svg></span
+          ><span class="brand-name">prime<span class="brand-sub">AGENT STUDIO</span></span
+          ><span class="local-pill">LOCAL</span></a
+        >
+        <div class="sidebar-top">
+          <button id="new-session" class="new-session-button">
+            <span data-icon="plus"></span>Nouvelle session<kbd>Ctrl N</kbd></button
+          ><label class="search-field"
+            ><span data-icon="search"></span
+            ><input
+              id="session-search"
+              type="search"
+              placeholder="Rechercher une session"
+              aria-label="Rechercher une session"
+            /><kbd>Ctrl K</kbd></label
+          >
+        </div>
+        <div class="sidebar-section-heading">
+          <span>ESPACE DE TRAVAIL</span
+          ><button
+            id="add-project"
+            class="icon-button small"
+            title="Ajouter un projet"
+            aria-label="Ajouter un projet"
+            data-icon="plus"
+          ></button>
+        </div>
+        <div id="project-list" class="project-list" aria-label="Projets">
+          <div class="skeleton skeleton-project"></div>
+          <div class="skeleton skeleton-project short"></div>
+        </div>
+        <div class="sidebar-section-heading session-heading">
+          <span id="session-list-label">SESSIONS RÉCENTES</span
+          ><button
+            id="show-archived"
+            class="icon-button small"
+            title="Afficher les sessions archivées"
+            aria-label="Afficher les sessions archivées"
+            aria-pressed="false"
+            data-icon="archive"
+          ></button>
+        </div>
+        <nav id="session-list" class="session-list" aria-label="Sessions">
+          <div class="skeleton skeleton-session"></div>
+          <div class="skeleton skeleton-session short"></div>
+        </nav>
+        <div class="sidebar-footer">
+          <div class="runtime-status">
+            <span id="connection-dot" class="status-dot waiting"></span
+            ><span id="connection-label">Connexion…</span><span id="cli-version" class="version-label"></span>
+          </div>
+          <button id="open-settings" class="sidebar-settings">
+            <span data-icon="settings"></span>Préférences<span class="settings-shortcut">Studio local</span>
+          </button>
+        </div>
+      </aside>
+      <main class="workspace">
+        <header class="workspace-header">
+          <button
+            id="toggle-sidebar"
+            class="icon-button mobile-menu"
+            aria-label="Afficher les projets"
+            data-icon="menu"
+          ></button>
+          <div class="breadcrumb">
+            <span class="breadcrumb-icon" data-icon="folder"></span
+            ><button id="header-project" class="breadcrumb-project" type="button">Espace de travail</button
+            ><span class="breadcrumb-separator">/</span><span id="header-session">Nouvelle session</span>
+          </div>
+          <div class="header-actions">
+            <span id="session-state" class="session-state" hidden></span
+            ><button
+              id="session-menu-button"
+              class="icon-button"
+              aria-label="Options de la session"
+              title="Options de la session"
+              aria-haspopup="menu"
+              data-icon="more"
+              disabled
+            ></button
+            ><button
+              id="toggle-details"
+              class="icon-button"
+              aria-label="Masquer le contexte"
+              title="Masquer le contexte"
+              aria-pressed="true"
+              data-icon="panel"
+            ></button>
+          </div>
+        </header>
+        <div id="remote-view-banner" class="remote-view-banner" role="status" hidden>
+          <span data-icon="monitor"></span>
+          <span
+            ><span id="remote-view-label">Studio à distance</span>
+            <span id="remote-view-detail" class="remote-view-detail">· contrôle complet</span></span
+          >
+        </div>
+        <div id="global-banner" class="global-banner" role="status" hidden></div>
+        <div class="workspace-body">
+          <section class="conversation-column" aria-label="Conversation">
+            <div id="conversation-scroll" class="conversation-scroll" tabindex="-1">
+              <section
+                id="project-overview"
+                class="project-overview"
+                aria-labelledby="project-overview-title"
+                hidden
+              >
+                <div class="project-overview-eyebrow"><span data-icon="folder"></span>VOTRE PROJET</div>
+                <div class="project-overview-heading">
+                  <div>
+                    <h1 id="project-overview-title" tabindex="-1">Sessions du projet</h1>
+                    <p id="project-session-count" class="project-session-count"></p>
+                  </div>
+                  <button id="project-new-session" class="primary-button" type="button">
+                    <span data-icon="plus"></span>Nouvelle session
+                  </button>
+                </div>
+                <p class="project-overview-description">
+                  Retrouvez une conversation et reprenez là où vous en étiez.
+                </p>
+                <div class="project-overview-toolbar">
+                  <div class="project-session-filters" role="group" aria-label="Sessions affichées">
+                    <button id="project-show-recent" type="button" aria-pressed="true">Récentes</button>
+                    <button id="project-show-archived" type="button" aria-pressed="false">Archivées</button>
+                  </div>
+                  <label class="search-field project-session-search"
+                    ><span data-icon="search"></span
+                    ><input
+                      id="project-session-search"
+                      type="search"
+                      placeholder="Rechercher dans ce projet"
+                      aria-label="Rechercher dans ce projet"
+                  /></label>
+                </div>
+                <div
+                  id="project-session-list"
+                  class="project-session-list"
+                  aria-label="Sessions de ce projet"
+                ></div>
+              </section>
+              <div id="welcome" class="welcome">
+                <div class="welcome-eyebrow"><span class="eyebrow-line"></span>DE L’IDÉE AU CODE</div>
+                <div class="welcome-symbol" aria-hidden="true">
+                  <svg viewBox="0 0 80 80" fill="none">
+                    <rect
+                      x="11.5"
+                      y="11.5"
+                      width="57"
+                      height="57"
+                      rx="17"
+                      stroke="currentColor"
+                      opacity=".3"
+                    />
+                    <path
+                      d="M25 54V26h18a10 10 0 0 1 0 20h-9v8M34 34h9a2 2 0 0 1 0 4h-9v-4Z"
+                      stroke="currentColor"
+                      stroke-width="3"
+                      stroke-linejoin="round"
+                    />
+                    <path d="m62 10 2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <h1>Un nouvel élan<br />pour vos projets.</h1>
+                <p class="welcome-description">
+                  Un agent, votre code et toutes vos idées.<br />Choisissez une piste, ou commencez simplement
+                  à écrire.
+                </p>
+                <div id="welcome-project" class="welcome-project">
+                  <span data-icon="folder"></span><span>Ajoutez un projet pour commencer</span>
+                </div>
+                <div class="starter-grid">
+                  <button
+                    class="starter-card"
+                    data-prompt="Explore ce projet et explique-moi son architecture, ses principaux composants et comment le lancer."
+                  >
+                    <span class="starter-icon" data-icon="compass"></span
+                    ><span
+                      ><strong>Explorer le projet</strong><small>Comprendre avant de construire</small></span
+                    ><span class="starter-arrow" data-icon="arrow-up-right"></span></button
+                  ><button
+                    class="starter-card"
+                    data-prompt="Aide-moi à développer une nouvelle fonctionnalité dans ce projet. Commence par explorer le code, puis demande-moi ce que je souhaite ajouter."
+                  >
+                    <span class="starter-icon" data-icon="code"></span
+                    ><span
+                      ><strong>Créer une fonctionnalité</strong
+                      ><small>Donner vie à la prochaine idée</small></span
+                    ><span class="starter-arrow" data-icon="arrow-up-right"></span></button
+                  ><button
+                    class="starter-card"
+                    data-prompt="Analyse ce projet pour repérer les bugs et les cas limites. Présente les problèmes concrets avec leurs emplacements et propose des corrections."
+                  >
+                    <span class="starter-icon" data-icon="bug"></span
+                    ><span
+                      ><strong>Résoudre un problème</strong
+                      ><small>Trouver la cause, corriger le code</small></span
+                    ><span class="starter-arrow" data-icon="arrow-up-right"></span></button
+                  ><button
+                    class="starter-card"
+                    data-prompt="Fais une revue de qualité du projet : lisibilité, robustesse, tests et maintenabilité. Propose des améliorations concrètes, classées par priorité."
+                  >
+                    <span class="starter-icon" data-icon="sparkles"></span
+                    ><span
+                      ><strong>Améliorer l’existant</strong
+                      ><small>Prendre du recul sur votre code</small></span
+                    ><span class="starter-arrow" data-icon="arrow-up-right"></span>
+                  </button>
+                </div>
+              </div>
+              <div
+                id="messages"
+                class="messages"
+                aria-live="polite"
+                aria-relevant="additions"
+                aria-label="Messages"
+              ></div>
+              <div id="conversation-loading" class="conversation-loading" hidden>
+                <span class="spinner"></span>Chargement de la session…
+              </div>
+            </div>
+            <button id="scroll-bottom" class="scroll-bottom" aria-label="Aller au dernier message" hidden>
+              <span data-icon="arrow-down"></span>Derniers messages
+            </button>
+            <div class="composer-area">
+              <div id="run-status" class="run-status" role="status" hidden>
+                <span class="spinner"></span><span id="run-status-label">L’agent travaille…</span
+                ><span id="run-elapsed"></span>
+              </div>
+              <form id="composer-form" class="composer-form">
+                <label for="composer" class="sr-only">Votre message à Prime Agent</label
+                ><textarea
+                  id="composer"
+                  rows="2"
+                  placeholder="Que souhaitez-vous construire ?"
+                  spellcheck="true"
+                ></textarea>
+                <div class="composer-toolbar">
+                  <div class="model-controls">
+                    <span data-icon="model" class="model-icon"></span
+                    ><button
+                      id="model-picker-button"
+                      class="model-picker-button"
+                      type="button"
+                      aria-haspopup="dialog"
+                      aria-controls="model-dialog"
+                      aria-expanded="false"
+                    >
+                      <span class="model-picker-selection">
+                        <span id="model-picker-label">Modèle par défaut</span
+                        ><span id="model-picker-provider">Configuration Prime Agent</span>
+                      </span>
+                      <span class="model-picker-chevron" data-icon="chevron"></span></button
+                    ><select id="model-select" hidden aria-hidden="true" tabindex="-1">
+                      <option value="">Modèle par défaut</option></select
+                    ><span class="control-separator"></span
+                    ><label for="thinking-select" class="sr-only">Effort de raisonnement</label
+                    ><select id="thinking-select" aria-label="Effort de raisonnement">
+                      <option value="">Effort par défaut</option>
+                      <option value="off">Sans raisonnement</option>
+                      <option value="minimal">Minimal</option>
+                      <option value="low">Léger</option>
+                      <option value="medium">Moyen</option>
+                      <option value="high">Élevé</option>
+                      <option value="xhigh">Très élevé</option>
+                      <option value="max">Maximum</option>
+                    </select>
+                  </div>
+                  <button
+                    id="stop-button"
+                    class="stop-button"
+                    type="button"
+                    title="Arrêter l’agent"
+                    aria-label="Arrêter l’agent"
+                    hidden
+                  >
+                    <span data-icon="stop" aria-hidden="true"></span></button
+                  ><button
+                    id="send-button"
+                    class="send-button"
+                    type="submit"
+                    title="Envoyer le message"
+                    aria-label="Envoyer le message"
+                    disabled
+                    data-icon="arrow-up"
+                  ></button>
+                </div>
+              </form>
+              <div class="composer-footnote">
+                <span
+                  ><span class="tiny-shield" data-icon="shield"></span>Interface locale · sessions sur cet
+                  ordinateur</span
+                ><span id="send-hint">Entrée pour envoyer · Maj Entrée pour un saut de ligne</span>
+              </div>
+            </div>
+          </section>
+          <aside id="details-panel" class="details-panel" aria-label="Contexte de la session">
+            <div class="details-heading">Contexte<span class="context-dot"></span></div>
+            <section class="context-section">
+              <div class="context-label">PROJET ACTIF</div>
+              <div class="context-project-icon" data-icon="folder"></div>
+              <h2 id="detail-project-name">Votre prochain projet</h2>
+              <p id="detail-project-path" class="project-path">
+                Connectez un dossier local pour donner du contexte à votre agent.
+              </p>
+              <button id="copy-project-path" class="text-button" hidden>
+                <span data-icon="copy"></span>Copier le chemin
+              </button>
+            </section>
+            <section class="context-section">
+              <div class="context-label">SESSION</div>
+              <dl class="session-properties">
+                <div>
+                  <dt>État</dt>
+                  <dd id="detail-status"><span class="status-dot"></span>Prête à démarrer</dd>
+                </div>
+                <div>
+                  <dt>Messages</dt>
+                  <dd id="detail-message-count">—</dd>
+                </div>
+                <div>
+                  <dt>Dernière activité</dt>
+                  <dd id="detail-updated">—</dd>
+                </div>
+              </dl>
+              <div id="detail-session-id" class="session-id" hidden></div>
+              <button id="export-session" class="text-button" hidden>
+                <span data-icon="download"></span>Exporter la conversation
+              </button>
+            </section>
+            <section id="active-runs-section" class="context-section" hidden>
+              <div class="context-label">EN COURS</div>
+              <div id="active-runs"></div>
+            </section>
+            <div class="context-bottom">
+              <div class="context-note-icon" data-icon="terminal"></div>
+              <strong>Le terminal, en toute discrétion.</strong>
+              <p>
+                Prime Agent s’exécute en arrière-plan. Retrouvez ses actions et ses résultats dans la
+                conversation.
+              </p>
+              <div class="context-footer">
+                <span>PRIME AGENT STUDIO</span><span id="studio-version">2.0</span>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </main>
+    </div>
+    <div id="session-menu" class="popover-menu" role="menu" hidden>
+      <button role="menuitem" data-action="rename"><span data-icon="pencil"></span>Renommer</button
+      ><button role="menuitem" data-action="pin">
+        <span data-icon="pin"></span><span id="pin-label">Épingler</span></button
+      ><button role="menuitem" data-action="export">
+        <span data-icon="download"></span>Exporter en Markdown
+      </button>
+      <div class="menu-divider"></div>
+      <button role="menuitem" data-action="archive">
+        <span data-icon="archive"></span><span id="archive-label">Archiver</span>
+      </button>
+    </div>
+    <dialog id="project-dialog" class="modal">
+      <form id="project-form">
+        <div class="modal-heading">
+          <span class="modal-icon" data-icon="folder-plus"></span
+          ><button
+            class="icon-button"
+            type="button"
+            data-close-dialog
+            aria-label="Fermer"
+            data-icon="x"
+          ></button>
+        </div>
+        <h2>Un projet à explorer.</h2>
+        <p>Indiquez le dossier de travail de Prime Agent. Vos sessions seront regroupées ici.</p>
+        <label for="project-cwd">Dossier du projet <span>obligatoire</span></label
+        ><input
+          id="project-cwd"
+          name="cwd"
+          autocomplete="off"
+          placeholder="C:\Users\vous\Projets\mon-projet"
+          required
+        /><label for="project-name">Nom du projet <span>facultatif</span></label
+        ><input id="project-name" name="name" autocomplete="off" placeholder="Mon projet" />
+        <div id="project-error" class="form-error" role="alert" hidden></div>
+        <div class="modal-actions">
+          <button class="secondary-button" type="button" data-close-dialog>Annuler</button
+          ><button id="project-submit" class="primary-button" type="submit">
+            <span data-icon="plus"></span>Ajouter le projet
+          </button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="rename-dialog" class="modal compact">
+      <form id="rename-form">
+        <div class="modal-heading">
+          <h2>Renommer la session</h2>
+          <button
+            class="icon-button"
+            type="button"
+            data-close-dialog
+            aria-label="Fermer"
+            data-icon="x"
+          ></button>
+        </div>
+        <label for="session-title">Titre de la session</label
+        ><input id="session-title" name="title" maxlength="180" required />
+        <div id="rename-error" class="form-error" role="alert" hidden></div>
+        <div class="modal-actions">
+          <button class="secondary-button" type="button" data-close-dialog>Annuler</button
+          ><button class="primary-button" type="submit">Enregistrer</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog
+      id="model-dialog"
+      class="modal model-dialog"
+      aria-labelledby="model-dialog-title"
+      aria-describedby="model-dialog-description"
+    >
+      <div class="modal-heading model-dialog-heading">
+        <span class="modal-icon" data-icon="model"></span>
+        <div>
+          <h2 id="model-dialog-title">Choisir un modèle</h2>
+          <p id="model-dialog-description">
+            Recherchez un modèle ou placez vos modèles préférés en tête de liste.
+          </p>
+        </div>
+        <button
+          class="icon-button"
+          type="button"
+          data-close-dialog
+          aria-label="Fermer"
+          data-icon="x"
+        ></button>
+      </div>
+      <label for="model-search" class="sr-only">Rechercher un modèle</label>
+      <div class="model-search-field">
+        <span data-icon="search"></span
+        ><input
+          id="model-search"
+          type="search"
+          autocomplete="off"
+          autofocus
+          spellcheck="false"
+          placeholder="Rechercher par nom, fournisseur ou identifiant…"
+        />
+      </div>
+      <div class="model-list-toolbar">
+        <span id="model-results-status" role="status" aria-live="polite"></span
+        ><button id="model-favorites-filter" type="button" aria-pressed="false">
+          <span data-icon="star"></span><span id="model-favorites-label">Favoris</span>
+        </button>
+      </div>
+      <div id="model-list" class="model-list" role="region" aria-label="Modèles disponibles"></div>
+    </dialog>
+    <dialog id="settings-dialog" class="modal settings-modal">
+      <div class="modal-heading">
+        <h2>Faites comme chez vous.</h2>
+        <button
+          class="icon-button"
+          type="button"
+          data-close-dialog
+          aria-label="Fermer"
+          data-icon="x"
+        ></button>
+      </div>
+      <p>Personnalisez votre espace de travail.</p>
+      <div class="settings-group">
+        <label>Apparence</label>
+        <div class="theme-options">
+          <button data-theme-choice="dark"><span data-icon="moon"></span>Sombre</button
+          ><button data-theme-choice="light"><span data-icon="sun"></span>Clair</button
+          ><button data-theme-choice="system"><span data-icon="monitor"></span>Système</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div>
+          <label for="enter-to-send">Entrée pour envoyer</label>
+          <p>Sinon, utilisez Ctrl + Entrée.</p>
+        </div>
+        <input id="enter-to-send" class="switch" type="checkbox" role="switch" checked />
+      </div>
+      <div class="settings-row">
+        <div>
+          <label for="show-reasoning">Afficher le raisonnement</label>
+          <p>Ouvrir les étapes de réflexion de l’agent.</p>
+        </div>
+        <input id="show-reasoning" class="switch" type="checkbox" role="switch" />
+      </div>
+      <div id="model-config-settings" class="settings-row">
+        <div>
+          <label for="open-model-config">Modèles et valeurs par défaut</label>
+          <p>Choisissez le modèle principal et gérez les définitions personnalisées.</p>
+        </div>
+        <button id="open-model-config" class="secondary-button" type="button">
+          <span data-icon="model"></span>Configurer
+        </button>
+      </div>
+      <div class="settings-about">
+        <span class="status-dot"></span>
+        <div>
+          <strong>Prime Agent Studio</strong>
+          <p id="settings-runtime">Interface locale pour Prime Agent</p>
+        </div>
+      </div>
+      <div class="modal-actions"><button class="primary-button" data-close-dialog>Terminé</button></div>
+    </dialog>
+    <dialog id="model-config-dialog" class="modal model-config-modal">
+      <div class="modal-heading model-config-heading">
+        <div class="modal-icon" aria-hidden="true" data-icon="model"></div>
+        <div>
+          <h2>Configurer les modèles</h2>
+          <p>Les définitions sont enregistrées localement dans Prime Agent.</p>
+        </div>
+        <button
+          class="icon-button"
+          type="button"
+          data-close-dialog
+          aria-label="Fermer"
+          data-icon="x"
+        ></button>
+      </div>
+      <div id="model-config-loading" class="model-config-loading" role="status">
+        Chargement de la configuration…
+      </div>
+      <div id="model-config-content" hidden>
+        <section id="model-config-list-view">
+          <article class="model-defaults-card">
+            <div class="model-defaults-heading">
+              <div>
+                <span class="model-config-kicker">COMPORTEMENT NATIF PRIME AGENT</span>
+                <h3>Modèles par défaut</h3>
+              </div>
+              <button id="save-default-model" class="primary-button" type="button" disabled>
+                <span data-icon="check"></span>Enregistrer
+              </button>
+            </div>
+            <div class="model-defaults-grid">
+              <label for="default-main-model">
+                Agent principal
+                <select id="default-main-model">
+                  <option value="">Choix automatique de Prime Agent</option>
+                </select>
+              </label>
+              <label for="default-subagent-model">
+                Sous-agents
+                <select id="default-subagent-model" disabled>
+                  <option>Hériter du modèle de l’agent parent</option>
+                </select>
+              </label>
+            </div>
+            <p class="model-defaults-note">
+              Le choix principal utilise les réglages globaux <code>defaultProvider</code> et
+              <code>defaultModel</code>. Prime Agent 0.9.1 ne définit pas de modèle global distinct pour les
+              sous-agents. Ils héritent du modèle de leur parent, sauf si l’agent demande explicitement un
+              autre modèle lors d’un appel <code>rlm(…, model=…)</code>.
+            </p>
+          </article>
+          <div class="model-config-section-heading">
+            <div>
+              <h3>Vos modèles personnalisés</h3>
+              <p id="model-config-count">Aucun modèle configuré</p>
+            </div>
+            <button id="add-custom-model" class="secondary-button" type="button">
+              <span data-icon="plus"></span>Ajouter
+            </button>
+          </div>
+          <div id="custom-model-list" class="custom-model-list"></div>
+          <div id="model-config-empty" class="model-config-empty" hidden>
+            Aucun modèle personnalisé. Ajoutez une définition pour un fournisseur compatible.
+          </div>
+          <p class="model-config-local-note">
+            <span data-icon="shield"></span
+            ><span
+              >Ce configurateur reste sur cet ordinateur. Les clés enregistrées ne sont jamais renvoyées au
+              navigateur. Pour une nouvelle clé, indiquez uniquement le nom de sa variable
+              d’environnement.</span
+            >
+          </p>
+        </section>
+        <form id="model-config-form" hidden novalidate>
+          <div class="model-config-form-heading">
+            <div>
+              <span class="model-config-kicker">DÉFINITION PRIME AGENT</span>
+              <h3 id="model-config-form-title">Ajouter un modèle</h3>
+            </div>
+            <button id="cancel-model-config" class="secondary-button" type="button">Retour</button>
+          </div>
+          <div class="model-config-grid">
+            <label for="custom-model-provider">
+              Fournisseur
+              <input
+                id="custom-model-provider"
+                required
+                maxlength="100"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="ex. opencode"
+              />
+            </label>
+            <label for="custom-model-id">
+              Identifiant du modèle
+              <input
+                id="custom-model-id"
+                required
+                maxlength="300"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="ex. mon-modele"
+              />
+            </label>
+            <label class="model-config-wide" for="custom-model-name">
+              Nom affiché
+              <input id="custom-model-name" required maxlength="200" autocomplete="off" />
+            </label>
+            <label for="custom-model-api">
+              Protocole API
+              <select id="custom-model-api" required>
+                <option value="openai-responses">OpenAI Responses</option>
+                <option value="openai-completions">OpenAI Chat Completions</option>
+                <option value="anthropic-messages">Anthropic Messages</option>
+                <option value="google-generative-ai">Google Generative AI</option>
+              </select>
+            </label>
+            <label for="custom-model-credential">
+              Variable de clé API <span>(si nécessaire)</span>
+              <input
+                id="custom-model-credential"
+                maxlength="128"
+                autocomplete="off"
+                autocapitalize="characters"
+                spellcheck="false"
+                placeholder="ex. PROVIDER_API_KEY"
+              />
+            </label>
+            <label class="model-config-wide" for="custom-model-url">
+              Adresse de base de l’API
+              <input
+                id="custom-model-url"
+                type="url"
+                required
+                maxlength="2048"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="https://api.exemple.fr/v1"
+              />
+            </label>
+            <label for="custom-model-context">
+              Fenêtre de contexte
+              <input id="custom-model-context" type="number" required min="1" max="16777216" step="1" />
+            </label>
+            <label for="custom-model-output">
+              Sortie maximale
+              <input id="custom-model-output" type="number" required min="1" max="16777216" step="1" />
+            </label>
+          </div>
+          <div class="model-capability-options">
+            <label><input id="custom-model-reasoning" type="checkbox" /> Raisonnement</label>
+            <label><input id="custom-model-image" type="checkbox" /> Images en entrée</label>
+          </div>
+          <p class="model-config-field-note">
+            Ne saisissez jamais une clé secrète ici. Prime Agent résout la variable indiquée ou conserve
+            l’identification déjà configurée pour ce fournisseur.
+          </p>
+          <div id="model-config-error" class="form-error" role="alert" hidden></div>
+          <div class="modal-actions">
+            <button id="cancel-model-config-bottom" class="secondary-button" type="button">Annuler</button>
+            <button id="save-model-config" class="primary-button" type="submit">
+              <span data-icon="check"></span>Enregistrer
+            </button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+    <div id="toasts" class="toasts" aria-live="polite" aria-atomic="false"></div>
+    <script type="module" src="/public/app.js"></script>
+  </body>
+</html>

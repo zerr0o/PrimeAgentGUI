@@ -1,0 +1,2138 @@
+import { marked } from '/vendor/marked.js';
+import DOMPurify from '/vendor/purify.js';
+import { createConversationRenderer } from './conversation.js';
+import { createLiveMessages } from './live-messages.js';
+let liveMessagesUI;
+const $ = (id) => document.getElementById(id);
+const icons = {
+  plus: 'M12 5v14M5 12h14',
+  search: 'm21 21-4.4-4.4M19 10.5a8.5 8.5 0 1 1-17 0 8.5 8.5 0 0 1 17 0',
+  folder: 'M3 7V5a1 1 0 0 1 1-1h5l2 3h9a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7Z',
+  'folder-plus': 'M3 7V5h6l2 2h10v13H3V7Zm9 3v7m-3-3.5h6',
+  archive: 'M4 8h16v12H4V8ZM3 3h18v5H3V3Zm7 9h4',
+  settings:
+    'm10 3-.5 2-2 .9-1.8-.6-2 3.4L5.2 10v2l-1.5 1.3 2 3.4 1.8-.6 2 .9.5 2h4l.5-2 2-.9 1.8.6 2-3.4-1.5-1.3v-2l1.5-1.3-2-3.4-1.8.6-2-.9L14 3h-4ZM15 11a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
+  menu: 'M4 6h16M4 12h16M4 18h16',
+  more: 'M5 12h.01M12 12h.01M19 12h.01',
+  panel: 'M3 4h18v16H3V4Zm12 0v16',
+  compass: 'M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0ZM16 8l-2 6-6 2 2-6 6-2Z',
+  code: 'm8 6-6 6 6 6m8-12 6 6-6 6M14 4l-4 16',
+  bug: 'M8 7V5a4 4 0 0 1 8 0v2M6 7h12v8a6 6 0 0 1-12 0V7Zm6 0v14M2 9h4m12 0h4M2 15h4m12 0h4M4 21l3-3m10 0 3 3',
+  sparkles: 'm12 3 2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4L12 3Zm8-1v4m-2-2h4',
+  'arrow-up-right': 'M6 18 18 6M6 6h12v12',
+  'arrow-up': 'M12 19V5m-6 6 6-6 6 6',
+  'arrow-down': 'M12 5v14m-6-6 6 6 6-6',
+  model: 'm12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5M3 16l9 5 9-5',
+  stop: 'M6 6h12v12H6V6',
+  shield: 'M12 3 3 7v5c0 5 9 9 9 9s9-4 9-9V7l-9-4Zm-4 9 3 3 5-6',
+  copy: 'M9 9h12v12H9V9ZM5 15H3V3h12v2',
+  download: 'M12 3v12m-5-5 5 5 5-5M3 16v5h18v-5',
+  terminal: 'm4 5 6 6-6 6m8 0h8',
+  pencil: 'm16 3 5 5L8 21H3v-5L16 3Zm-2 2 5 5',
+  pin: 'm9 3 12 12-3 3-5-2-4 4-5-5 4-4-2-5 3-3Zm-3 15-4 4',
+  star: 'm12 2.8 2.8 5.7 6.3.9-4.6 4.5 1.1 6.3-5.6-3-5.6 3 1.1-6.3-4.6-4.5 6.3-.9L12 2.8Z',
+  x: 'm6 6 12 12M6 18 18 6',
+  moon: 'M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z',
+  sun: 'M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM12 1v2m0 18v2M1 12h2m18 0h2M4.2 4.2l1.4 1.4m12.8 12.8 1.4 1.4M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4',
+  monitor: 'M2 3h20v14H2V3Zm10 14v4m-5 0h10',
+  chat: 'M21 4H3v13h5l4 4 4-4h5V4Z',
+  chevron: 'm9 5 7 7-7 7',
+  check: 'm5 12 4 4L19 6',
+  alert: 'm12 3 10 18H2L12 3Zm0 5v6m0 3v.01',
+  user: 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM4 21v-3a8 5 0 0 1 16 0v3',
+  brain: 'M12 4C8 0 4 4 5 7c-5 1-4 7-1 8-1 5 5 8 8 4 3 4 9 1 8-4 3-1 4-7-1-8 1-3-3-7-7-3Zm0 0v15',
+  tool: 'M21 3a6 6 0 0 1-8 8L5 21l-3-3 9-9a6 6 0 0 1 8-8l-4 4 3 3 3-5Z',
+};
+function icon(name, className = '') {
+  const s = document.createElement('span');
+  if (className) s.className = className;
+  s.setAttribute('aria-hidden', 'true');
+  s.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="${icons[name] || icons.chat}"/></svg>`;
+  return s;
+}
+function hydrateIcons(root = document) {
+  root.querySelectorAll('[data-icon]').forEach((n) => n.replaceChildren(icon(n.dataset.icon)));
+}
+function el(tag, className, text) {
+  const n = document.createElement(tag);
+  if (className) n.className = className;
+  if (text != null) n.textContent = text;
+  return n;
+}
+function readStorage(key, fallback) {
+  try {
+    return JSON.parse(localStorage.getItem(`prime-studio.${key}`)) ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+function writeStorage(key, value) {
+  try {
+    localStorage.setItem(`prime-studio.${key}`, JSON.stringify(value));
+  } catch {}
+}
+function storedPreferences() {
+  const stored = readStorage('preferences', {});
+  return stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : {};
+}
+function savePreferences(patch) {
+  Object.assign(prefs, storedPreferences(), patch);
+  writeStorage('preferences', prefs);
+}
+const prefs = {
+  theme: 'dark',
+  enterToSend: true,
+  showReasoning: false,
+  details: true,
+  modelFavorites: [],
+  ...readStorage('preferences', {}),
+};
+const state = {
+  projects: [],
+  projectCwd: null,
+  sessionId: null,
+  viewRunId: null,
+  history: [],
+  runs: new Map(),
+  models: [],
+  version: null,
+  online: false,
+  loading: false,
+  sending: false,
+  archived: false,
+  requestId: 0,
+  initialized: false,
+  readOnly: false,
+  remote: false,
+  projectOverview: false,
+  menuSessionId: null,
+  modelFavoritesOnly: false,
+  modelConfig: null,
+  modelConfigOriginal: null,
+  modelDefaults: null,
+  modelCatalogDefault: '',
+};
+const selection = readStorage('selection', {});
+const normalizedPath = (p) =>
+  String(p || '')
+    .replaceAll('\\', '/')
+    .replace(/\/$/, '')
+    .toLowerCase();
+const samePath = (a, b) => normalizedPath(a) === normalizedPath(b);
+const project = () => state.projects.find((p) => samePath(p.cwd, state.projectCwd));
+const allSessions = () =>
+  state.projects.flatMap((p) => (p.sessions || []).map((s) => ({ ...s, cwd: s.cwd || p.cwd })));
+const session = (id) => allSessions().find((s) => s.id === (id || state.sessionId));
+const isRunning = (run) => run && ['running', 'stopping'].includes(run.status);
+const activeRun = () =>
+  state.runs.get(state.viewRunId) ||
+  [...state.runs.values()].find((r) => r.sessionId && r.sessionId === state.sessionId && isRunning(r));
+const activeMessages = () => {
+  const r = activeRun();
+  return r?.initialized ? [...r.base, ...r.messages] : state.history;
+};
+const toTime = (v) => {
+  const n = typeof v === 'number' ? v : Date.parse(v);
+  return Number.isFinite(n) ? n : 0;
+};
+const dateLabel = (v) => {
+  const time = toTime(v);
+  if (!time) return '—';
+  const d = new Date(time);
+  return new Date().toDateString() === d.toDateString()
+    ? d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+    : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+};
+const normalizeModelSearch = (value) =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('fr-FR')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim();
+function favoriteModelIds() {
+  const latest = storedPreferences(),
+    stored = Array.isArray(latest.modelFavorites)
+      ? latest.modelFavorites
+      : Array.isArray(prefs.modelFavorites)
+        ? prefs.modelFavorites
+        : [],
+    sanitized = stored.filter((id) => typeof id === 'string' && id.length <= 500);
+  prefs.modelFavorites = sanitized;
+  return new Set(sanitized);
+}
+function modelDisplayName(id) {
+  return state.models.find((model) => model.id === id)?.name || id?.split('/').pop() || 'Modèle par défaut';
+}
+function setSelectedModel(value, persist = false) {
+  const id = typeof value === 'string' ? value : '',
+    select = $('model-select');
+  if (id && ![...select.options].some((option) => option.value === id)) {
+    const option = el('option', '', id);
+    option.value = id;
+    select.append(option);
+  }
+  select.value = id;
+  const name = modelDisplayName(id),
+    button = $('model-picker-button'),
+    model = state.models.find((item) => item.id === id),
+    provider =
+      model?.provider ||
+      (id.includes('/')
+        ? id.slice(0, id.indexOf('/'))
+        : id
+          ? 'Modèle personnalisé'
+          : 'Configuration Prime Agent');
+  $('model-picker-label').textContent = name;
+  $('model-picker-provider').textContent = provider;
+  button.title = id ? `${name} · ${model?.id || id}` : name;
+  button.setAttribute(
+    'aria-label',
+    `Choisir le modèle. Sélection actuelle : ${id ? `${name}, ${model?.id || id}` : name}`,
+  );
+  if (persist) savePreferences({ model: id });
+  if ($('model-dialog').open) renderModelList();
+}
+function modelRow(model, favorite = false) {
+  const id = model.id || '',
+    defaultChoice = !id,
+    name = model.name || modelDisplayName(id),
+    selected = $('model-select').value === id,
+    accessibleName = defaultChoice ? name : `${name}, ${model.id}`,
+    row = el('div', `model-row${selected ? ' selected' : ''}`),
+    choice = el('button', 'model-choice'),
+    copy = el('span', 'model-choice-copy'),
+    favoriteButton = defaultChoice ? null : el('button', 'model-favorite');
+  row.dataset.modelId = id;
+  row.setAttribute('role', 'listitem');
+  choice.type = 'button';
+  choice.dataset.modelId = id;
+  choice.setAttribute('aria-label', `Utiliser ${accessibleName}`);
+  if (selected) choice.setAttribute('aria-current', 'true');
+  copy.append(
+    el('span', 'model-choice-name', name),
+    el('span', 'model-choice-detail', defaultChoice ? 'Configuration de Prime Agent' : model.id),
+  );
+  choice.append(copy);
+  if (selected) choice.append(icon('check', 'model-choice-check'));
+  row.append(choice);
+  if (favoriteButton) {
+    favoriteButton.type = 'button';
+    favoriteButton.dataset.modelId = id;
+    favoriteButton.setAttribute('aria-pressed', String(favorite));
+    favoriteButton.setAttribute(
+      'aria-label',
+      `${favorite ? 'Retirer' : 'Ajouter'} ${accessibleName} ${favorite ? 'des' : 'aux'} favoris`,
+    );
+    favoriteButton.title = favorite ? 'Retirer des favoris' : 'Ajouter aux favoris';
+    favoriteButton.append(icon('star'));
+    row.append(favoriteButton);
+  }
+  return row;
+}
+function appendModelGroup(title, models, favorites) {
+  if (!models.length) return;
+  const section = el('section', 'model-group'),
+    heading = el('h3', 'model-group-title', title),
+    list = el('div', 'model-group-list');
+  section.setAttribute('aria-label', title);
+  list.setAttribute('role', 'list');
+  for (const model of models) list.append(modelRow(model, favorites.has(model.id)));
+  section.append(heading, list);
+  $('model-list').append(section);
+}
+function renderModelList({ focusFavorite } = {}) {
+  const root = $('model-list'),
+    query = normalizeModelSearch($('model-search').value),
+    favorites = favoriteModelIds(),
+    matching = state.models.filter((model) =>
+      normalizeModelSearch(`${model.name || ''} ${model.provider || ''} ${model.id || ''}`).includes(query),
+    ),
+    favoriteModels = matching.filter((model) => favorites.has(model.id)),
+    otherModels = state.modelFavoritesOnly ? [] : matching.filter((model) => !favorites.has(model.id)),
+    defaultMatches = normalizeModelSearch('Modèle par défaut configuration Prime Agent').includes(query),
+    showDefault = !state.modelFavoritesOnly && defaultMatches,
+    visibleCount = favoriteModels.length + otherModels.length + Number(showDefault),
+    availableFavoriteCount = state.models.filter((model) => favorites.has(model.id)).length;
+  root.replaceChildren();
+  $('model-favorites-filter').setAttribute('aria-pressed', String(state.modelFavoritesOnly));
+  $('model-favorites-label').textContent = availableFavoriteCount
+    ? `Favoris (${availableFavoriteCount})`
+    : 'Favoris';
+  $('model-results-status').textContent =
+    query || state.modelFavoritesOnly
+      ? `${visibleCount} résultat${visibleCount === 1 ? '' : 's'}`
+      : `${visibleCount} choix disponible${visibleCount === 1 ? '' : 's'}`;
+  appendModelGroup('Favoris', favoriteModels, favorites);
+  if (showDefault)
+    appendModelGroup('Configuration', [{ id: '', name: 'Modèle par défaut', provider: '' }], favorites);
+  if (!state.modelFavoritesOnly) {
+    const providers = new Map();
+    for (const model of otherModels) {
+      const provider = model.provider || 'Autres';
+      if (!providers.has(provider)) providers.set(provider, []);
+      providers.get(provider).push(model);
+    }
+    for (const [provider, models] of providers) appendModelGroup(provider, models, favorites);
+  }
+  if (!visibleCount) {
+    const empty = el('div', 'model-list-empty');
+    empty.append(
+      icon(state.modelFavoritesOnly ? 'star' : 'search'),
+      el('strong', '', state.modelFavoritesOnly ? 'Aucun favori trouvé' : 'Aucun modèle trouvé'),
+      el(
+        'span',
+        '',
+        state.modelFavoritesOnly
+          ? 'Ajoutez un favori ou modifiez votre recherche.'
+          : 'Essayez un autre nom, fournisseur ou identifiant.',
+      ),
+    );
+    root.append(empty);
+  }
+  if (focusFavorite) {
+    requestAnimationFrame(() => {
+      const target = [...root.querySelectorAll('.model-favorite')].find(
+        (button) => button.dataset.modelId === focusFavorite,
+      );
+      (target || $('model-favorites-filter')).focus();
+    });
+  }
+}
+function toggleModelFavorite(id) {
+  if (!state.models.some((model) => model.id === id)) return;
+  const favorites = favoriteModelIds(),
+    removing = favorites.delete(id);
+  if (!removing) favorites.add(id);
+  savePreferences({ modelFavorites: [...favorites] });
+  renderModelList({ focusFavorite: state.modelFavoritesOnly && removing ? undefined : id });
+  if (state.modelFavoritesOnly && removing) requestAnimationFrame(() => $('model-favorites-filter').focus());
+}
+function openModelDialog() {
+  if ($('model-picker-button').disabled) return;
+  state.modelFavoritesOnly = false;
+  $('model-search').value = '';
+  renderModelList();
+  $('model-dialog').showModal();
+  $('model-picker-button').setAttribute('aria-expanded', 'true');
+  requestAnimationFrame(() => {
+    $('model-search').focus();
+    $('model-list').querySelector('.model-row.selected')?.scrollIntoView({ block: 'center' });
+  });
+}
+function toast(message, error = false) {
+  const n = el('div', `toast${error ? ' error' : ''}`);
+  n.append(icon(error ? 'alert' : 'check'), el('span', '', message));
+  $('toasts').append(n);
+  setTimeout(() => n.remove(), error ? 6500 : 3200);
+}
+function banner(message, error = false) {
+  $('global-banner').textContent = message || '';
+  $('global-banner').hidden = !message;
+  $('global-banner').classList.toggle('error', error);
+}
+async function api(path, { method = 'GET', body, signal } = {}) {
+  if (state.readOnly && method.toUpperCase() !== 'GET')
+    throw new Error('Cette connexion permet de consulter les sessions.');
+  const r = await fetch(path, {
+    method,
+    signal,
+    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  let data;
+  try {
+    data = await r.json();
+  } catch {
+    throw new Error('Le serveur a renvoyé une réponse illisible.');
+  }
+  if (!r.ok) {
+    const e = new Error(data.error || `Erreur ${r.status}`);
+    e.status = r.status;
+    throw e;
+  }
+  return data;
+}
+function setConnection(online) {
+  state.online = online;
+  $('connection-dot').className = `status-dot${online ? '' : ' offline'}`;
+  $('connection-label').textContent = online
+    ? state.version?.available === false
+      ? 'Prime Agent indisponible'
+      : 'Moteur connecté'
+    : 'Reconnexion au serveur…';
+  if (online && state.version?.available === false) $('connection-dot').className = 'status-dot waiting';
+  updateComposer();
+}
+function applyPreferences() {
+  document.documentElement.dataset.theme =
+    prefs.theme === 'system'
+      ? matchMedia('(prefers-color-scheme: light)').matches
+        ? 'light'
+        : 'dark'
+      : prefs.theme;
+  $('enter-to-send').checked = prefs.enterToSend;
+  $('show-reasoning').checked = prefs.showReasoning;
+  document
+    .querySelectorAll('[data-theme-choice]')
+    .forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themeChoice === prefs.theme)));
+  $('send-hint').textContent = prefs.enterToSend
+    ? 'Entrée pour envoyer · Maj Entrée pour un saut de ligne'
+    : 'Ctrl Entrée pour envoyer';
+  if (innerWidth > 1080) {
+    $('details-panel').hidden = !prefs.details;
+    $('toggle-details').setAttribute('aria-pressed', String(prefs.details));
+  } else {
+    $('details-panel').hidden = false;
+    $('toggle-details').setAttribute(
+      'aria-pressed',
+      String($('details-panel').classList.contains('mobile-open')),
+    );
+  }
+  const open = $('toggle-details').getAttribute('aria-pressed') === 'true';
+  $('toggle-details').title = open ? 'Masquer le contexte' : 'Afficher le contexte';
+  $('toggle-details').setAttribute('aria-label', $('toggle-details').title);
+}
+function applyAccessMode() {
+  document.documentElement.dataset.readOnly = String(state.readOnly);
+  document.documentElement.dataset.remote = String(state.remote);
+  $('remote-view-banner').hidden = !state.remote;
+  $('remote-view-label').textContent = state.readOnly ? 'Consultation à distance' : 'Studio à distance';
+  $('remote-view-detail').textContent = state.readOnly ? '· lecture seule' : '· contrôle complet';
+  $('composer').disabled = state.readOnly;
+  $('enter-to-send').closest('.settings-row').hidden = state.readOnly;
+  $('model-config-settings').hidden = state.remote;
+  const skipLink = document.querySelector('.skip-link');
+  skipLink.href = state.readOnly ? '#conversation-scroll' : '#composer';
+  skipLink.textContent = state.readOnly ? 'Aller à la conversation' : 'Aller au message';
+  document.querySelector('.local-pill').textContent = state.remote ? 'DISTANT' : 'LOCAL';
+  document.querySelector('.settings-shortcut').textContent = state.remote ? 'Cet appareil' : 'Studio local';
+  if (state.readOnly) {
+    closeSessionMenu();
+    document.querySelector('#welcome h1').textContent = 'Vos projets, à portée de main.';
+    document.querySelector('.welcome-description').textContent =
+      'Choisissez un projet pour retrouver ses sessions et suivre l’agent en direct.';
+    document.querySelector('.welcome-eyebrow').lastChild.textContent = 'VOTRE STUDIO À DISTANCE';
+  }
+}
+function draftKey() {
+  return state.sessionId ? `session:${state.sessionId}` : `project:${normalizedPath(state.projectCwd)}`;
+}
+function saveDraft() {
+  if (state.readOnly) return;
+  const drafts = readStorage('drafts', {}),
+    key = draftKey();
+  if ($('composer').value) drafts[key] = $('composer').value;
+  else delete drafts[key];
+  writeStorage('drafts', drafts);
+}
+function restoreDraft() {
+  $('composer').value = state.readOnly ? '' : readStorage('drafts', {})[draftKey()] || '';
+  resizeComposer();
+}
+function saveSelection() {
+  writeStorage('selection', {
+    cwd: state.projectCwd,
+    sessionId: state.sessionId,
+    runId: state.viewRunId,
+    projectOverview: state.projectOverview,
+  });
+}
+function resizeComposer() {
+  const a = $('composer');
+  const style = getComputedStyle(a);
+  const minHeight = parseFloat(style.minHeight) || 40;
+  const maxHeight = parseFloat(style.maxHeight) || 200;
+  a.style.height = '0px';
+  a.style.height = `${Math.min(maxHeight, Math.max(minHeight, a.scrollHeight))}px`;
+  updateComposer();
+}
+function updateComposer() {
+  const running = isRunning(activeRun());
+  $('send-button').hidden = running;
+  $('stop-button').hidden = !running;
+  $('stop-button').disabled = state.readOnly || activeRun()?.status === 'stopping';
+  $('send-button').disabled =
+    state.readOnly ||
+    state.projectOverview ||
+    !$('composer').value.trim() ||
+    !state.projectCwd ||
+    state.sending ||
+    state.loading ||
+    running ||
+    !state.online ||
+    state.version?.available === false ||
+    project()?.exists === false;
+  $('model-select').disabled = state.readOnly || running || state.sending;
+  $('model-picker-button').disabled = state.readOnly || running || state.sending;
+  $('thinking-select').disabled = state.readOnly || running || state.sending;
+  $('run-status').hidden = !running;
+  $('run-status-label').textContent =
+    activeRun()?.status === 'stopping'
+      ? 'Arrêt de l’agent…'
+      : activeRun()?.statusLabel || 'L’agent travaille…';
+  $('composer').placeholder = state.projectCwd
+    ? running
+      ? 'Préparez votre prochain message…'
+      : 'Que souhaitez-vous construire ?'
+    : 'Ajoutez un projet pour commencer…';
+  liveMessagesUI?.update();
+}
+function renderProjects() {
+  const root = $('project-list');
+  root.replaceChildren();
+  const items = [...state.projects].sort((a, b) => Number(b.pinned) - Number(a.pinned));
+  for (const p of items) {
+    const b = el('button', `project-row${samePath(p.cwd, state.projectCwd) ? ' active' : ''}`);
+    b.title = p.cwd;
+    b.setAttribute('aria-pressed', String(samePath(p.cwd, state.projectCwd)));
+    b.append(icon('folder'), el('span', 'project-label', p.name || p.cwd.split(/[\\/]/).pop()));
+    const count = el('span', 'project-count', String((p.sessions || []).filter((s) => !s.archived).length));
+    b.append(count);
+    if (p.exists === false) {
+      count.textContent = '!';
+      count.title = 'Dossier introuvable';
+    }
+    b.onclick = () => selectProject(p.cwd);
+    root.append(b);
+  }
+  if (!items.length) {
+    const empty = el(
+      'div',
+      'sidebar-empty',
+      state.readOnly ? 'Aucun projet à consulter pour le moment.' : 'Vos projets, au même endroit. ',
+    );
+    if (!state.readOnly) {
+      const b = el('button', '', 'Ajouter un dossier');
+      b.onclick = openProjectDialog;
+      empty.append(b);
+    }
+    root.append(empty);
+  }
+}
+function groupLabel(s) {
+  if (s.pinned) return 'Épinglées';
+  const age = (Date.now() - toTime(s.updatedAt)) / 86400000;
+  return age < 1 ? 'Aujourd’hui' : age < 7 ? 'Cette semaine' : age < 30 ? 'Ce mois-ci' : 'Plus anciennes';
+}
+function renderSessions() {
+  const query = $('session-search').value.trim().toLocaleLowerCase('fr');
+  let items = query
+    ? allSessions()
+    : (project()?.sessions || []).map((s) => ({ ...s, cwd: s.cwd || state.projectCwd }));
+  items = items.filter(
+    (s) =>
+      Boolean(s.archived) === state.archived &&
+      (!query || `${s.title} ${s.cwd}`.toLocaleLowerCase('fr').includes(query)),
+  );
+  items.sort((a, b) => Number(b.pinned) - Number(a.pinned) || toTime(b.updatedAt) - toTime(a.updatedAt));
+  const root = $('session-list'),
+    scroll = root.scrollTop;
+  root.replaceChildren();
+  $('session-list-label').textContent = state.archived
+    ? 'SESSIONS ARCHIVÉES'
+    : query
+      ? 'RÉSULTATS DE RECHERCHE'
+      : 'SESSIONS RÉCENTES';
+  $('show-archived').setAttribute('aria-pressed', String(state.archived));
+  $('show-archived').title = state.archived
+    ? 'Afficher les sessions récentes'
+    : 'Afficher les sessions archivées';
+  $('show-archived').setAttribute('aria-label', $('show-archived').title);
+  let group = '';
+  for (const s of items) {
+    const label = groupLabel(s);
+    if (label !== group && !query) {
+      root.append(el('div', 'session-group-label', label));
+      group = label;
+    }
+    const row = el('div', `session-row${s.id === state.sessionId ? ' active' : ''}`),
+      b = el('button', 'session-select');
+    b.title = s.title || 'Sans titre';
+    b.setAttribute('aria-current', s.id === state.sessionId ? 'page' : 'false');
+    const running = [...state.runs.values()].some((r) => r.sessionId === s.id && isRunning(r));
+    b.append(
+      running ? el('span', 'running-dot') : icon(s.pinned ? 'pin' : 'chat'),
+      el('span', 'session-title', s.title || 'Nouvelle session'),
+    );
+    b.onclick = () => selectSession(s.id, s.cwd);
+    const menu = el('button', 'icon-button session-more');
+    menu.append(icon('more'));
+    menu.title = 'Options de la session';
+    menu.setAttribute('aria-label', `Options : ${s.title || 'Nouvelle session'}`);
+    menu.setAttribute('aria-haspopup', 'menu');
+    menu.onclick = (e) => openSessionMenu(s.id, e.currentTarget);
+    row.append(b, menu);
+    root.append(row);
+  }
+  if (!items.length)
+    root.append(
+      el(
+        'div',
+        'empty-search',
+        query
+          ? 'Aucune session ne correspond à votre recherche.'
+          : state.archived
+            ? 'Aucune session archivée.'
+            : state.readOnly
+              ? 'Aucune session à consulter dans ce projet pour le moment.'
+              : 'Vos conversations apparaîtront ici. Commencez une nouvelle session.',
+      ),
+    );
+  root.scrollTop = scroll;
+}
+let projectListSignature = '';
+function renderProjectOverview() {
+  const p = project();
+  const visible = state.projectOverview && Boolean(p);
+  $('project-overview').hidden = !visible;
+  document.documentElement.dataset.projectOverview = String(visible);
+  const skipLink = document.querySelector('.skip-link');
+  skipLink.href = visible || state.readOnly ? '#conversation-scroll' : '#composer';
+  skipLink.textContent = visible
+    ? 'Aller aux sessions du projet'
+    : state.readOnly
+      ? 'Aller à la conversation'
+      : 'Aller au message';
+  if (!visible) return;
+  $('project-overview-title').textContent = p.name || 'Sessions du projet';
+  $('project-new-session').hidden = state.readOnly;
+  $('project-new-session').disabled = p.exists === false;
+  const sessions = (p.sessions || []).map((s) => ({ ...s, cwd: s.cwd || p.cwd }));
+  const pendingRuns = [...state.runs.values()].filter(
+    (r) => samePath(r.cwd, p.cwd) && isRunning(r) && !sessions.some((s) => s.id === r.sessionId),
+  );
+  const count = sessions.filter((s) => !s.archived).length + pendingRuns.length;
+  $('project-session-count').textContent = `${count} session${count > 1 ? 's' : ''}`;
+  $('project-show-recent').setAttribute('aria-pressed', String(!state.archived));
+  $('project-show-archived').setAttribute('aria-pressed', String(state.archived));
+  document.querySelector('.project-overview-description').textContent = state.readOnly
+    ? 'Ouvrez une conversation pour consulter ses échanges et suivre l’agent en direct.'
+    : 'Retrouvez une conversation et reprenez là où vous en étiez.';
+  const query = $('project-session-search').value.trim().toLocaleLowerCase('fr');
+  const items = [
+    ...sessions,
+    ...pendingRuns.map((r) => ({
+      id: r.sessionId,
+      runId: r.id,
+      title: r.prompt?.slice(0, 100) || 'Nouvelle session',
+      cwd: r.cwd,
+      updatedAt: r.startedAt,
+    })),
+  ]
+    .filter(
+      (s) =>
+        Boolean(s.archived) === state.archived &&
+        (!query || (s.title || '').toLocaleLowerCase('fr').includes(query)),
+    )
+    .sort(
+      (a, b) =>
+        Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || toTime(b.updatedAt) - toTime(a.updatedAt),
+    );
+  const runningIds = new Set([...state.runs.values()].filter(isRunning).map((r) => r.sessionId));
+  const signature = JSON.stringify([p.cwd, state.readOnly, state.archived, query, items, [...runningIds]]);
+  if (signature === projectListSignature) return;
+  projectListSignature = signature;
+  const root = $('project-session-list');
+  root.replaceChildren();
+  for (const s of items) {
+    const running = Boolean(s.runId || (s.id && runningIds.has(s.id)));
+    const card = el('button', `project-session-card${running ? ' is-running' : ''}`);
+    card.type = 'button';
+    if (s.id) card.dataset.sessionId = s.id;
+    if (s.runId) card.dataset.runId = s.runId;
+    card.append(icon(s.archived ? 'archive' : s.pinned ? 'pin' : 'chat', 'project-session-icon'));
+    const content = el('span', 'project-session-content');
+    content.append(el('span', 'project-session-title', s.title || 'Nouvelle session'));
+    const meta = el('span', 'project-session-meta');
+    if (running) {
+      const status = el('span', 'project-session-running');
+      status.append(el('span', 'running-dot'), document.createTextNode('Agent en cours'));
+      meta.append(status);
+    } else if (s.pinned) meta.append(el('span', '', 'Épinglée'));
+    if (Number.isFinite(s.messageCount))
+      meta.append(el('span', '', `${s.messageCount} message${s.messageCount > 1 ? 's' : ''}`));
+    const date = el('time', '', dateLabel(s.updatedAt));
+    if (toTime(s.updatedAt)) {
+      date.dateTime = new Date(toTime(s.updatedAt)).toISOString();
+      date.title = new Date(toTime(s.updatedAt)).toLocaleString('fr-FR');
+    }
+    meta.append(date);
+    content.append(meta);
+    card.append(content, icon('chevron', 'project-session-chevron'));
+    card.onclick = () => {
+      if (s.runId) void selectRun(state.runs.get(s.runId));
+      else void selectSession(s.id, s.cwd);
+    };
+    root.append(card);
+  }
+  if (!items.length) {
+    const empty = el('div', 'project-sessions-empty');
+    empty.append(
+      icon(query ? 'search' : state.archived ? 'archive' : 'chat'),
+      el(
+        'h2',
+        '',
+        query ? 'Aucun résultat' : state.archived ? 'Aucune session archivée' : 'Votre première session',
+      ),
+      el(
+        'p',
+        '',
+        query
+          ? 'Essayez un autre mot pour retrouver votre conversation.'
+          : state.archived
+            ? 'Les conversations archivées de ce projet apparaîtront ici.'
+            : state.readOnly
+              ? 'Ce projet ne contient pas encore de conversation.'
+              : 'Créez une session pour commencer à travailler avec Prime Agent.',
+      ),
+    );
+    root.append(empty);
+  }
+}
+function renderDetails() {
+  const p = project(),
+    s = session(),
+    run = activeRun();
+  $('header-project').textContent = p?.name || 'Espace de travail';
+  $('header-project').title = p?.cwd || '';
+  $('header-project').disabled = !p;
+  $('header-project').setAttribute(
+    'aria-label',
+    p ? `Afficher les sessions de ${p.name}` : 'Espace de travail',
+  );
+  $('header-session').textContent =
+    s?.title ||
+    (run
+      ? 'Session en cours'
+      : state.projectOverview
+        ? 'Sessions'
+        : state.readOnly
+          ? 'Consultation des sessions'
+          : 'Nouvelle session');
+  $('header-session').title = $('header-session').textContent;
+  document.title = s?.title ? `${s.title} · Prime Agent Studio` : 'Prime Agent Studio';
+  $('detail-project-name').textContent =
+    p?.name || (state.readOnly ? 'Vos projets' : 'Votre prochain projet');
+  $('detail-project-path').textContent =
+    p?.cwd ||
+    (state.readOnly
+      ? 'Les projets du Studio sont accessibles depuis le menu.'
+      : 'Connectez un dossier local pour donner du contexte à votre agent.');
+  $('copy-project-path').hidden = !p;
+  $('welcome-project').lastElementChild.textContent = p
+    ? p.exists === false
+      ? `${p.name} · dossier introuvable`
+      : p.name
+    : state.readOnly
+      ? 'Vos sessions apparaîtront ici'
+      : 'Ajoutez un projet pour commencer';
+  const status = isRunning(run)
+    ? run.status === 'stopping'
+      ? 'Arrêt en cours'
+      : 'En cours'
+    : s?.archived
+      ? 'Archivée'
+      : s
+        ? 'Disponible'
+        : state.readOnly
+          ? 'Consultation'
+          : 'Prête à démarrer';
+  $('detail-status').replaceChildren(
+    el('span', `status-dot${s?.archived ? ' waiting' : ''}`),
+    document.createTextNode(status),
+  );
+  $('detail-message-count').textContent =
+    s || run
+      ? String(activeMessages().filter((m) => m.role === 'user' || m.role === 'assistant').length)
+      : '—';
+  $('detail-updated').textContent = dateLabel(s?.updatedAt || run?.startedAt);
+  $('detail-session-id').hidden = !state.sessionId;
+  $('detail-session-id').textContent = state.sessionId ? `ID ${state.sessionId}` : '';
+  $('detail-session-id').title = state.sessionId || '';
+  $('session-menu-button').disabled = !state.sessionId;
+  $('export-session').hidden = !state.sessionId;
+  $('session-state').hidden = !isRunning(run);
+  $('session-state').textContent = 'Agent en cours';
+  const runs = [...state.runs.values()].filter(isRunning);
+  $('active-runs-section').hidden = !runs.length;
+  $('active-runs').replaceChildren();
+  for (const r of runs) {
+    const b = el('button', 'active-run');
+    b.append(
+      el('span', 'spinner'),
+      el(
+        'span',
+        'active-run-label',
+        session(r.sessionId)?.title || r.prompt?.slice(0, 55) || 'Nouvelle session',
+      ),
+    );
+    b.onclick = () => selectRun(r);
+    $('active-runs').append(b);
+  }
+  if (state.online && state.version?.available !== false) {
+    if (p?.exists === false)
+      banner(
+        state.readOnly
+          ? 'Le dossier de ce projet est introuvable. Ses conversations restent consultables.'
+          : 'Le dossier de ce projet est introuvable. Ajoutez son nouvel emplacement pour poursuivre.',
+        true,
+      );
+    else if ($('global-banner').dataset.persistent !== 'true') banner('');
+  }
+}
+function renderNavigation() {
+  renderProjects();
+  renderSessions();
+  renderProjectOverview();
+  renderDetails();
+  updateComposer();
+}
+marked.setOptions({ gfm: true, breaks: false });
+function markdown(text) {
+  const n = el('div', 'markdown');
+  n.innerHTML = DOMPurify.sanitize(marked.parse(String(text || '')), {
+    USE_PROFILES: { html: true },
+    FORBID_TAGS: [
+      'style',
+      'form',
+      'input',
+      'button',
+      'textarea',
+      'select',
+      'iframe',
+      'video',
+      'audio',
+      'object',
+      'embed',
+      'svg',
+      'math',
+    ],
+    FORBID_ATTR: ['style', 'id', 'name', 'target'],
+  });
+  n.querySelectorAll('a').forEach((a) => {
+    const href = a.getAttribute('href') || '';
+    if (!/^(https?:|mailto:|#|\/)/i.test(href)) {
+      a.removeAttribute('href');
+      a.title = href;
+    } else if (/^https?:/i.test(href)) {
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+    }
+  });
+  n.querySelectorAll('img').forEach((img) => {
+    const src = img.getAttribute('src') || '';
+    if (!src.startsWith('/') && !src.startsWith('data:image/'))
+      img.replaceWith(el('span', '', `[Image : ${img.alt || src}]`));
+  });
+  n.querySelectorAll('pre').forEach((pre) => {
+    const code = pre.querySelector('code');
+    if (!code) return;
+    const bar = el('div', 'code-bar'),
+      lang = (code.className.match(/language-([\w+#.-]+)/) || [])[1] || 'code';
+    bar.append(el('span', '', lang));
+    const b = el('button', 'copy-code');
+    b.type = 'button';
+    b.append(icon('copy'), document.createTextNode('Copier'));
+    b.onclick = () => copyText(code.textContent, 'Code copié');
+    bar.append(b);
+    pre.prepend(bar);
+  });
+  return n;
+}
+function stringify(v) {
+  if (v == null) return '';
+  if (typeof v === 'string') return v;
+  if (Array.isArray(v.content))
+    return v.content
+      .map((c) => (c.type === 'text' ? c.text : c.type === 'image' ? '[Image]' : JSON.stringify(c)))
+      .join('\n');
+  try {
+    return JSON.stringify(v, null, 2);
+  } catch {
+    return String(v);
+  }
+}
+const openDetails = new Set();
+function makeDetails(className, key, defaultOpen = false) {
+  const d = el('details', className);
+  d.open = openDetails.has(key) || defaultOpen;
+  d.addEventListener('toggle', () => {
+    if (d.open) openDetails.add(key);
+    else openDetails.delete(key);
+  });
+  return d;
+}
+function renderTool(t, messageId) {
+  const d = makeDetails('tool-block', `tool:${t.id || messageId}`),
+    summary = el('summary');
+  const status =
+    t.status === 'running'
+      ? 'En cours'
+      : t.isError
+        ? 'Erreur'
+        : t.status === 'pending'
+          ? 'Préparation'
+          : 'Terminé';
+  summary.append(
+    icon(t.status === 'running' ? 'terminal' : 'tool'),
+    el('span', 'tool-name', t.name || 'Outil'),
+    el('span', `tool-status${t.isError ? ' error' : ''}`, status),
+    icon('chevron', 'chevron'),
+  );
+  d.append(summary);
+  const content = el('div', 'tool-content');
+  if (t.args != null) content.append(el('h4', '', 'PARAMÈTRES'), el('pre', '', stringify(t.args)));
+  if (t.result != null) content.append(el('h4', '', 'RÉSULTAT'), el('pre', '', stringify(t.result)));
+  if (!content.childNodes.length) content.append(el('pre', '', 'En attente du résultat…'));
+  d.append(content);
+  return d;
+}
+const messageNodes = new Map();
+function renderMessage(m, index) {
+  const id = m.id || `history-${index}`,
+    signature = JSON.stringify(m),
+    old = messageNodes.get(id);
+  if (old?.signature === signature) return old.node;
+  const n = el('article', `message ${['assistant', 'user'].includes(m.role) ? m.role : 'system'}`);
+  n.dataset.messageId = id;
+  const heading = el('div', 'message-heading'),
+    avatar = el('span', 'message-avatar');
+  avatar.append(m.role === 'user' ? icon('user') : icon('model'));
+  heading.append(
+    avatar,
+    el(
+      'span',
+      'message-author',
+      m.role === 'user' ? 'Vous' : m.role === 'assistant' ? 'Prime Agent' : 'Contexte',
+    ),
+  );
+  if (m.model) {
+    const model = el('span', 'message-model', String(m.model).split('/').pop());
+    model.title = String(m.model);
+    heading.append(model);
+  }
+  heading.append(el('span', 'message-time', dateLabel(m.timestamp)));
+  n.append(heading);
+  const body = el('div', 'message-body');
+  if (m.role === 'user') body.textContent = m.text || '';
+  else {
+    if (m.thinking) {
+      const d = makeDetails('thinking-block', `thinking:${id}`, prefs.showReasoning),
+        s = el('summary');
+      s.append(
+        icon('brain'),
+        el('span', '', m.streaming ? 'Réflexion en cours' : 'Raisonnement'),
+        icon('chevron', 'chevron'),
+      );
+      d.append(s, el('div', 'thinking-content', m.thinking));
+      body.append(d);
+    }
+    if (m.text) body.append(markdown(m.text));
+    for (const tool of m.tools || []) body.append(renderTool(tool, id));
+    if (m.error) body.append(el('div', 'message-error', m.error));
+    if (m.streaming) body.append(el('span', 'stream-caret'));
+    if (!m.text && !m.thinking && !m.tools?.length && !m.error && !m.streaming)
+      body.append(
+        el('span', '', m.stopReason === 'aborted' ? 'Réponse interrompue.' : 'Aucun contenu textuel.'),
+      );
+  }
+  if (m.attachments?.length)
+    body.append(
+      el('div', 'attachment-note', `${m.attachments.length} pièce(s) jointe(s) dans la session native.`),
+    );
+  n.append(body);
+  if (m.text) {
+    const actions = el('div', 'message-actions'),
+      b = el('button', '');
+    b.append(icon('copy'), document.createTextNode('Copier'));
+    b.onclick = () => copyText(m.text, 'Message copié');
+    actions.append(b);
+    n.append(actions);
+  }
+  messageNodes.set(id, { node: n, signature });
+  return n;
+}
+const conversationRenderer = createConversationRenderer({
+  el,
+  icon,
+  markdown,
+  renderTool,
+  makeDetails,
+  dateLabel,
+  copyText,
+  showReasoning: () => prefs.showReasoning,
+  renderMessage,
+});
+function nearBottom() {
+  const s = $('conversation-scroll');
+  return s.scrollHeight - s.scrollTop - s.clientHeight < 110;
+}
+function scrollBottom(smooth = false) {
+  $('conversation-scroll').scrollTo({
+    top: $('conversation-scroll').scrollHeight,
+    behavior: smooth && !matchMedia('(prefers-reduced-motion: reduce)').matches ? 'smooth' : 'instant',
+  });
+  $('scroll-bottom').hidden = true;
+}
+let renderScheduled = false;
+function scheduleMessages() {
+  if (renderScheduled) return;
+  renderScheduled = true;
+  requestAnimationFrame(() => {
+    renderScheduled = false;
+    renderMessages();
+    renderDetails();
+    updateComposer();
+  });
+}
+function renderMessages(forceScroll = false) {
+  const stick = forceScroll || nearBottom(),
+    messages = activeMessages();
+  $('welcome').hidden = state.projectOverview || messages.length > 0 || state.loading;
+  $('conversation-loading').hidden = !state.loading;
+  $('messages').hidden = state.projectOverview || state.loading;
+  const root = $('messages'),
+    keep = new Set();
+  conversationRenderer.render(root, messages);
+  messages.forEach((m, i) => keep.add(m.id || `history-${i}`));
+  for (const key of messageNodes.keys()) if (!keep.has(key)) messageNodes.delete(key);
+  if (!messages.length && !state.loading) {
+    $('conversation-scroll').scrollTop = 0;
+    $('scroll-bottom').hidden = true;
+  } else if (stick) requestAnimationFrame(() => scrollBottom());
+  else $('scroll-bottom').hidden = nearBottom();
+}
+function closeSidebar() {
+  $('sidebar').classList.remove('mobile-open');
+  $('mobile-backdrop').hidden = true;
+}
+function openSidebar() {
+  $('sidebar').classList.add('mobile-open');
+  $('mobile-backdrop').hidden = false;
+}
+function resetView() {
+  state.history = [];
+  state.viewRunId = null;
+  state.sessionId = null;
+  state.loading = false;
+  state.projectOverview = false;
+  state.requestId++;
+  messageNodes.clear();
+}
+function newSession() {
+  if (state.readOnly) return;
+  saveDraft();
+  resetView();
+  state.archived = false;
+  saveSelection();
+  restoreDraft();
+  renderNavigation();
+  renderMessages(true);
+  closeSidebar();
+  if (!state.projectCwd) openProjectDialog();
+  else $('composer').focus();
+}
+function selectProject(cwd) {
+  saveDraft();
+  resetView();
+  state.projectCwd = cwd;
+  state.projectOverview = true;
+  state.archived = false;
+  $('session-search').value = '';
+  $('project-session-search').value = '';
+  saveSelection();
+  restoreDraft();
+  renderNavigation();
+  renderMessages(true);
+  closeSidebar();
+  $('project-overview-title').focus({ preventScroll: true });
+}
+function historyBeforeRun(messages, run) {
+  const start = toTime(run.startedAt);
+  let i = messages.findIndex(
+    (m) => m.role === 'user' && m.text?.trim() === run.prompt?.trim() && toTime(m.timestamp) >= start - 1000,
+  );
+  if (i < 0) i = messages.findIndex((m) => toTime(m.timestamp) >= start);
+  return i < 0 ? messages : messages.slice(0, i);
+}
+async function selectSession(id, cwd) {
+  saveDraft();
+  const token = ++state.requestId;
+  state.sessionId = id;
+  state.projectOverview = false;
+  state.projectCwd = cwd || session(id)?.cwd || state.projectCwd;
+  state.viewRunId = null;
+  state.history = [];
+  state.loading = true;
+  messageNodes.clear();
+  closeSidebar();
+  saveSelection();
+  restoreDraft();
+  renderNavigation();
+  renderMessages(true);
+  const running = [...state.runs.values()].find((r) => r.sessionId === id && isRunning(r));
+  try {
+    let h;
+    try {
+      h = await api(`/api/history?id=${encodeURIComponent(id)}`);
+    } catch (e) {
+      if (e.status === 404 && running) h = { messages: [] };
+      else throw e;
+    }
+    if (token !== state.requestId) return;
+    state.history = h.messages || [];
+    if (running) {
+      state.viewRunId = running.id;
+      if (!running.initialized) initializeRun(running, state.history);
+      subscribe(running);
+    }
+    if (h.model && state.models.some((m) => m.id === h.model)) setSelectedModel(h.model);
+    state.loading = false;
+    renderNavigation();
+    renderMessages(true);
+    saveSelection();
+  } catch (e) {
+    if (token !== state.requestId) return;
+    state.loading = false;
+    renderMessages();
+    banner(e.message, true);
+    toast(e.message, true);
+  }
+}
+async function selectRun(run) {
+  if (run.sessionId) return selectSession(run.sessionId, run.cwd);
+  saveDraft();
+  resetView();
+  state.projectCwd = run.cwd;
+  state.viewRunId = run.id;
+  if (!run.initialized) initializeRun(run, []);
+  subscribe(run);
+  restoreDraft();
+  saveSelection();
+  renderNavigation();
+  renderMessages(true);
+  closeSidebar();
+}
+function initializeRun(run, history) {
+  run.initialized = true;
+  run.base = historyBeforeRun(history, run);
+  run.messages = [
+    { id: `${run.id}-user`, role: 'user', text: run.prompt || '', timestamp: run.startedAt, tools: [] },
+  ];
+  run.lastSeq = 0;
+  run.currentMessage = null;
+  run.initialUserEchoSeen = false;
+}
+function upsertSession(id, run) {
+  if (!id) return;
+  let p = state.projects.find((p) => samePath(p.cwd, run.cwd));
+  if (!p) {
+    p = { cwd: run.cwd, name: run.cwd.split(/[\\/]/).pop(), exists: true, sessions: [] };
+    state.projects.push(p);
+  }
+  if (!p.sessions.some((s) => s.id === id))
+    p.sessions.unshift({
+      id,
+      cwd: run.cwd,
+      title: run.prompt?.replace(/\s+/g, ' ').slice(0, 100) || 'Nouvelle session',
+      createdAt: run.startedAt,
+      updatedAt: run.startedAt,
+    });
+}
+function ensureAssistant(run, seq) {
+  if (!run.currentMessage || !run.currentMessage.streaming) {
+    const m = {
+      id: `${run.id}-${seq}`,
+      role: 'assistant',
+      text: '',
+      thinking: '',
+      tools: [],
+      timestamp: new Date().toISOString(),
+      streaming: true,
+    };
+    run.messages.push(m);
+    run.currentMessage = m;
+  }
+  return run.currentMessage;
+}
+function findTool(run, id) {
+  for (let i = run.messages.length - 1; i >= 0; i--) {
+    const t = run.messages[i].tools?.find((t) => t.id === id);
+    if (t) return t;
+  }
+  return null;
+}
+function applyRunEvent(run, e) {
+  if (e.seq && e.seq <= run.lastSeq) return;
+  if (e.seq) run.lastSeq = e.seq;
+  switch (e.kind) {
+    case 'session':
+      run.sessionId = e.sessionId;
+      upsertSession(e.sessionId, run);
+      if (state.viewRunId === run.id) {
+        saveDraft();
+        state.sessionId = e.sessionId;
+        saveSelection();
+        saveDraft();
+      }
+      renderNavigation();
+      break;
+    case 'message_start':
+      if (e.role === 'assistant') {
+        if (run.currentMessage) run.currentMessage.streaming = false;
+        ensureAssistant(run, e.seq);
+      }
+      break;
+    case 'text':
+      ensureAssistant(run, e.seq).text += e.delta || '';
+      break;
+    case 'thinking':
+      ensureAssistant(run, e.seq).thinking += e.delta || '';
+      break;
+    case 'message': {
+      const incoming = e.message || {};
+      if (incoming.role === 'assistant') {
+        const m = ensureAssistant(run, e.seq),
+          known = new Map((m.tools || []).map((t) => [t.id, t]));
+        Object.assign(m, incoming, {
+          id: m.id,
+          streaming: false,
+          tools: (incoming.tools || []).map((t) => ({ ...t, ...known.get(t.id) })),
+        });
+        run.currentMessage = null;
+      } else if (incoming.role === 'user') {
+        const user = run.messages.find((m) => m.role === 'user');
+        if (!run.initialUserEchoSeen && user) {
+          Object.assign(user, incoming, { id: user.id });
+        } else {
+          if (run.currentMessage) run.currentMessage.streaming = false;
+          run.currentMessage = null;
+          run.messages.push({ ...incoming, id: `${run.id}-user-${e.seq}` });
+        }
+        run.initialUserEchoSeen = true;
+      } else if (incoming.role === 'toolResult') {
+        const t = findTool(run, incoming.toolCallId);
+        if (t)
+          Object.assign(t, {
+            result: incoming.text,
+            isError: incoming.isError,
+            status: incoming.isError ? 'error' : 'done',
+          });
+      }
+      break;
+    }
+    case 'tool_start': {
+      let t = findTool(run, e.id);
+      if (!t) {
+        let m = run.messages.findLast((m) => m.role === 'assistant');
+        if (!m) m = ensureAssistant(run, e.seq);
+        t = { id: e.id };
+        m.tools.push(t);
+      }
+      Object.assign(t, { name: e.name, args: e.args, status: 'running' });
+      break;
+    }
+    case 'tool_update':
+    case 'tool_end': {
+      const t = findTool(run, e.id);
+      if (t)
+        Object.assign(t, {
+          result: e.result,
+          isError: e.isError,
+          status: e.kind === 'tool_end' ? (e.isError ? 'error' : 'done') : 'running',
+        });
+      break;
+    }
+    case 'runtime':
+    case 'status':
+      run.statusLabel =
+        e.status === 'compacting'
+          ? 'Optimisation du contexte…'
+          : e.status === 'retrying'
+            ? 'Nouvelle tentative en cours…'
+            : 'L’agent travaille…';
+      break;
+    case 'replay_truncated':
+      if (state.viewRunId === run.id)
+        toast('Le début de cette exécution sera rechargé depuis l’historique à la fin.');
+      break;
+    case 'done':
+      void finishRun(run, e);
+      break;
+  }
+  if (state.viewRunId === run.id) scheduleMessages();
+}
+function subscribe(run) {
+  if (run.source || run.replayedDone) return;
+  if (!run.initialized) initializeRun(run, []);
+  const source = new EventSource(`/api/runs/${encodeURIComponent(run.id)}/events?after=${run.lastSeq || 0}`);
+  run.source = source;
+  source.onmessage = (e) => {
+    try {
+      applyRunEvent(run, JSON.parse(e.data));
+    } catch (error) {
+      console.error('Événement Prime Agent invalide', error);
+    }
+  };
+  source.onopen = () => {
+    if (run.disconnected) run.statusLabel = 'L’agent travaille…';
+    run.disconnected = false;
+    if (state.viewRunId === run.id) updateComposer();
+  };
+  source.onerror = () => {
+    if (!isRunning(run)) {
+      source.close();
+      run.source = null;
+      return;
+    }
+    run.disconnected = true;
+    run.statusLabel = 'Reconnexion à l’agent…';
+    if (state.viewRunId === run.id) updateComposer();
+    void refreshOverview();
+  };
+}
+async function finishRun(run, e) {
+  run.replayedDone = true;
+  run.status = e.status || 'completed';
+  run.endedAt = new Date().toISOString();
+  run.source?.close();
+  run.source = null;
+  for (const m of run.messages) m.streaming = false;
+  if (e.sessionId) {
+    run.sessionId = e.sessionId;
+    upsertSession(e.sessionId, run);
+  }
+  if (e.error) {
+    run.messages.push({
+      id: `${run.id}-error`,
+      role: 'system',
+      text: e.error,
+      tools: [],
+      timestamp: run.endedAt,
+    });
+    toast(e.error, true);
+  } else if (e.status === 'stopped' || e.status === 'cancelled') toast('L’agent a été arrêté.');
+  if (state.viewRunId === run.id) {
+    state.sessionId = run.sessionId || state.sessionId;
+    state.history = [...run.base, ...run.messages];
+    saveSelection();
+    scheduleMessages();
+    if (run.sessionId) {
+      try {
+        const h = await api(`/api/history?id=${encodeURIComponent(run.sessionId)}`);
+        if (state.viewRunId === run.id && h.messages?.length) {
+          state.history = h.messages;
+          if (e.error)
+            state.history.push({
+              id: `${run.id}-error`,
+              role: 'system',
+              text: e.error,
+              tools: [],
+              timestamp: run.endedAt,
+            });
+          state.viewRunId = null;
+          scheduleMessages();
+        }
+      } catch {}
+    }
+  }
+  await refreshOverview();
+  renderNavigation();
+}
+async function sendMessage(event) {
+  event?.preventDefault();
+  if (isRunning(activeRun())) return liveMessagesUI?.submitDraft();
+  if (state.readOnly || $('send-button').disabled || state.sending) return;
+  const message = $('composer').value.trim(),
+    cwd = state.projectCwd,
+    sessionId = state.sessionId,
+    base = [...activeMessages()],
+    token = state.requestId;
+  state.sending = true;
+  updateComposer();
+  try {
+    const run = await api('/api/runs', {
+      method: 'POST',
+      body: {
+        cwd,
+        message,
+        ...(sessionId ? { sessionId } : {}),
+        ...($('model-select').value ? { model: $('model-select').value } : {}),
+        ...($('thinking-select').value ? { thinking: $('thinking-select').value } : {}),
+      },
+    });
+    Object.assign(run, {
+      initialized: true,
+      base,
+      messages: [{ id: `${run.id}-user`, role: 'user', text: message, tools: [], timestamp: run.startedAt }],
+      lastSeq: 0,
+      currentMessage: null,
+    });
+    state.runs.set(run.id, run);
+    if (run.sessionId) upsertSession(run.sessionId, run);
+    if (token === state.requestId) {
+      $('composer').value = '';
+      saveDraft();
+      state.viewRunId = run.id;
+      state.sessionId = run.sessionId || sessionId;
+      saveSelection();
+      resizeComposer();
+      renderMessages(true);
+    }
+    subscribe(run);
+    renderNavigation();
+  } catch (e) {
+    toast(e.message, true);
+  } finally {
+    state.sending = false;
+    updateComposer();
+  }
+}
+async function stopRun() {
+  if (state.readOnly) return;
+  const r = activeRun();
+  if (!isRunning(r) || r.status === 'stopping') return;
+  r.status = 'stopping';
+  updateComposer();
+  renderDetails();
+  try {
+    await api(`/api/runs/${encodeURIComponent(r.id)}/stop`, { method: 'POST', body: {} });
+  } catch (e) {
+    r.status = 'running';
+    toast(e.message, true);
+    updateComposer();
+  }
+}
+let overviewPromise = null,
+  overviewQueued = false;
+function refreshOverview() {
+  if (overviewPromise) {
+    overviewQueued = true;
+    return overviewPromise;
+  }
+  overviewPromise = (async () => {
+    do {
+      overviewQueued = false;
+      try {
+        const data = await api('/api/overview');
+        state.projects = data.projects || [];
+        const remoteRuns = data.runs || [];
+        for (const remote of remoteRuns) {
+          const existing = state.runs.get(remote.id);
+          if (existing) Object.assign(existing, remote);
+          else state.runs.set(remote.id, remote);
+        }
+        for (const run of state.runs.values()) {
+          if (
+            isRunning(run) &&
+            !remoteRuns.some((r) => r.id === run.id) &&
+            (!run.source || run.disconnected)
+          ) {
+            run.status = 'interrupted';
+            run.source?.close();
+            run.source = null;
+            for (const m of run.messages || []) m.streaming = false;
+            if (state.viewRunId === run.id) {
+              toast('Cette exécution n’est plus active. L’historique enregistré a été conservé.', true);
+              if (run.sessionId) void selectSession(run.sessionId, run.cwd);
+              else scheduleMessages();
+            }
+          }
+        }
+        setConnection(true);
+        renderNavigation();
+      } catch {
+        setConnection(false);
+      }
+    } while (overviewQueued);
+  })().finally(() => {
+    overviewPromise = null;
+  });
+  return overviewPromise;
+}
+function modelConfigNumber(value) {
+  return new Intl.NumberFormat('fr-FR').format(value || 0);
+}
+function updateModelsAfterConfiguration(data, removedId = '') {
+  if (!data?.catalog) return;
+  const selected = $('model-select').value;
+  populateModels(data.catalog);
+  if (selected && selected !== removedId && state.models.some((model) => model.id === selected))
+    setSelectedModel(selected);
+  renderModelDefaults();
+}
+function renderModelDefaults() {
+  const select = $('default-main-model'),
+    configured = state.modelDefaults?.mainModel || '';
+  select.replaceChildren();
+  const automatic = el('option', '', 'Choix automatique de Prime Agent');
+  automatic.value = '';
+  select.append(automatic);
+  const groups = new Map();
+  for (const model of state.models) {
+    if (!groups.has(model.provider)) {
+      const group = el('optgroup');
+      group.label = model.provider;
+      groups.set(model.provider, group);
+      select.append(group);
+    }
+    const option = el('option', '', model.name || model.id);
+    option.value = model.id;
+    groups.get(model.provider).append(option);
+  }
+  if (configured && !state.models.some((model) => model.id === configured)) {
+    const unavailable = el('option', '', `Indisponible · ${configured}`);
+    unavailable.value = configured;
+    unavailable.disabled = true;
+    select.prepend(unavailable);
+  }
+  select.value = configured;
+  $('save-default-model').disabled = true;
+}
+function renderModelConfig() {
+  const configuration = state.modelConfig || { models: [] },
+    models = configuration.models || [],
+    list = $('custom-model-list');
+  $('model-config-count').textContent = models.length
+    ? `${models.length} modèle${models.length > 1 ? 's' : ''} configuré${models.length > 1 ? 's' : ''}`
+    : 'Aucun modèle configuré';
+  $('model-config-empty').hidden = models.length > 0;
+  list.replaceChildren();
+  const apiNames = new Map((configuration.apis || []).map((item) => [item.id, item.name]));
+  models.forEach((model, index) => {
+    const card = el('article', 'custom-model-card'),
+      symbol = el('div', 'custom-model-symbol'),
+      copy = el('div', 'custom-model-copy'),
+      title = el('div', 'custom-model-title'),
+      badges = el('div', 'custom-model-badges'),
+      actions = el('div', 'custom-model-actions'),
+      editButton = el('button', 'secondary-button', ''),
+      deleteButton = el('button', 'model-config-delete', '');
+    symbol.append(icon('model'));
+    title.append(el('strong', '', model.name), el('code', '', `${model.provider}/${model.id}`));
+    badges.append(
+      el('span', '', apiNames.get(model.api) || model.api || 'API héritée'),
+      el('span', '', `${modelConfigNumber(model.contextWindow)} jetons`),
+    );
+    if (model.reasoning) badges.append(el('span', '', 'Raisonnement'));
+    if (model.input?.includes('image')) badges.append(el('span', '', 'Images'));
+    if (!model.authenticationAvailable) badges.append(el('span', 'warning', 'Identification à vérifier'));
+    if (!model.editable) badges.append(el('span', 'warning', 'Options avancées en lecture seule'));
+    copy.append(title, badges);
+    editButton.type = 'button';
+    editButton.dataset.editModel = String(index);
+    editButton.disabled = !model.editable;
+    editButton.setAttribute('aria-label', `Modifier ${model.name}`);
+    editButton.append(icon('pencil'), document.createTextNode('Modifier'));
+    deleteButton.type = 'button';
+    deleteButton.dataset.deleteModel = String(index);
+    deleteButton.setAttribute('aria-label', `Supprimer ${model.name}`);
+    deleteButton.append(icon('x'), document.createTextNode('Supprimer'));
+    actions.append(editButton, deleteButton);
+    card.append(symbol, copy, actions);
+    list.append(card);
+  });
+}
+function showModelConfigList(focus = false) {
+  $('model-config-form').hidden = true;
+  $('model-config-list-view').hidden = false;
+  state.modelConfigOriginal = null;
+  if (focus) $('add-custom-model').focus();
+}
+function showModelConfigForm(model = null) {
+  state.modelConfigOriginal = model ? { provider: model.provider, id: model.id } : null;
+  $('model-config-list-view').hidden = true;
+  $('model-config-form').hidden = false;
+  $('model-config-form-title').textContent = model ? 'Modifier le modèle' : 'Ajouter un modèle';
+  $('custom-model-provider').value = model?.provider || '';
+  $('custom-model-id').value = model?.id || '';
+  $('custom-model-name').value = model?.name || '';
+  $('custom-model-api').value = model?.api || 'openai-responses';
+  $('custom-model-url').value = model?.baseUrl || '';
+  $('custom-model-credential').value = model?.credentialEnv || '';
+  $('custom-model-credential').placeholder = model?.credentialConfigured
+    ? 'Identification existante conservée'
+    : 'ex. PROVIDER_API_KEY';
+  $('custom-model-context').value = String(model?.contextWindow || 128000);
+  $('custom-model-output').value = String(model?.maxTokens || 16384);
+  $('custom-model-reasoning').checked = model?.reasoning === true;
+  $('custom-model-image').checked = model?.input?.includes('image') === true;
+  $('model-config-error').hidden = true;
+  requestAnimationFrame(() => $(model ? 'custom-model-name' : 'custom-model-provider').focus());
+}
+async function openModelConfig() {
+  if (state.remote) {
+    toast('La configuration des modèles est disponible uniquement sur l’ordinateur local.', true);
+    return;
+  }
+  $('settings-dialog').close();
+  $('model-config-loading').hidden = false;
+  $('model-config-loading').textContent = 'Chargement de la configuration…';
+  $('model-config-content').hidden = true;
+  $('model-config-dialog').showModal();
+  try {
+    [state.modelConfig, state.modelDefaults] = await Promise.all([
+      api('/api/model-config'),
+      api('/api/model-defaults'),
+    ]);
+    renderModelConfig();
+    renderModelDefaults();
+    showModelConfigList();
+    $('model-config-loading').hidden = true;
+    $('model-config-content').hidden = false;
+    requestAnimationFrame(() => $('default-main-model').focus());
+  } catch (error) {
+    const message =
+      error.status === 404
+        ? 'Le serveur en cours doit être redémarré pour activer le configurateur. Arrêtez puis relancez Prime Agent Studio.'
+        : `Impossible de charger la configuration. ${error.message}`;
+    $('model-config-loading').textContent = message;
+    toast(message, true);
+  }
+}
+async function saveDefaultModel() {
+  const button = $('save-default-model'),
+    model = $('default-main-model').value;
+  button.disabled = true;
+  try {
+    const data = await api('/api/model-defaults', { method: 'POST', body: { model } });
+    state.modelDefaults = {
+      mainModel: data.mainModel,
+      subagents: data.subagents,
+    };
+    savePreferences({ model: data.mainModel || '' });
+    if (data.catalog) populateModels(data.catalog);
+    renderModelDefaults();
+    toast(
+      data.mainModel
+        ? 'Le modèle par défaut de l’agent principal a été enregistré.'
+        : 'Prime Agent choisira automatiquement le modèle principal.',
+    );
+  } catch (error) {
+    button.disabled = false;
+    toast(`Impossible d’enregistrer le modèle par défaut. ${error.message}`, true);
+  }
+}
+
+async function saveModelConfiguration(event) {
+  event.preventDefault();
+  const form = $('model-config-form');
+  if (!form.reportValidity()) return;
+  const button = $('save-model-config'),
+    body = {
+      provider: $('custom-model-provider').value.trim().toLowerCase(),
+      id: $('custom-model-id').value.trim(),
+      name: $('custom-model-name').value.trim(),
+      api: $('custom-model-api').value,
+      baseUrl: $('custom-model-url').value.trim(),
+      credentialEnv: $('custom-model-credential').value.trim(),
+      reasoning: $('custom-model-reasoning').checked,
+      input: $('custom-model-image').checked ? ['text', 'image'] : ['text'],
+      contextWindow: Number($('custom-model-context').value),
+      maxTokens: Number($('custom-model-output').value),
+      ...(state.modelConfigOriginal ? { original: state.modelConfigOriginal } : {}),
+    };
+  button.disabled = true;
+  $('model-config-error').hidden = true;
+  try {
+    const data = await api('/api/model-config', { method: 'POST', body });
+    state.modelConfig = data;
+    updateModelsAfterConfiguration(data);
+    renderModelConfig();
+    showModelConfigList(true);
+    toast(`${body.name} a été enregistré.`);
+  } catch (error) {
+    $('model-config-error').textContent = error.message;
+    $('model-config-error').hidden = false;
+  } finally {
+    button.disabled = false;
+  }
+}
+async function deleteModelConfiguration(index) {
+  const model = state.modelConfig?.models?.[index];
+  if (!model || !confirm(`Supprimer « ${model.name} » de Prime Agent ?`)) return;
+  try {
+    const data = await api('/api/model-config', {
+      method: 'DELETE',
+      body: { provider: model.provider, id: model.id },
+    });
+    state.modelConfig = data;
+    updateModelsAfterConfiguration(data, `${model.provider}/${model.id}`);
+    renderModelConfig();
+    toast(`${model.name} a été supprimé.`);
+  } catch (error) {
+    toast(`Impossible de supprimer ce modèle. ${error.message}`, true);
+  }
+}
+function populateModels(catalog) {
+  state.models = Array.isArray(catalog?.models) ? catalog.models : [];
+  state.modelCatalogDefault = typeof catalog?.default?.model === 'string' ? catalog.default.model : '';
+  const select = $('model-select');
+  select.replaceChildren();
+  const option = el('option', '', 'Modèle par défaut');
+  option.value = '';
+  select.append(option);
+  const groups = new Map();
+  for (const model of state.models) {
+    if (!groups.has(model.provider)) {
+      const group = el('optgroup');
+      group.label = model.provider;
+      groups.set(model.provider, group);
+      select.append(group);
+    }
+    const item = el('option', '', model.name || model.id);
+    item.value = model.id;
+    groups.get(model.provider).append(item);
+  }
+  const saved = typeof prefs.model === 'string' ? prefs.model : '',
+    configuredDefault = typeof catalog?.default?.model === 'string' ? catalog.default.model : '',
+    preferred = saved || configuredDefault,
+    chosen = state.models.some((model) => model.id === preferred) ? preferred : '';
+  setSelectedModel(chosen);
+  $('thinking-select').value = prefs.thinking ?? catalog?.default?.thinking ?? '';
+}
+async function bootstrap() {
+  try {
+    const data = await api('/api/bootstrap');
+    state.readOnly = data.preferences?.readOnly === true;
+    state.remote = data.preferences?.remote === true || state.readOnly;
+    applyAccessMode();
+    state.projects = data.projects || [];
+    state.version = data.version || {};
+    for (const run of data.runs || []) state.runs.set(run.id, run);
+    populateModels(data.models);
+    state.projectCwd =
+      state.projects.find((p) => samePath(p.cwd, selection.cwd))?.cwd || state.projects[0]?.cwd || null;
+    state.projectOverview = Boolean(state.projectCwd && (selection.projectOverview ?? state.remote));
+    state.initialized = true;
+    setConnection(true);
+    $('cli-version').textContent = state.version.version ? `v${state.version.version}` : '';
+    $('settings-runtime').textContent =
+      state.version.available === false
+        ? 'Prime Agent introuvable sur cet ordinateur'
+        : `Prime Agent ${state.version.version || ''} · sessions natives conservées`;
+    if (state.version.available === false) {
+      banner('Prime Agent est introuvable. Installez ou configurez le CLI puis relancez le Studio.', true);
+      $('global-banner').dataset.persistent = 'true';
+    }
+    renderNavigation();
+    const lastRun = state.runs.get(selection.runId);
+    if (lastRun && isRunning(lastRun)) await selectRun(lastRun);
+    else if (selection.sessionId && session(selection.sessionId))
+      await selectSession(selection.sessionId, session(selection.sessionId).cwd);
+    else {
+      restoreDraft();
+      renderMessages();
+    }
+    saveSelection();
+  } catch (e) {
+    setConnection(false);
+    banner(`Impossible de joindre le serveur. ${e.message}`, true);
+    $('project-list').replaceChildren(
+      el('div', 'sidebar-empty', 'Le serveur local est indisponible. Reconnexion automatique…'),
+    );
+    $('session-list').replaceChildren();
+    setTimeout(bootstrap, 5000);
+  }
+}
+function openProjectDialog() {
+  if (state.readOnly) return;
+  $('project-form').reset();
+  $('project-error').hidden = true;
+  $('project-dialog').showModal();
+  $('project-cwd').focus();
+}
+async function addProject(e) {
+  e.preventDefault();
+  const b = $('project-submit');
+  b.disabled = true;
+  $('project-error').hidden = true;
+  try {
+    const p = await api('/api/projects', {
+      method: 'POST',
+      body: { cwd: $('project-cwd').value.trim(), name: $('project-name').value.trim() || undefined },
+    });
+    await refreshOverview();
+    $('project-dialog').close();
+    selectProject(p.cwd || $('project-cwd').value.trim());
+    toast('Projet ajouté à votre espace de travail.');
+  } catch (e) {
+    $('project-error').textContent = e.message;
+    $('project-error').hidden = false;
+  } finally {
+    b.disabled = false;
+  }
+}
+function closeSessionMenu() {
+  $('session-menu').hidden = true;
+  $('session-menu-button').setAttribute('aria-expanded', 'false');
+}
+function openSessionMenu(id, anchor) {
+  if (state.readOnly) return;
+  state.menuSessionId = id;
+  const s = session(id);
+  if (!s) return;
+  const menu = $('session-menu');
+  $('pin-label').textContent = s.pinned ? 'Désépingler' : 'Épingler';
+  $('archive-label').textContent = s.archived ? 'Désarchiver' : 'Archiver';
+  const r = anchor.getBoundingClientRect();
+  menu.hidden = false;
+  menu.style.left = `${Math.min(innerWidth - 219, Math.max(12, r.right - 203))}px`;
+  menu.style.top = `${Math.min(innerHeight - menu.offsetHeight - 12, r.bottom + 5)}px`;
+  $('session-menu-button').setAttribute('aria-expanded', 'true');
+  menu.querySelector('button').focus();
+}
+async function patchSession(id, patch) {
+  await api('/api/sessions', { method: 'PATCH', body: { id, ...patch } });
+  await refreshOverview();
+}
+async function menuAction(action) {
+  if (state.readOnly && action !== 'export') return;
+  const id = state.menuSessionId,
+    s = session(id);
+  closeSessionMenu();
+  if (!s) return;
+  try {
+    if (action === 'rename') {
+      $('session-title').value = s.title || '';
+      $('rename-error').hidden = true;
+      $('rename-dialog').dataset.sessionId = id;
+      $('rename-dialog').showModal();
+      $('session-title').select();
+    } else if (action === 'pin') {
+      await patchSession(id, { pinned: !s.pinned });
+      toast(s.pinned ? 'Session désépinglée.' : 'Session épinglée.');
+    } else if (action === 'archive') {
+      await patchSession(id, { archived: !s.archived });
+      toast(s.archived ? 'Session restaurée.' : 'Session archivée.');
+      if (s.id === state.sessionId && !s.archived) newSession();
+    } else if (action === 'export') await exportSession(id);
+  } catch (e) {
+    toast(e.message, true);
+  }
+}
+async function renameSession(e) {
+  e.preventDefault();
+  const b = e.currentTarget.querySelector('[type=submit]');
+  b.disabled = true;
+  try {
+    await patchSession($('rename-dialog').dataset.sessionId, { title: $('session-title').value.trim() });
+    $('rename-dialog').close();
+    toast('Session renommée.');
+  } catch (e) {
+    $('rename-error').textContent = e.message;
+    $('rename-error').hidden = false;
+  } finally {
+    b.disabled = false;
+  }
+}
+async function copyText(text, label = 'Copié') {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast(label);
+  } catch {
+    const area = el('textarea', 'sr-only');
+    area.value = text;
+    document.body.append(area);
+    area.select();
+    const ok = document.execCommand('copy');
+    area.remove();
+    if (ok) toast(label);
+    else toast('Le navigateur ne permet pas la copie. Sélectionnez le texte manuellement.', true);
+  }
+}
+function fence(text) {
+  const longest = Math.max(2, ...[...String(text).matchAll(/`+/g)].map((m) => m[0].length)),
+    ticks = '`'.repeat(longest + 1);
+  return `${ticks}\n${text}\n${ticks}`;
+}
+async function exportSession(id = state.sessionId) {
+  if (!id) return;
+  try {
+    const h = await api(`/api/history?id=${encodeURIComponent(id)}`),
+      parts = [`# ${h.title || 'Conversation Prime Agent'}`, `Projet : ${h.cwd || ''}`, `Session : ${h.id}`];
+    for (const m of h.messages || []) {
+      parts.push(
+        `## ${m.role === 'user' ? 'Vous' : m.role === 'assistant' ? 'Prime Agent' : 'Contexte'}`,
+        m.text || '',
+      );
+      if (m.thinking)
+        parts.push('<details><summary>Raisonnement</summary>', '', m.thinking, '', '</details>');
+      for (const t of m.tools || [])
+        parts.push(
+          `### Outil : ${t.name || 'outil'}`,
+          `Paramètres :\n\n${fence(stringify(t.args))}`,
+          `Résultat :\n\n${fence(stringify(t.result))}`,
+        );
+    }
+    const url = URL.createObjectURL(
+        new Blob([parts.join('\n\n') + '\n'], { type: 'text/markdown;charset=utf-8' }),
+      ),
+      a = el('a');
+    a.href = url;
+    a.download = `${(h.title || 'prime-agent-session').replace(/[<>:"/\\|?*\x00-\x1f]/g, '-').slice(0, 90)}.md`;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast('Conversation exportée en Markdown.');
+  } catch (e) {
+    toast(e.message, true);
+  }
+}
+
+hydrateIcons();
+liveMessagesUI = createLiveMessages({
+  api,
+  getContext: () => {
+    const run = activeRun();
+    return {
+      runId: run?.id,
+      sessionId: run?.sessionId || state.sessionId,
+      cwd: state.projectCwd,
+      running: isRunning(run),
+      stopping: run?.status === 'stopping',
+      readOnly: state.readOnly,
+      online: state.online,
+    };
+  },
+  onSent: () => {
+    saveDraft();
+    resizeComposer();
+  },
+  onError: (error) => toast(error.message || String(error), true),
+});
+applyPreferences();
+$('new-session').onclick = newSession;
+$('project-new-session').onclick = newSession;
+$('header-project').onclick = () => {
+  if (state.projectCwd) selectProject(state.projectCwd);
+};
+$('project-session-search').oninput = renderProjectOverview;
+$('project-show-recent').onclick = () => {
+  state.archived = false;
+  renderSessions();
+  renderProjectOverview();
+};
+$('project-show-archived').onclick = () => {
+  state.archived = true;
+  renderSessions();
+  renderProjectOverview();
+};
+$('add-project').onclick = openProjectDialog;
+$('project-form').onsubmit = addProject;
+$('rename-form').onsubmit = renameSession;
+$('composer-form').onsubmit = sendMessage;
+$('stop-button').onclick = stopRun;
+$('session-search').oninput = renderSessions;
+$('show-archived').onclick = () => {
+  state.archived = !state.archived;
+  renderSessions();
+  renderProjectOverview();
+};
+$('session-menu-button').onclick = (e) => {
+  if ($('session-menu').hidden) openSessionMenu(state.sessionId, e.currentTarget);
+  else closeSessionMenu();
+};
+$('session-menu').onclick = (e) => {
+  const b = e.target.closest('[data-action]');
+  if (b) void menuAction(b.dataset.action);
+};
+$('export-session').onclick = () => exportSession();
+$('copy-project-path').onclick = () => copyText(state.projectCwd, 'Chemin du projet copié.');
+$('open-settings').onclick = () => $('settings-dialog').showModal();
+$('open-model-config').onclick = () => void openModelConfig();
+$('default-main-model').onchange = () => {
+  $('save-default-model').disabled = $('default-main-model').value === (state.modelDefaults?.mainModel || '');
+};
+$('save-default-model').onclick = () => void saveDefaultModel();
+$('add-custom-model').onclick = () => showModelConfigForm();
+$('cancel-model-config').onclick = () => showModelConfigList(true);
+$('cancel-model-config-bottom').onclick = () => showModelConfigList(true);
+$('model-config-form').onsubmit = saveModelConfiguration;
+$('custom-model-list').onclick = (event) => {
+  const editButton = event.target.closest('[data-edit-model]'),
+    deleteButton = event.target.closest('[data-delete-model]');
+  if (editButton) showModelConfigForm(state.modelConfig?.models?.[Number(editButton.dataset.editModel)]);
+  else if (deleteButton) void deleteModelConfiguration(Number(deleteButton.dataset.deleteModel));
+};
+$('toggle-sidebar').onclick = openSidebar;
+$('mobile-backdrop').onclick = closeSidebar;
+$('toggle-details').onclick = () => {
+  if (innerWidth <= 1080) $('details-panel').classList.toggle('mobile-open');
+  else prefs.details = !prefs.details;
+  savePreferences({ details: prefs.details });
+  applyPreferences();
+};
+$('scroll-bottom').onclick = () => scrollBottom(true);
+$('conversation-scroll').onscroll = () => {
+  $('scroll-bottom').hidden = state.projectOverview || nearBottom();
+};
+$('composer').oninput = () => {
+  saveDraft();
+  resizeComposer();
+};
+$('composer').onkeydown = (e) => {
+  if (e.key === 'Enter' && !e.isComposing) {
+    const send = prefs.enterToSend ? !e.shiftKey : e.ctrlKey || e.metaKey;
+    if (send) {
+      e.preventDefault();
+      void sendMessage();
+    }
+  }
+};
+$('model-picker-button').onclick = openModelDialog;
+$('model-select').onchange = () => setSelectedModel($('model-select').value, true);
+$('model-search').oninput = () => renderModelList();
+$('model-favorites-filter').onclick = () => {
+  state.modelFavoritesOnly = !state.modelFavoritesOnly;
+  renderModelList();
+  $('model-favorites-filter').focus();
+};
+$('model-list').onclick = (event) => {
+  const favorite = event.target.closest('.model-favorite');
+  if (favorite) {
+    toggleModelFavorite(favorite.dataset.modelId);
+    return;
+  }
+  const choice = event.target.closest('.model-choice');
+  if (!choice) return;
+  setSelectedModel(choice.dataset.modelId, true);
+  $('model-dialog').close();
+};
+$('model-search').onkeydown = (event) => {
+  if (event.key !== 'ArrowDown') return;
+  const first = $('model-list').querySelector('.model-choice');
+  if (first) {
+    event.preventDefault();
+    first.focus();
+  }
+};
+$('model-list').onkeydown = (event) => {
+  if (!event.target.matches('.model-choice') || !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key))
+    return;
+  event.preventDefault();
+  const choices = [...$('model-list').querySelectorAll('.model-choice')],
+    current = choices.indexOf(event.target),
+    index =
+      event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+          ? choices.length - 1
+          : (current + (event.key === 'ArrowDown' ? 1 : -1) + choices.length) % choices.length;
+  choices[index]?.focus();
+};
+$('model-dialog').addEventListener('close', () => {
+  $('model-picker-button').setAttribute('aria-expanded', 'false');
+});
+$('thinking-select').onchange = () => {
+  savePreferences({ thinking: $('thinking-select').value });
+};
+$('enter-to-send').onchange = (e) => {
+  savePreferences({ enterToSend: e.target.checked });
+  applyPreferences();
+};
+$('show-reasoning').onchange = (e) => {
+  savePreferences({ showReasoning: e.target.checked });
+  messageNodes.clear();
+  renderMessages();
+};
+document.querySelectorAll('[data-theme-choice]').forEach(
+  (b) =>
+    (b.onclick = () => {
+      savePreferences({ theme: b.dataset.themeChoice });
+      applyPreferences();
+    }),
+);
+document
+  .querySelectorAll('[data-close-dialog]')
+  .forEach((b) => (b.onclick = () => b.closest('dialog').close()));
+document.querySelectorAll('dialog').forEach((d) =>
+  d.addEventListener('click', (e) => {
+    if (e.target === d) {
+      const r = d.getBoundingClientRect();
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) d.close();
+    }
+  }),
+);
+document.querySelectorAll('[data-prompt]').forEach(
+  (b) =>
+    (b.onclick = () => {
+      $('composer').value = b.dataset.prompt;
+      saveDraft();
+      resizeComposer();
+      $('composer').focus();
+      if (!state.projectCwd) openProjectDialog();
+    }),
+);
+document.addEventListener('click', (e) => {
+  if (
+    !e.target.closest('#session-menu') &&
+    !e.target.closest('#session-menu-button') &&
+    !e.target.closest('.session-more')
+  )
+    closeSessionMenu();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeSessionMenu();
+    closeSidebar();
+    $('details-panel').classList.remove('mobile-open');
+    applyPreferences();
+  }
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
+    if (e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      if (innerWidth <= 760) openSidebar();
+      $('session-search').focus();
+      $('session-search').select();
+    }
+    if (e.key.toLowerCase() === 'n') {
+      e.preventDefault();
+      if (!document.querySelector('dialog[open]')) newSession();
+    }
+  }
+  if (!$('session-menu').hidden && ['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) {
+    e.preventDefault();
+    const items = [...$('session-menu').querySelectorAll('button')];
+    let i = items.indexOf(document.activeElement);
+    i =
+      e.key === 'Home'
+        ? 0
+        : e.key === 'End'
+          ? items.length - 1
+          : (i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+    items[i].focus();
+  }
+});
+window.addEventListener('resize', () => {
+  applyPreferences();
+  closeSessionMenu();
+  resizeComposer();
+});
+matchMedia('(prefers-color-scheme: light)').addEventListener('change', applyPreferences);
+window.addEventListener('storage', (event) => {
+  if (event.key !== 'prime-studio.preferences') return;
+  const latest = storedPreferences();
+  prefs.modelFavorites = Array.isArray(latest.modelFavorites) ? latest.modelFavorites : [];
+  if ($('model-dialog').open) renderModelList();
+});
+window.addEventListener('beforeunload', saveDraft);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && state.initialized) void refreshOverview();
+});
+window.addEventListener('online', () => {
+  if (state.initialized) void refreshOverview();
+});
+setInterval(() => {
+  const r = activeRun();
+  if (isRunning(r)) {
+    const s = Math.max(0, Math.floor((Date.now() - toTime(r.startedAt)) / 1000));
+    $('run-elapsed').textContent = s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${s % 60} s`;
+  }
+}, 1000);
+setInterval(() => {
+  if (state.initialized) void refreshOverview();
+}, 10000);
+void bootstrap();

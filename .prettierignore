@@ -1,0 +1,5 @@
+node_modules/
+.local/
+.backup/
+test-results/
+package-lock.json

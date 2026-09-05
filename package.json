@@ -1,0 +1,31 @@
+{
+  "name": "prime-agent-studio",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Espace de travail local pour Prime Agent, avec sessions persistantes et lancement Windows silencieux.",
+  "scripts": {
+    "start": "node server.mjs",
+    "start:silent": "wscript.exe \"Lancer Prime Agent.vbs\"",
+    "stop": "node scripts/stop-server.mjs",
+    "shortcut": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/install-shortcut.ps1",
+    "setup:runtime": "node scripts/setup-runtime.mjs",
+    "lan:enable": "node scripts/enable-lan.mjs",
+    "test": "node --test test/*.test.mjs",
+    "test:ui": "node scripts/test-ui.mjs",
+    "test:mobile": "node scripts/test-mobile-control.mjs",
+    "check": "node --check server.mjs && node --check public/app.js",
+    "format": "prettier --write --ignore-unknown server.mjs lib public scripts test index.html README.md package.json"
+  },
+  "engines": {
+    "node": ">=22.8.0"
+  },
+  "dependencies": {
+    "dompurify": "3.4.14",
+    "marked": "18.0.11"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1",
+    "prettier": "3.9.6"
+  }
+}

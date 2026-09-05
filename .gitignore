@@ -1,0 +1,11 @@
+node_modules/
+.local/
+.backup/
+.codex-remote-attachments/
+test-results/
+*.log
+__pycache__/
+.env
+.env.*
+!.env.example
+/nul
