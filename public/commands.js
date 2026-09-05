@@ -1,10 +1,17 @@
+import {
+  composerText,
+  setComposerText,
+  composerCommand,
+  selectComposerCommand,
+  createCommandChip,
+} from './composer.js';
+import { COMMAND_ALIASES as aliases, immediateCommands } from './command-definitions.js';
 const node = (tag, className = '', text = '') => {
   const element = document.createElement(tag);
   element.className = className;
   element.textContent = text;
   return element;
 };
-const aliases = { clear: 'new', usage: 'context', thinking: 'effort', rename: 'name' };
 const labels = {
   studio: 'Studio',
   native: 'Prime Agent',
@@ -18,9 +25,21 @@ const normalize = (text) =>
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
 
+function commandTitle(command, tag = 'span') {
+  const title = node(tag, 'command-title');
+  const dot = node('span', 'command-dot');
+  dot.dataset.kind = command.source;
+  dot.setAttribute('aria-hidden', 'true');
+  title.append(dot, document.createTextNode(`/${command.name}`));
+  return title;
+}
+
 export function createCommands({ api, getContext, action, onChange, onError, hasAttachments }) {
   const input = document.getElementById('composer');
-  const button = node('button', 'attach-image-button command-launcher', '/');
+  const chip = createCommandChip();
+  const button = node('button', 'attach-image-button command-launcher');
+  button.innerHTML =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M15 4 9 20"/></svg>';
   button.id = 'open-commands';
   button.type = 'button';
   button.title = 'Commandes et skills';
@@ -57,6 +76,11 @@ export function createCommands({ api, getContext, action, onChange, onError, has
   const filters = node('div', 'command-filters');
   const filterButtons = new Map();
   const list = node('div', 'command-list');
+  const more = node('button', 'command-more', 'Afficher la suite');
+  more.type = 'button';
+  more.hidden = true;
+  const refresh = node('button', 'command-refresh', 'Actualiser');
+  refresh.type = 'button';
   const note = node('p', 'command-note');
   note.setAttribute('role', 'status');
   const help = node('details', 'command-help');
@@ -70,6 +94,7 @@ export function createCommands({ api, getContext, action, onChange, onError, has
   );
   dialog.append(header, intro, search, filters, note, list, help);
   document.body.append(popup, dialog);
+  const cache = new Map();
   let catalog = null,
     catalogKey = '',
     loadedAt = 0,
@@ -79,7 +104,14 @@ export function createCommands({ api, getContext, action, onChange, onError, has
     matches = [],
     filter = 'all',
     dismissed = false,
-    sending = false;
+    sending = false,
+    loadError = '',
+    prefetchKey = '',
+    prefetchTimer,
+    controller,
+    pageSize = 30,
+    currentList = [],
+    suggestionQuery = '';
   const key = () => {
     const c = getContext();
     return `${c.cwd || ''}\0${c.sessionId || ''}\0${!!c.running}`;
@@ -91,44 +123,75 @@ export function createCommands({ api, getContext, action, onChange, onError, has
   }
   function update() {
     const context = getContext();
+    chip.update();
     button.disabled = context.readOnly || !context.cwd || context.loading;
     if (catalogKey && catalogKey !== key()) {
       generation++;
+      controller?.abort();
       catalog = null;
       pending = null;
       catalogKey = '';
       hide();
       if (dialog.open) dialog.close();
     }
+    if (context.cwd && !context.readOnly && !context.loading && prefetchKey !== key()) {
+      prefetchKey = key();
+      clearTimeout(prefetchTimer);
+      prefetchTimer = setTimeout(() => void load().catch(() => {}), 100);
+    }
   }
-  async function load() {
+  async function load({ force = false } = {}) {
     update();
-    if (catalog && Date.now() - loadedAt < 5000) return catalog;
+    const cached = cache.get(key());
+    if (!catalog && cached) {
+      catalog = cached.data;
+      loadedAt = cached.at;
+      catalogKey = key();
+    }
+    if (!force && catalog && Date.now() - loadedAt < 30000) return catalog;
     if (pending) return pending;
     const c = getContext(),
       token = generation,
       requestedKey = key();
     if (!c.cwd) throw new Error('Choisissez un projet pour voir ses commandes.');
     catalogKey = requestedKey;
+    controller = new AbortController();
+    loadError = '';
     pending = api(
       `/api/commands?cwd=${encodeURIComponent(c.cwd)}${c.sessionId ? `&sessionId=${encodeURIComponent(c.sessionId)}` : ''}`,
+      { signal: controller.signal },
     )
       .then((data) => {
         if (token !== generation || requestedKey !== key())
           throw new Error('Le projet sélectionné a changé.');
         catalog = data;
         loadedAt = Date.now();
+        if (cache.size >= 12) cache.delete(cache.keys().next().value);
+        cache.set(requestedKey, { data, at: loadedAt });
         return data;
       })
+      .catch((error) => {
+        if (token === generation && error.name !== 'AbortError') loadError = error.message;
+        throw error;
+      })
       .finally(() => {
-        if (token === generation) pending = null;
+        if (token === generation) {
+          pending = null;
+          if (dialog.open) renderList();
+          if (!popup.hidden) renderSuggestions();
+        }
       });
     return pending;
   }
   function insert(command) {
     if (!command.supported) return;
-    const suffix = input.value.startsWith('/') ? input.value.replace(/^\/\S*\s*/, '') : input.value;
-    input.value = `/${command.name} ${suffix}`;
+    const text = composerText();
+    const suffix = composerCommand()
+      ? input.value
+      : text.startsWith('/')
+        ? text.replace(/^\/\S*\s*/, '')
+        : text;
+    selectComposerCommand(command, suffix);
     hide();
     dialog.close();
     dismissed = true;
@@ -136,6 +199,9 @@ export function createCommands({ api, getContext, action, onChange, onError, has
     input.setSelectionRange(input.value.length, input.value.length);
     input.dispatchEvent(new Event('input', { bubbles: true }));
     onChange();
+  }
+  function available() {
+    return catalog?.commands || cache.get(key())?.data.commands || immediateCommands;
   }
   function filtered(items, query) {
     const q = normalize(query).replace(/^\//, '');
@@ -145,23 +211,30 @@ export function createCommands({ api, getContext, action, onChange, onError, has
         (a, b) => Number(b.name.startsWith(q)) - Number(a.name.startsWith(q)) || a.name.localeCompare(b.name),
       );
   }
-  function renderList() {
+  function renderList({ keepPage = false } = {}) {
+    if (!keepPage) pageSize = 30;
     list.replaceChildren();
-    const commands = (catalog?.commands || []).filter((c) =>
+    const commands = available().filter((c) =>
       filter === 'terminal' ? !c.supported : c.supported && (filter === 'all' || c.source === filter),
     );
     const visible = filtered(commands, search.value);
-    note.textContent = catalog?.live
-      ? 'Ressources chargées dans cette session.'
-      : 'Ressources du projet pour les nouvelles sessions. Les extensions déjà chargées apparaissent pendant l’exécution.';
+    currentList = visible;
+    note.textContent =
+      loadError ||
+      (pending
+        ? 'Chargement des skills et prompts…'
+        : catalog?.live
+          ? 'Ressources chargées dans cette session.'
+          : 'Ressources du projet pour les nouvelles sessions.');
+    note.setAttribute('aria-busy', String(!!pending));
     if (catalog?.diagnostics?.length)
       note.textContent += ` ${catalog.diagnostics.map((d) => d.message).join(' · ')}`;
-    for (const command of visible) {
+    for (const command of visible.slice(0, pageSize)) {
       const row = node('button', 'command-item');
       row.type = 'button';
       row.disabled = !command.supported;
-      const name = node('span', 'command-name', `/${command.name}`);
-      name.append(node('small', '', command.argumentHint || labels[command.source]));
+      const name = node('span', 'command-name');
+      name.append(commandTitle(command), node('small', '', command.argumentHint || labels[command.source]));
       row.append(name, node('span', 'command-description', command.description || labels[command.source]));
       if (command.sourceInfo?.path) {
         const path = node('span', 'command-source', command.sourceInfo.path);
@@ -174,9 +247,33 @@ export function createCommands({ api, getContext, action, onChange, onError, has
       row.onclick = () => insert(command);
       list.append(row);
     }
-    if (!visible.length) list.append(node('p', 'command-empty', 'Aucun résultat pour ce filtre.'));
+    if (!visible.length && !pending)
+      list.append(node('p', 'command-empty', 'Aucun résultat pour ce filtre.'));
+    more.hidden = visible.length <= pageSize;
+    more.textContent = `Afficher la suite · ${Math.min(pageSize, visible.length)} sur ${visible.length}`;
+    list.append(more);
     for (const [value, b] of filterButtons) b.setAttribute('aria-pressed', String(value === filter));
   }
+  more.onclick = () => {
+    const top = list.scrollTop;
+    const previousSize = pageSize,
+      focused = document.activeElement === more;
+    pageSize = Math.min(pageSize + 30, currentList.length);
+    renderList({ keepPage: true });
+    list.scrollTop = top;
+    if (focused) list.querySelectorAll('.command-item')[previousSize]?.focus({ preventScroll: true });
+  };
+  if ('IntersectionObserver' in window)
+    new IntersectionObserver(
+      (entries) => {
+        if (dialog.open && entries.some((entry) => entry.isIntersecting) && !more.hidden) more.click();
+      },
+      { root: list, rootMargin: '80px' },
+    ).observe(more);
+  refresh.onclick = () => {
+    void load({ force: true }).catch(() => {});
+    renderList();
+  };
   for (const [value, label] of [
     ['all', 'Tout'],
     ['skill', 'Skills'],
@@ -192,20 +289,16 @@ export function createCommands({ api, getContext, action, onChange, onError, has
     filters.append(b);
     filterButtons.set(value, b);
   }
+  filters.append(refresh);
   async function open(selected = 'all') {
+    update();
     hide();
     filter = selected;
     search.value = '';
-    list.replaceChildren();
-    note.textContent = 'Lecture du catalogue Prime Agent…';
     dialog.showModal();
     search.focus();
-    try {
-      await load();
-      if (dialog.open) renderList();
-    } catch (error) {
-      note.textContent = error.message;
-    }
+    void load().catch(() => {});
+    renderList();
   }
   function position() {
     if (popup.hidden) return;
@@ -220,48 +313,76 @@ export function createCommands({ api, getContext, action, onChange, onError, has
     if (
       dismissed ||
       document.activeElement !== input ||
+      composerCommand() ||
       !/^\/[^\s]*$/.test(input.value) ||
       getContext().readOnly
     ) {
       hide();
       return;
     }
-    const text = input.value,
-      requestedKey = key();
-    try {
-      await load();
-      if (text !== input.value || requestedKey !== key() || dismissed || document.activeElement !== input)
-        return;
-      matches = filtered(
-        catalog.commands.filter((c) => c.supported),
-        text,
-      ).slice(0, 12);
-      index = 0;
-      popup.replaceChildren();
-      if (!matches.length) {
-        hide();
-        return;
-      }
-      matches.forEach((c, i) => {
-        const row = node('div', 'command-suggestion');
-        row.id = `command-option-${i}`;
-        row.setAttribute('role', 'option');
-        row.append(node('strong', '', `/${c.name}`), node('span', '', c.description || labels[c.source]));
-        row.onpointerdown = (event) => event.preventDefault();
-        row.onclick = () => insert(c);
-        popup.append(row);
-      });
-      popup.hidden = false;
-      input.setAttribute('aria-expanded', 'true');
-      selectIndex();
-      position();
-    } catch {
+    suggestionQuery = input.value;
+    void load().catch(() => {});
+    renderSuggestions();
+  }
+  function renderSuggestions() {
+    if (
+      suggestionQuery !== input.value ||
+      composerCommand() ||
+      dismissed ||
+      document.activeElement !== input
+    ) {
       hide();
+      return;
     }
+    const selected = matches[index]?.name;
+    matches = filtered(
+      available().filter((c) => c.supported),
+      suggestionQuery,
+    ).slice(0, 12);
+    index = Math.max(
+      0,
+      matches.findIndex((command) => command.name === selected),
+    );
+    popup.replaceChildren();
+    matches.forEach((c, i) => {
+      const row = node('div', 'command-suggestion');
+      row.id = `command-option-${i}`;
+      row.setAttribute('role', 'option');
+      row.append(commandTitle(c, 'strong'), node('span', '', c.description || labels[c.source]));
+      row.onpointerdown = (event) => event.preventDefault();
+      row.onclick = () => insert(c);
+      popup.append(row);
+    });
+    if (pending || loadError || !matches.length) {
+      const status = node(
+        'p',
+        'command-loading',
+        loadError || (pending ? 'Chargement des skills et prompts…' : 'Aucune commande correspondante.'),
+      );
+      status.setAttribute('role', 'status');
+      popup.append(status);
+    }
+    if (loadError) {
+      const retry = node('button', 'command-more', 'Réessayer');
+      retry.type = 'button';
+      retry.onpointerdown = (e) => e.preventDefault();
+      retry.onclick = () => {
+        void load({ force: true }).catch(() => {});
+        renderSuggestions();
+      };
+      popup.append(retry);
+    }
+    popup.hidden = false;
+    input.setAttribute('aria-expanded', 'true');
+    if (matches.length) selectIndex();
+    else input.removeAttribute('aria-activedescendant');
+    position();
   }
   function selectIndex() {
-    [...popup.children].forEach((row, i) => row.setAttribute('aria-selected', String(i === index)));
-    const row = popup.children[index];
+    [...popup.querySelectorAll('[role=option]')].forEach((row, i) =>
+      row.setAttribute('aria-selected', String(i === index)),
+    );
+    const row = document.getElementById(`command-option-${index}`);
     input.setAttribute('aria-activedescendant', row.id);
     row.scrollIntoView({ block: 'nearest' });
   }
@@ -269,6 +390,10 @@ export function createCommands({ api, getContext, action, onChange, onError, has
     'keydown',
     (event) => {
       if (popup.hidden || event.isComposing) return;
+      if (!matches.length && ['Tab', 'Enter'].includes(event.key)) {
+        hide();
+        return;
+      }
       if (['ArrowDown', 'ArrowUp', 'Tab', 'Enter', 'Escape'].includes(event.key)) {
         if (event.key === 'Enter' && (event.shiftKey || event.ctrlKey || event.metaKey)) return;
         event.preventDefault();
@@ -276,8 +401,9 @@ export function createCommands({ api, getContext, action, onChange, onError, has
         if (event.key === 'Escape') {
           dismissed = true;
           hide();
-        } else if (event.key === 'Tab' || event.key === 'Enter') insert(matches[index]);
-        else {
+        } else if (event.key === 'Tab' || event.key === 'Enter') {
+          if (matches[index]) insert(matches[index]);
+        } else if (matches.length) {
           index = (index + (event.key === 'ArrowDown' ? 1 : -1) + matches.length) % matches.length;
           selectIndex();
         }
@@ -302,8 +428,29 @@ export function createCommands({ api, getContext, action, onChange, onError, has
   return {
     open,
     update,
+    restoreDraft() {
+      const text = composerText(),
+        requestedKey = key();
+      const match = text.match(/^\/([^\s/]+) ([\s\S]*)$/);
+      if (!match) return;
+      void load()
+        .then((data) => {
+          if (key() !== requestedKey || composerText() !== text || input.selectionStart < match[1].length + 2)
+            return;
+          const name = Object.hasOwn(aliases, match[1]) ? aliases[match[1]] : match[1];
+          const command = data.commands.find((c) => c.name === name && c.supported);
+          if (!command) return;
+          const offset = match[1].length + 2,
+            start = input.selectionStart - offset,
+            end = input.selectionEnd - offset;
+          selectComposerCommand({ ...command, name: match[1] }, match[2]);
+          input.setSelectionRange(start, end);
+          onChange();
+        })
+        .catch(() => {});
+    },
     async intercept() {
-      const draft = input.value;
+      const draft = composerText();
       if (draft.trim() === '/') {
         void open();
         return true;
@@ -314,10 +461,11 @@ export function createCommands({ api, getContext, action, onChange, onError, has
       sending = true;
       const contextKey = key();
       try {
-        const data = await load();
-        if (input.value !== draft || contextKey !== key()) return true;
         const name = Object.hasOwn(aliases, parsed[1]) ? aliases[parsed[1]] : parsed[1],
           args = (parsed[2] || '').trim();
+        const studio = immediateCommands.find((c) => c.name === name);
+        const data = studio ? { commands: [studio] } : await load();
+        if (composerText() !== draft || contextKey !== key()) return true;
         const command = data.commands.find((c) => c.name === name);
         if (!command)
           throw new Error(`Commande /${name} inconnue. Ouvrez le menu / pour voir les commandes du projet.`);
@@ -326,13 +474,15 @@ export function createCommands({ api, getContext, action, onChange, onError, has
         if (command.source !== 'studio') return false;
         if (hasAttachments())
           throw new Error('Retirez les pièces jointes avant d’utiliser ce raccourci du Studio.');
-        input.value = '';
+        const token = composerCommand();
+        setComposerText('');
         onChange();
         try {
           await action(command.action, args);
         } catch (error) {
-          if (contextKey === key() && !input.value) {
-            input.value = draft;
+          if (contextKey === key() && !composerText()) {
+            if (token) selectComposerCommand(token, draft.slice(token.name.length + 2));
+            else setComposerText(draft);
             onChange();
           }
           throw error;

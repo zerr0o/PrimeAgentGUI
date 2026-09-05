@@ -1,6 +1,105 @@
 .command-launcher {
-  font-size: 23px;
+  padding: 0;
+  line-height: 1;
+}
+.composer-command,
+.command-dot {
+  --chip-text: #afd2ff;
+  --chip-bg: #26354b;
+  --chip-line: #425d80;
+}
+.composer-command {
+  display: inline-grid;
+  grid-template-columns: minmax(0, 1fr) 32px;
+  align-items: center;
+  width: max-content;
+  min-width: 0;
+  max-width: min(260px, 30vw);
+  height: 34px;
+  margin-top: 2px;
+  padding-left: 10px;
+  border: 1px solid var(--chip-line);
+  border-radius: 9px;
+  color: var(--chip-text);
+  background: var(--chip-bg);
+}
+:is(.composer-command, .command-dot)[data-kind='skill'] {
+  --chip-text: #dbccff;
+  --chip-bg: #39304e;
+  --chip-line: #695185;
+}
+:is(.composer-command, .command-dot)[data-kind='prompt'] {
+  --chip-text: #b0e1ca;
+  --chip-bg: #233e34;
+  --chip-line: #426b59;
+}
+[data-theme='light'] :is(.composer-command, .command-dot) {
+  --chip-text: #24578e;
+  --chip-bg: #e8f1fc;
+  --chip-line: #adc5e4;
+}
+[data-theme='light'] :is(.composer-command, .command-dot)[data-kind='skill'] {
+  --chip-text: #694298;
+  --chip-bg: #f0e8fa;
+  --chip-line: #cab4e4;
+}
+[data-theme='light'] :is(.composer-command, .command-dot)[data-kind='prompt'] {
+  --chip-text: #2a654e;
+  --chip-bg: #e6f4ed;
+  --chip-line: #aed2bf;
+}
+.composer-command-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
   font-weight: 600;
+}
+.composer-command button {
+  width: 100%;
+  height: 32px;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  font-size: 20px;
+  border-radius: 7px;
+}
+.composer-command button:hover {
+  background: color-mix(in srgb, var(--chip-text) 12%, transparent);
+}
+.composer-command.is-selected {
+  outline: 2px solid var(--chip-text);
+  outline-offset: 2px;
+}
+#composer-form .has-command-chip {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  column-gap: 10px;
+  align-items: start;
+}
+#composer-form .has-command-chip textarea {
+  width: 100%;
+}
+.command-loading {
+  margin: 8px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.command-refresh {
+  margin-left: auto;
+}
+.command-more {
+  min-height: 44px;
+  width: 100%;
+  color: var(--accent-text);
+  font-size: 13px;
+  padding: 10px;
+}
+.command-more:hover {
+  background: var(--surface-hover);
 }
 .command-dialog {
   width: min(680px, calc(100vw - 24px));
@@ -81,6 +180,20 @@
   font-weight: 400;
   color: var(--muted);
 }
+.command-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.command-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: var(--chip-text);
+}
 .command-description {
   font-size: 13px;
   line-height: 1.5;
@@ -122,7 +235,7 @@
 .command-suggestion strong {
   font-size: 13px;
 }
-.command-suggestion span {
+.command-suggestion > span {
   font-size: 12px;
   color: var(--muted);
   overflow: hidden;
@@ -145,5 +258,32 @@
   }
   .command-list {
     max-height: 38dvh;
+  }
+}
+@media (max-width: 760px) {
+  #composer-form .has-command-chip {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px 8px;
+  }
+  #composer-form .has-command-chip .composer-command {
+    grid-column: 1;
+    grid-row: 1;
+    width: fit-content;
+    grid-template-columns: minmax(0, 1fr) 40px;
+    max-width: 100%;
+    height: 40px;
+    margin: 1px 0;
+  }
+  #composer-form .has-command-chip .attachment-controls {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  #composer-form .has-command-chip textarea {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    min-height: 32px;
+  }
+  .composer-command button {
+    height: 40px;
   }
 }

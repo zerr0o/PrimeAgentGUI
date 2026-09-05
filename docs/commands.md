@@ -4,6 +4,10 @@ Tapez **`/` au début du message**, ou appuyez sur le bouton **/** à côté des
 
 La sélection prépare le message et vous laisse ajouter des arguments. Elle ne lance aucune commande à elle seule.
 
+Une commande validée devient un **chip coloré** dans le champ : violet pour un skill, bleu pour une commande et vert pour un prompt. Écrivez vos arguments à côté, ou en dessous sur mobile. **×** retire le chip et conserve les arguments ; **Retour arrière** au début du texte fait la même chose. Sur PC, **Ctrl/Cmd+A**, puis copier ou couper, inclut la commande. Le brouillon est conservé en texte classique et son chip est restauré après rechargement si la commande est toujours disponible. Les images, documents et envois en cours de tour restent compatibles.
+
+Le menu `/` s’ouvre immédiatement avec les raccourcis du Studio. Les skills et prompts sont chargés en arrière-plan, avec un indicateur de chargement et une possibilité de réessayer. Le catalogue est préchargé lorsque le projet est prêt, puis gardé en mémoire pendant 30 secondes par contexte de session. Les longues listes affichent 30 éléments à la fois, chargent la suite au défilement et restent entièrement recherchables. **Actualiser** relit le catalogue depuis le serveur.
+
 ## Raccourcis du Studio
 
 | Commande               | Effet                                                                           |

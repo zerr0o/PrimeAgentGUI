@@ -107,6 +107,10 @@ Les routes MCP sont `/api/mcp` (GET/POST/PATCH/DELETE), `/api/mcp/test`, `/api/m
 
 ## Organisation du code
 
+`public/composer.js` conserve la commande sélectionnée séparément des arguments dans le textarea. `composerText()` sérialise le tout pour les brouillons et les deux chemins d’envoi ; `setComposerText()` synchronise l’édition et le chip. Les événements de collage des pièces jointes restent attachés au même textarea. Les raccourcis immédiats sont partagés entre interface et serveur dans `public/command-definitions.js`.
+
+Le navigateur précharge le catalogue, mutualise les requêtes, conserve un cache par contexte pendant 30 secondes et invalide les réponses tardives lors d’un changement de session. La validation serveur reste native. Le menu propose les raccourcis sans attendre le réseau et le catalogue détaillé affiche des lots de 30 résultats. `scripts/test-command-chips.mjs`, inclus dans `npm run test:commands`, retient volontairement la réponse HTTP pour vérifier l’ouverture immédiate et utilise 801 skills pour tester pagination et recherche, puis les brouillons, le presse-papiers, les pièces jointes et les envois pendant un tour sur PC et mobile.
+
 `lib/commands.mjs` expose le catalogue et valide les envois slash avant leur admission. `scripts/command-catalog-worker.mjs` utilise le gestionnaire de packages et les lecteurs de skills/prompts de l’installation native, dans un processus masqué et borné. Il ignore les packages absents et ne charge pas les extensions JavaScript. Pour une exécution active, `get_commands` fournit les ressources réellement chargées, après vérification de l’identité du worker.
 
 Les commandes natives de session passent par `prompt` avec `streamingBehavior` et `queueIfBusy` : `steer` et `follow_up` seuls ne déclenchent pas leur analyse native. Les skills et prompts conservent ces chemins d’envoi ordinaires et sont développés par le moteur. Les résultats natifs `custom` avec `display: true` sont projetés comme messages de contexte. Le remplacement d’un message ordinaire par une commande en attente est refusé, car leur type d’action native est différent.

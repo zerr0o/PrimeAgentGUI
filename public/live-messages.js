@@ -1,3 +1,4 @@
+import { composerText, setComposerText } from './composer.js';
 const icons = {
   edit: 'M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L9 17l-4 1 1-4Z',
   delete: 'M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6',
@@ -373,9 +374,9 @@ export function createLiveMessages({
     const images = imageDraft?.images || [];
     const files = imageDraft?.files || [];
     const message =
-      composer.value.trim() || (images.length || files.length ? 'Analyse les pièces jointes.' : '');
+      composerText().trim() || (images.length || files.length ? 'Analyse les pièces jointes.' : '');
     if (!message || sending || !editable() || current.stopping || imageComposer?.blocked()) return true;
-    const originalDraft = composer.value,
+    const originalDraft = composerText(),
       originalRevision = draftRevision,
       selectedMode = mode,
       token = generation;
@@ -398,8 +399,8 @@ export function createLiveMessages({
       if (imageDraft) imageComposer.accepted(imageDraft);
       if (destroyed || token !== generation) return true;
       retry = null;
-      const draftUnchanged = composer.value === originalDraft && draftRevision === originalRevision;
-      if (draftUnchanged) composer.value = '';
+      const draftUnchanged = composerText() === originalDraft && draftRevision === originalRevision;
+      if (draftUnchanged) setComposerText('');
       onSent(result, { context: current, message, mode: selectedMode, draftUnchanged });
       if (inFlight) await inFlight;
       await refresh();
@@ -446,7 +447,7 @@ export function createLiveMessages({
     } else if (!wasOnline && key) queueMicrotask(() => void refresh());
     wasOnline = Boolean(current.online);
     const active = Boolean(current.running),
-      hasDraft = Boolean(composer.value.trim() || imageComposer?.hasImages());
+      hasDraft = Boolean(composerText().trim() || imageComposer?.hasImages());
     // Keep the controls still while the first click opens an attachment picker.
     // Revealing this row on focus moves the button between pointerdown and click.
     modeRow.hidden = !active || current.readOnly || !hasDraft;

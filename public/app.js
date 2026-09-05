@@ -5,6 +5,7 @@ import { createLiveMessages } from './live-messages.js';
 import { createImageComposer, renderImages } from './images.js';
 import { createMcpSettings } from './mcp.js';
 import { createCommands } from './commands.js';
+import { composerText, setComposerText, composerCommand } from './composer.js';
 let imageComposer;
 let liveMessagesUI;
 let commandsUI;
@@ -430,12 +431,15 @@ function saveDraft() {
   if (state.readOnly) return;
   const drafts = readStorage('drafts', {}),
     key = draftKey();
-  if ($('composer').value) drafts[key] = $('composer').value;
+  if (composerText()) drafts[key] = composerText();
   else delete drafts[key];
   writeStorage('drafts', drafts);
 }
 function restoreDraft() {
-  $('composer').value = state.readOnly ? '' : readStorage('drafts', {})[draftKey()] || '';
+  setComposerText(state.readOnly ? '' : readStorage('drafts', {})[draftKey()] || '', {
+    retainCommand: false,
+  });
+  commandsUI?.restoreDraft();
   resizeComposer();
 }
 function saveSelection() {
@@ -465,7 +469,7 @@ function updateComposer() {
   $('send-button').disabled =
     state.readOnly ||
     state.projectOverview ||
-    (!$('composer').value.trim() && !imageComposer?.hasImages()) ||
+    (!composerText().trim() && !imageComposer?.hasImages()) ||
     imageComposer?.blocked() ||
     !state.projectCwd ||
     state.sending ||
@@ -482,11 +486,13 @@ function updateComposer() {
     activeRun()?.status === 'stopping'
       ? 'Arrêt de l’agent…'
       : activeRun()?.statusLabel || 'L’agent travaille…';
-  $('composer').placeholder = state.projectCwd
-    ? running
-      ? 'Préparez votre prochain message…'
-      : 'Que souhaitez-vous construire ?'
-    : 'Ajoutez un projet pour commencer…';
+  $('composer').placeholder = composerCommand()
+    ? 'Ajoutez vos consignes…'
+    : state.projectCwd
+      ? running
+        ? 'Préparez votre prochain message…'
+        : 'Que souhaitez-vous construire ?'
+      : 'Ajoutez un projet pour commencer…';
   liveMessagesUI?.update();
 }
 function renderProjects() {
@@ -1381,7 +1387,7 @@ async function sendMessage(event) {
   const imageDraft = imageComposer?.snapshot();
   const images = imageDraft?.images || [];
   const files = imageDraft?.files || [];
-  const originalDraft = $('composer').value;
+  const originalDraft = composerText();
   const message =
       originalDraft.trim() || (images.length || files.length ? 'Analyse les pièces jointes.' : ''),
     cwd = state.projectCwd,
@@ -1423,7 +1429,7 @@ async function sendMessage(event) {
     if (imageDraft) imageComposer.accepted(imageDraft);
     if (run.sessionId) upsertSession(run.sessionId, run);
     if (token === state.requestId) {
-      if ($('composer').value === originalDraft) $('composer').value = '';
+      if (composerText() === originalDraft) setComposerText('');
       saveDraft();
       state.viewRunId = run.id;
       state.sessionId = run.sessionId || sessionId;
@@ -2319,7 +2325,7 @@ document.querySelectorAll('dialog').forEach((d) =>
 document.querySelectorAll('[data-prompt]').forEach(
   (b) =>
     (b.onclick = () => {
-      $('composer').value = b.dataset.prompt;
+      setComposerText(b.dataset.prompt);
       saveDraft();
       resizeComposer();
       $('composer').focus();

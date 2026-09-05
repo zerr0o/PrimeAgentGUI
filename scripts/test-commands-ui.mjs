@@ -77,7 +77,8 @@ try {
     await page.locator('#composer').fill('/mod');
     await expect(page.locator('#command-suggestions')).toBeVisible();
     await page.locator('#composer').press('Enter');
-    await expect(page.locator('#composer')).toHaveValue('/model ');
+    await expect(page.locator('#composer-command-label')).toHaveText('/model');
+    await expect(page.locator('#composer')).toHaveValue('');
     expect(controls).toHaveLength(0);
     await page.locator('#send-button').click();
     await expect(page.locator('#model-dialog')).toBeVisible();
@@ -89,7 +90,9 @@ try {
     await expect(page.locator('.command-item')).toContainText('<script>untrusted()</script>');
     expect(await page.locator('#commands-dialog script').count()).toBe(0);
     await page.locator('.command-item').click();
-    await expect(page.locator('#composer')).toHaveValue('/skill:design ');
+    await expect(page.locator('#composer-command-label')).toHaveText('/skill:design');
+    await expect(page.locator('#composer')).toHaveValue('');
+    await page.locator('#remove-command').click();
     await page.locator('#composer').fill('/share');
     await page.locator('#send-button').click();
     await expect(page.locator('#composer')).toHaveValue('/share');
