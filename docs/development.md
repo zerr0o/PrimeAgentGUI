@@ -107,6 +107,12 @@ Les routes MCP sont `/api/mcp` (GET/POST/PATCH/DELETE), `/api/mcp/test`, `/api/m
 
 ## Organisation du code
 
+`lib/commands.mjs` expose le catalogue et valide les envois slash avant leur admission. `scripts/command-catalog-worker.mjs` utilise le gestionnaire de packages et les lecteurs de skills/prompts de l’installation native, dans un processus masqué et borné. Il ignore les packages absents et ne charge pas les extensions JavaScript. Pour une exécution active, `get_commands` fournit les ressources réellement chargées, après vérification de l’identité du worker.
+
+Les commandes natives de session passent par `prompt` avec `streamingBehavior` et `queueIfBusy` : `steer` et `follow_up` seuls ne déclenchent pas leur analyse native. Les skills et prompts conservent ces chemins d’envoi ordinaires et sont développés par le moteur. Les résultats natifs `custom` avec `display: true` sont projetés comme messages de contexte. Le remplacement d’un message ordinaire par une commande en attente est refusé, car leur type d’action native est différent.
+
+`npm run test:commands` vérifie les parcours PC/mobile via une passerelle authentifiée, le catalogue, la complétion clavier, les raccourcis, les contenus non fiables et la disposition du composeur. `npm run test:commands:native` utilise un véritable worker Prime Agent, son outil Python et un fournisseur factice local, dans des dossiers temporaires. Il vérifie les expansions de skills, les arguments de prompts, les commandes en cours de tour, leur historique et l’absence d’interruption des outils. Aucun compte ou daemon utilisateur n’est utilisé.
+
 `server.mjs` expose l’API locale et les flux SSE. `lib/store.mjs` lit les sessions natives et conserve les préférences. `lib/agent.mjs` gère le CLI, les modèles, les événements et l’arrêt. `public/` contient l’interface. `runtime/` isole les correctifs de sous-processus. `scripts/` contient les lanceurs et outils de vérification.
 
 Les principales routes sont `GET /api/bootstrap`, `GET /api/overview`, `GET /api/history?id=…`, les routes locales `/api/model-config` et `/api/model-defaults`, `POST /api/projects`, `PATCH /api/projects`, `PATCH /api/sessions`, `POST /api/runs`, `GET /api/runs/:id/events` et `POST /api/runs/:id/stop`. Les flux SSE acceptent `Last-Event-ID` pour reprendre les événements après une déconnexion.

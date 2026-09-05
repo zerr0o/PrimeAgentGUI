@@ -43,6 +43,26 @@ test('live controls match an active native session and exact project before reac
   f.run.status = 'completed';
   assert.equal((await f.service.getSnapshot(sessionId, cwd)).available, false);
 });
+
+test('queue replacements preserve the native command action kind', async () => {
+  const f = fixture();
+  for (const [expectedText, text] of [
+    ['ordinary message', '/goal status'],
+    ['/goal status', 'ordinary message'],
+  ]) {
+    await assert.rejects(
+      f.service.mutate(sessionId, {
+        cwd,
+        lane: 'steering',
+        index: 0,
+        expectedText,
+        mutation: { type: 'replace', lane: 'steering', text },
+      }),
+      { status: 400 },
+    );
+  }
+  assert.equal(f.calls.length, 0);
+});
 test('concurrent duplicate sends and retries after completion reuse the same native acceptance', async () => {
   const f = fixture();
   const results = await Promise.all(Array.from({ length: 5 }, () => f.service.send(sessionId, body())));

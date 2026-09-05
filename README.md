@@ -15,6 +15,7 @@
   <a href="#images-et-pièces-jointes">Pièces jointes</a> ·
   <a href="#vos-modèles-à-portée-de-main">Modèles</a> ·
   <a href="docs/mcp.md">Connexions MCP</a> ·
+  <a href="docs/commands.md">Commandes et skills</a> ·
   <a href="docs/lan.md">Accès mobile</a> ·
   <a href="docs/pwa.md">Installer l’app</a> ·
   <a href="docs/development.md">Développement</a>
@@ -45,6 +46,10 @@ Les exécutions continuent lorsque vous changez de session, rechargez la page ou
 Le menu **⋯** de chaque projet fonctionne aussi sur mobile ; le clic droit est disponible sur PC. Retirer un projet masque son entrée dans le Studio et conserve son dossier et ses sessions. Vous pouvez retrouver ceux-ci en ajoutant à nouveau le dossier. Un projet avec une exécution active ne peut pas être retiré.
 
 Dans le Studio distant, **Préférences → Se déconnecter** ferme l’accès de ce navigateur et revient au code d’accès. Les agents et les autres appareils connectés continuent de fonctionner.
+
+## Commandes et skills à portée de main
+
+Tapez **`/`** ou utilisez le bouton **/** près des pièces jointes pour rechercher une commande, un skill ou un prompt du projet. Les raccourcis ouvrent les panneaux du Studio ; `/compact`, `/refine`, `/goal` et `/autonomous` sont exécutés par Prime Agent, y compris dans la file d’une session active. `/skill:nom` charge un skill avec vos consignes. Consultez le [guide des commandes, skills et prompts](docs/commands.md) pour les syntaxes et les commandes réservées au terminal.
 
 ## Vos outils et services MCP
 

@@ -70,6 +70,23 @@ function fixture(options = {}) {
           };
         case 'get_queue':
           return { success: true, data: { steering: [...queue.steering], followUp: [...queue.followUp] } };
+        case 'get_commands':
+          return {
+            success: true,
+            data: {
+              commands: [
+                {
+                  name: 'skill:example',
+                  source: 'skill',
+                  description: 'A skill',
+                  sourceInfo: { path: 'skill.md', scope: 'project', secret: 'private' },
+                },
+              ],
+            },
+          };
+        case 'prompt':
+          queue[command.streamingBehavior === 'steer' ? 'steering' : 'followUp'].push(command.message);
+          return { success: true };
         case 'steer':
         case 'follow_up':
           if (options.sendThrows) throw new Error('Private C:/path with owner-secret');
@@ -124,6 +141,31 @@ test('snapshot observes the exact native header without lifecycle commands or pr
     f.calls.map((call) => call.type),
     ['get_state', 'get_session_header', 'get_queue'],
   );
+  assert.ok(f.instances.every((instance) => instance.closed));
+});
+
+test('native command catalogue is read-only and session commands use prompt admission in their chosen lane', async () => {
+  const f = fixture();
+  assert.deepEqual(await f.client.getCommands(sessionId, cwd), [
+    {
+      name: 'skill:example',
+      source: 'skill',
+      description: 'A skill',
+      sourceInfo: { path: 'skill.md', scope: 'project' },
+    },
+  ]);
+  for (const mode of ['steer', 'follow_up']) {
+    assert.equal((await f.client.send(sessionId, cwd, { message: '  /goal status  ', mode })).accepted, true);
+  }
+  const prompts = f.calls.filter((c) => c.type === 'prompt');
+  assert.deepEqual(
+    prompts.map((p) => p.streamingBehavior),
+    ['steer', 'followUp'],
+  );
+  assert.ok(prompts.every((p) => p.queueIfBusy && p.message === '/goal status'));
+  await assert.rejects(f.client.send(sessionId, cwd, { message: '/goal status\nhello', mode: 'steer' }), {
+    status: 400,
+  });
   assert.ok(f.instances.every((instance) => instance.closed));
 });
 

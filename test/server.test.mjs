@@ -5,6 +5,7 @@ import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { createApp } from '../server.mjs';
+import { commandCatalog } from '../lib/commands.mjs';
 
 const delay = (milliseconds) => new Promise((done) => setTimeout(done, milliseconds));
 async function until(check, timeout = 2000) {
@@ -186,6 +187,24 @@ function decodeEvents(text) {
     .filter((line) => line.startsWith('data: '))
     .map((line) => JSON.parse(line.slice(6)));
 }
+
+test('slash API rejects terminal, unknown and malformed commands before a runtime can start', async (t) => {
+  const catalog = commandCatalog({
+    builtins: [{ name: 'goal' }, { name: 'share' }],
+    commands: [{ name: 'skill:example', source: 'skill' }],
+  });
+  const f = await fixture(t, { commands: { list: async () => catalog } });
+  assert.deepEqual(
+    (await f.api(`/api/commands?cwd=${encodeURIComponent(f.cwd)}`)).json,
+    JSON.parse(JSON.stringify(catalog)),
+  );
+  for (const message of ['/share', '/unknown', '/settings', '/goal status\nextra']) {
+    assert.equal((await f.run({ message })).status, 400);
+  }
+  assert.equal(f.runtime.controls.length, 0);
+  assert.equal((await f.run({ message: '/goal status' })).status, 201);
+  assert.equal(f.runtime.controls[0].input.message, '/goal status');
+});
 
 test('project context actions only open registered folders and removal never stops an active agent', async (t) => {
   const opened = [];

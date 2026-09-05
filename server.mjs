@@ -11,6 +11,7 @@ import { createModelConfigStore } from './lib/model-config.mjs';
 import { createModelDefaultsStore } from './lib/model-defaults.mjs';
 import { openDirectory } from './lib/open-directory.mjs';
 import { createMcpService } from './lib/mcp-service.mjs';
+import { createCommandService, parseCommand, validateCommand } from './lib/commands.mjs';
 import { createLiveMessages, routeLiveMessages } from './lib/live-messages.mjs';
 import { createLiveSessionClient } from './lib/live-session-client.mjs';
 import { validateImages, imageBodyLimit } from './lib/images.mjs';
@@ -83,8 +84,31 @@ export function createApp(options = {}) {
   const mcp = options.mcp || createMcpService({ agentHome });
   const runs = new Map(),
     sessionLocks = new Set();
+  const commands =
+    options.commands ||
+    createCommandService({
+      agentHome,
+      getLiveClient: (sessionId, cwd) => {
+        if (
+          ![...runs.values()].some(
+            (run) =>
+              run.sessionId === sessionId && cwdKey(run.cwd) === cwdKey(cwd) && run.status === 'running',
+          )
+        )
+          return null;
+        const endpoint = runtime.getLiveEndpoint?.();
+        return endpoint ? createLiveSessionClient(endpoint) : null;
+      },
+    });
   const liveMessages = createLiveMessages({
     fileStore,
+    validateMessage: async (message, context) => {
+      if (parseCommand(message))
+        validateCommand(message, await commands.list(context), {
+          live: true,
+          attachments: context.attachments,
+        });
+    },
     getRuns: () => [...runs.values()],
     getClient: () => {
       if (options.liveClient) return options.liveClient;
@@ -186,6 +210,10 @@ export function createApp(options = {}) {
     if (typeof body.message !== 'string' || (!body.message.trim() && !images.length && !files.length))
       throw new HttpError(400, 'Écrivez un message avant de l’envoyer.');
     if (body.message.length > 200000) throw new HttpError(400, 'Le message dépasse 200 000 caractères.');
+    if (parseCommand(body.message))
+      validateCommand(body.message, await commands.list({ cwd }), {
+        attachments: images.length + files.length > 0,
+      });
     if (images.length) {
       const catalog = await models();
       const selected = catalog.models?.find((model) => model.id === (body.model || catalog.default?.model));
@@ -356,6 +384,15 @@ export function createApp(options = {}) {
         return;
       }
       if (method === 'GET' && path === '/api/model-config') return json(res, 200, await modelConfig.list());
+      if (path === '/api/commands' && method === 'GET')
+        return json(
+          res,
+          200,
+          await commands.list({
+            cwd: url.searchParams.get('cwd'),
+            sessionId: url.searchParams.get('sessionId') || undefined,
+          }),
+        );
       if (path === '/api/mcp' && method === 'GET') return json(res, 200, await mcp.list());
       if (path === '/api/mcp' && method === 'POST')
         return json(res, 200, await mcp.upsert(await readBody(req)));
@@ -487,6 +524,7 @@ export function createApp(options = {}) {
   server.headersTimeout = 15000;
   async function close() {
     mcp.close?.();
+    commands.close?.();
     closing = true;
     clearInterval(cleanup);
     await runtime.close();

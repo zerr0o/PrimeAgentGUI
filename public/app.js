@@ -4,8 +4,10 @@ import { createConversationRenderer } from './conversation.js';
 import { createLiveMessages } from './live-messages.js';
 import { createImageComposer, renderImages } from './images.js';
 import { createMcpSettings } from './mcp.js';
+import { createCommands } from './commands.js';
 let imageComposer;
 let liveMessagesUI;
+let commandsUI;
 const $ = (id) => document.getElementById(id);
 const icons = {
   plus: 'M12 5v14M5 12h14',
@@ -455,6 +457,7 @@ function resizeComposer() {
 }
 function updateComposer() {
   imageComposer?.update();
+  commandsUI?.update();
   const running = isRunning(activeRun());
   $('send-button').hidden = running;
   $('stop-button').hidden = !running;
@@ -1238,6 +1241,8 @@ function applyRunEvent(run, e) {
           run.messages.push({ ...incoming, id: `${run.id}-user-${e.seq}` });
         }
         run.initialUserEchoSeen = true;
+      } else if (incoming.role === 'system') {
+        run.messages.push({ ...incoming, id: `${run.id}-system-${e.seq}`, tools: [] });
       } else if (incoming.role === 'toolResult') {
         const t = findTool(run, incoming.toolCallId);
         if (t)
@@ -1369,6 +1374,8 @@ async function finishRun(run, e) {
 }
 async function sendMessage(event) {
   event?.preventDefault();
+  if (state.readOnly || state.sending) return;
+  if (await commandsUI?.intercept()) return;
   if (isRunning(activeRun())) return liveMessagesUI?.submitDraft();
   if (state.readOnly || $('send-button').disabled || state.sending) return;
   const imageDraft = imageComposer?.snapshot();
@@ -2037,6 +2044,97 @@ imageComposer = createImageComposer({
   }),
   onChange: () => updateComposer(),
   onError: (error) => toast(error.message || String(error), true),
+});
+commandsUI = createCommands({
+  api,
+  getContext: () => ({
+    cwd: state.projectCwd,
+    sessionId: activeRun()?.sessionId || state.sessionId,
+    running: isRunning(activeRun()),
+    readOnly: state.readOnly,
+    loading: state.loading || state.projectOverview,
+  }),
+  hasAttachments: () => imageComposer.hasImages(),
+  onChange: () => {
+    saveDraft();
+    resizeComposer();
+  },
+  onError: (error) => toast(error.message, true),
+  action: async (name, args) => {
+    if (!['model', 'effort', 'name'].includes(name) && args)
+      throw new Error('Ce raccourci du Studio s’utilise sans argument.');
+    if (['model', 'effort'].includes(name) && isRunning(activeRun()))
+      throw new Error('Le modèle et son effort se choisissent entre deux tours.');
+    if (['name', 'session', 'export', 'copy'].includes(name) && !state.sessionId)
+      throw new Error('Ouvrez d’abord une session.');
+    switch (name) {
+      case 'help':
+        return commandsUI.open();
+      case 'skills':
+        return commandsUI.open('skill');
+      case 'settings':
+        $('settings-dialog').showModal();
+        break;
+      case 'mcp':
+        $('open-mcp-settings').click();
+        break;
+      case 'model':
+        openModelDialog();
+        if (args) {
+          $('model-search').value = args;
+          renderModelList();
+        }
+        break;
+      case 'effort':
+        if (args) {
+          if (![...$('thinking-select').options].some((option) => option.value === args))
+            throw new Error('Niveau attendu : off, minimal, low, medium, high, xhigh ou max.');
+          $('thinking-select').value = args;
+          $('thinking-select').dispatchEvent(new Event('change'));
+          toast('Effort de raisonnement modifié.');
+        } else {
+          $('thinking-select').focus();
+          try {
+            $('thinking-select').showPicker?.();
+          } catch {}
+        }
+        break;
+      case 'new':
+        newSession();
+        break;
+      case 'name':
+        if (args) await patchSession(state.sessionId, { title: args });
+        else {
+          state.menuSessionId = state.sessionId;
+          await menuAction('rename');
+        }
+        break;
+      case 'session':
+        if (innerWidth <= 1080) $('details-panel').classList.add('mobile-open');
+        else {
+          prefs.details = true;
+          savePreferences({ details: true });
+          applyPreferences();
+        }
+        renderDetails();
+        break;
+      case 'copy': {
+        const last = [...activeMessages()]
+          .reverse()
+          .find((message) => message.role === 'assistant' && message.text);
+        if (!last) throw new Error('Aucune réponse à copier.');
+        await copyText(last.text, 'Dernière réponse copiée.');
+        break;
+      }
+      case 'export':
+        await exportSession();
+        break;
+      case 'resume':
+        openSidebar();
+        $('session-search').focus();
+        break;
+    }
+  },
 });
 liveMessagesUI = createLiveMessages({
   api,

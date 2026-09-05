@@ -1,0 +1,149 @@
+.command-launcher {
+  font-size: 23px;
+  font-weight: 600;
+}
+.command-dialog {
+  width: min(680px, calc(100vw - 24px));
+  max-height: calc(var(--studio-height, 100dvh) - 36px);
+  padding: 24px;
+}
+.command-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.command-heading h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.command-intro,
+.command-note,
+.command-help {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.command-dialog .command-search {
+  width: 100%;
+  margin: 8px 0 12px;
+  padding: 12px;
+  font-size: 16px;
+}
+.command-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.command-filters button {
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.command-filters button[aria-pressed='true'] {
+  background: var(--accent-bg);
+  color: var(--text);
+}
+.command-list {
+  max-height: 42dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 12px 0;
+}
+.command-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--line);
+  border-radius: 8px;
+}
+.command-item:hover:not(:disabled),
+.command-item:focus-visible {
+  background: var(--surface-hover);
+}
+.command-item:disabled {
+  opacity: 0.75;
+}
+.command-name {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.command-name small {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.command-description {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.command-source {
+  font-size: 11px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.command-empty {
+  padding: 18px 8px;
+  color: var(--muted);
+}
+.command-help summary {
+  cursor: pointer;
+  min-height: 36px;
+}
+.command-suggestions {
+  position: fixed;
+  z-index: 90;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-raised);
+  box-shadow: 0 12px 40px #0006;
+}
+.command-suggestion {
+  padding: 10px 12px;
+  min-height: 48px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.command-suggestion strong {
+  font-size: 13px;
+}
+.command-suggestion span {
+  font-size: 12px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.command-suggestion[aria-selected='true'] {
+  background: var(--accent-bg);
+}
+@media (max-width: 600px) {
+  .command-dialog {
+    padding: 16px;
+  }
+  .command-heading h2 {
+    font-size: 18px;
+  }
+  .command-filters button,
+  .command-heading button {
+    min-height: 44px;
+  }
+  .command-list {
+    max-height: 38dvh;
+  }
+}
