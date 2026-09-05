@@ -18,7 +18,33 @@ Le port mobile est `3089`, lié uniquement à l’adresse privée de la carte r�
 
 Dans le menu, choisissez un projet pour afficher ses sessions dans la page, puis touchez une session pour l’ouvrir. **Nouvelle session** prépare une conversation dans ce projet. Les sessions archivées restent accessibles avec le filtre **Archivées**.
 
+Les boutons **Photo** et **Pièce jointe** sélectionnent respectivement les images et tous types de fichiers du téléphone. Les pièces sont transférées au PC lors de l’envoi, y compris en **Réorienter** ou **À la suite**. Touchez une image reçue pour l’agrandir, ou un fichier pour le télécharger. Les limites sont les mêmes que sur PC : [images et pièces jointes](../README.md#images-et-pièces-jointes).
+
 La configuration `readOnly: false` active les commandes à distance. Pour limiter volontairement cet accès à la consultation, passez `readOnly` à `true`, puis redémarrez. Une ancienne configuration sans ce champ reste en lecture seule jusqu’à sa mise à jour explicite. Le changement de mode conserve le code existant ; un redémarrage demande de se reconnecter.
+
+## Hors du Wi-Fi avec Tailscale
+
+Installez Tailscale sur le PC et le téléphone, connectez-les au même réseau Tailscale (le même compte pour un usage personnel), puis activez la connexion sur les deux appareils.
+
+Sur le PC, dans le dossier du Studio :
+
+```powershell
+npm run tailscale:enable
+```
+
+La commande détecte l’interface Tailscale et affiche l’adresse `http://100.x.y.z:3089`. Elle conserve l’accès LAN, le port, le code existant et les permissions. Si aucun accès distant n’était configuré, elle crée un code à huit chiffres et l’affiche une seule fois, sans activer le LAN.
+
+Attendez la fin des exécutions, puis redémarrez le Studio. Depuis le téléphone en 4G/5G, activez Tailscale et ouvrez l’adresse affichée. Saisissez le code habituel : les projets, sessions, messages en direct et commandes sont les mêmes qu’en Wi-Fi. Il n’est pas nécessaire d’activer Tailscale Serve, Funnel ou une redirection de port sur le routeur.
+
+Le Studio ouvre une seconde écoute sur l’adresse IPv4 de l’interface Tailscale, en plus de celle du LAN. Cette passerelle n’accepte que les pairs de la plage Tailscale `100.64.0.0/10` et les connexions locales ; l’authentification du Studio reste obligatoire. Le trafic entre appareils est chiffré par Tailscale. Le configurateur de modèles et les routes réservées au PC restent inaccessibles à distance.
+
+La configuration est conservée dans `tailscale: { enabled: true, host: "100.x.y.z" }` au sein de `.local/lan-access.json`. Pour désactiver uniquement Tailscale, passez `tailscale.enabled` à `false` et redémarrez. Le champ `enabled` principal continue de contrôler uniquement le LAN. Les deux accès partagent le code et le mode `readOnly`, mais demandent chacun une connexion dans le navigateur.
+
+Connectez Tailscale avant de lancer le Studio. Si son adresse change, relancez `tailscale:enable` puis redémarrez le Studio après la fin des exécutions. Relancer `lan:enable` conserve l’adresse Tailscale mais renouvelle le code partagé.
+
+En cas d’échec depuis le téléphone, vérifiez que le PC est allumé, que Tailscale est connecté sur les deux appareils et que les règles de votre réseau Tailscale et du pare-feu Windows autorisent le port choisi. Une erreur Tailscale au démarrage ne désactive pas le LAN ; les diagnostics apparaissent dans `.local/logs/server.log`.
+
+[Connexion entre appareils : documentation Tailscale](https://tailscale.com/docs/how-to/connect-to-devices).
 
 ## Redémarrer au bon moment
 

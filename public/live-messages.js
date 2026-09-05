@@ -45,11 +45,25 @@ function requestId() {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 const laneLabel = (lane) => (lane === 'steering' ? 'Réorienter' : 'À la suite');
+function queuedText(text) {
+  const marker = '\n\n<prime_studio_files>\n',
+    start = text.lastIndexOf(marker);
+  if (start < 0 || !text.endsWith('\n</prime_studio_files>')) return text;
+  try {
+    const files = JSON.parse(text.slice(start + marker.length, -'\n</prime_studio_files>'.length));
+    return Array.isArray(files) && files.every((file) => typeof file.name === 'string')
+      ? text.slice(0, start)
+      : text;
+  } catch {
+    return text;
+  }
+}
 
 /** Native queues stay authoritative; accepted messages are never copied into the transcript here. */
 export function createLiveMessages({
   api,
   getContext,
+  imageComposer,
   onSent = () => {},
   onError = () => {},
   onChange = () => {},
@@ -198,7 +212,7 @@ export function createLiveMessages({
   function openEditor(item) {
     if (mutating) return;
     edit = item;
-    editorText.value = item.expectedText;
+    editorText.value = queuedText(item.expectedText);
     editorLane.value = item.lane;
     queue.open = true;
     queueError.hidden = true;
@@ -224,7 +238,9 @@ export function createLiveMessages({
           const row = node('li', 'live-queue-item');
           row.dataset.lane = lane;
           row.dataset.index = String(index);
-          row.append(node('p', 'live-queue-text', text));
+          row.append(node('p', 'live-queue-text', queuedText(text)));
+          if (queuedText(text) !== text)
+            row.append(node('small', 'live-queue-file-note', 'Fichier(s) joint(s) conservé(s)'));
           const buttons = node('div', 'live-queue-item-actions');
           const editButton = action('Modifier le message', 'edit', () => openEditor(item));
           const switchButton = action(
@@ -353,21 +369,33 @@ export function createLiveMessages({
   async function submitDraft() {
     const current = { ...context() };
     if (!current.running) return false;
-    const message = composer.value.trim();
-    if (!message || sending || !editable() || current.stopping) return true;
+    const imageDraft = imageComposer?.snapshot();
+    const images = imageDraft?.images || [];
+    const files = imageDraft?.files || [];
+    const message =
+      composer.value.trim() || (images.length || files.length ? 'Analyse les pièces jointes.' : '');
+    if (!message || sending || !editable() || current.stopping || imageComposer?.blocked()) return true;
     const originalDraft = composer.value,
       originalRevision = draftRevision,
       selectedMode = mode,
       token = generation;
-    const fingerprint = `${contextKey}\n${selectedMode}\n${message}`;
+    const fingerprint = `${contextKey}\n${selectedMode}\n${message}\n${JSON.stringify([images, files])}`;
     if (!retry || retry.fingerprint !== fingerprint) retry = { fingerprint, requestId: requestId() };
     sending = true;
     update();
     try {
       const result = await api(`${path(current)}/messages`, {
         method: 'POST',
-        body: { cwd: current.cwd, message, mode: selectedMode, requestId: retry.requestId },
+        body: {
+          cwd: current.cwd,
+          message,
+          mode: selectedMode,
+          requestId: retry.requestId,
+          ...(images.length ? { images } : {}),
+          ...(files.length ? { files } : {}),
+        },
       });
+      if (imageDraft) imageComposer.accepted(imageDraft);
       if (destroyed || token !== generation) return true;
       retry = null;
       const draftUnchanged = composer.value === originalDraft && draftRevision === originalRevision;
@@ -418,9 +446,10 @@ export function createLiveMessages({
     } else if (!wasOnline && key) queueMicrotask(() => void refresh());
     wasOnline = Boolean(current.online);
     const active = Boolean(current.running),
-      hasDraft = Boolean(composer.value.trim());
-    const focused = form.contains(document.activeElement);
-    modeRow.hidden = !active || current.readOnly || (!hasDraft && !focused);
+      hasDraft = Boolean(composer.value.trim() || imageComposer?.hasImages());
+    // Keep the controls still while the first click opens an attachment picker.
+    // Revealing this row on focus moves the button between pointerdown and click.
+    modeRow.hidden = !active || current.readOnly || !hasDraft;
     for (const [value, button] of modeButtons) {
       button.setAttribute('aria-pressed', String(mode === value));
       button.disabled = sending || current.stopping || current.readOnly;
@@ -429,7 +458,7 @@ export function createLiveMessages({
       stop.hidden = false;
       stop.disabled = Boolean(current.stopping || current.readOnly || !current.online);
       send.hidden = !hasDraft;
-      send.disabled = !hasDraft || sending || !editable();
+      send.disabled = !hasDraft || sending || !editable() || imageComposer?.blocked();
       send.title = mode === 'steer' ? 'Réorienter l’agent' : 'Envoyer à la suite';
       send.setAttribute('aria-label', send.title);
     } else {

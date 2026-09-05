@@ -1,11 +1,12 @@
 // Capture the real desktop UI with isolated, fictional data. No native agent is started.
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium, expect } from '@playwright/test';
 import { createApp } from '../server.mjs';
+import { createFileStore } from '../lib/files.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const output = join(root, 'docs', 'screenshots');
@@ -222,7 +223,7 @@ try {
   // Seed only this isolated server's SSE replay to show the actual active-turn controls.
   const startedAt = new Date(Date.now() - 84000).toISOString();
   sessions[0].updatedAt = startedAt;
-  // The last capture shows a fresh demonstration turn, without older content above it.
+  // Show a fresh demonstration turn, without older content above it.
   sessions[0].messages = [];
   sessions[0].messageCount = 0;
   const run = {
@@ -280,6 +281,50 @@ try {
   await expect(page.locator('.activity-stack.is-running')).toBeVisible();
   await expect(page.locator('.activity-stack.is-running')).toBeInViewport();
   await capture('desktop-live-messages.png');
+
+  // Display genuine image/file rendering and upload previews using only our fixture files.
+  app.runs.delete(run.id);
+  const fileStore = createFileStore(join(temp, 'data', 'attachments'));
+  const brief = Buffer.from('# Atelier\n\nConserver les couleurs et simplifier la navigation.\n');
+  const [attachment] = await fileStore.save([{ name: 'brief-du-projet.md', data: brief.toString('base64') }]);
+  const picture = await readFile(join(root, 'assets', 'prime-agent.png'));
+  sessions[0].title = 'Images et fichiers pour le projet';
+  sessions[0].messages = [
+    message('user', 'Voici le logo et le brief du projet. Prépare les prochaines étapes.', {
+      attachments: [
+        { type: 'image', mimeType: 'image/png', data: picture.toString('base64') },
+        { type: 'file', id: attachment.id, name: attachment.name, size: attachment.size },
+      ],
+    }),
+    message(
+      'assistant',
+      [
+        '## Une base commune pour la suite',
+        '',
+        'Le logo et le brief sont prêts à guider le travail sur l’interface.',
+        '',
+        '- Reprendre les couleurs du logo dans les éléments de navigation.',
+        '- Définir les écrans prioritaires à partir du brief.',
+        '- Vérifier les parcours sur PC et sur mobile.',
+      ].join('\n'),
+    ),
+  ];
+  sessions[0].messageCount = sessions[0].messages.length;
+  await page.goto(url);
+  await expect(page.locator('#header-session')).toHaveText(sessions[0].title);
+  await expect(page.locator('.message-image')).toBeVisible();
+  await expect(page.locator('.message-file')).toHaveText('brief-du-projet.md');
+  await expect(page.locator('#attach-images')).toBeEnabled();
+  await page
+    .locator('#image-files')
+    .setInputFiles({ name: 'logo-projet.png', mimeType: 'image/png', buffer: picture });
+  await page
+    .locator('#attachment-files')
+    .setInputFiles({ name: 'notes-de-relecture.md', mimeType: 'text/markdown', buffer: brief });
+  await expect(page.locator('.image-draft')).toHaveCount(2);
+  await page.locator('#composer').fill('Voici les éléments pour la prochaine itération.');
+  await expect(page.locator('#send-button')).toBeEnabled();
+  await capture('desktop-attachments.png');
   assert.deepEqual(errors, []);
   await mkdir(join(root, 'test-results'), { recursive: true });
   await writeFile(

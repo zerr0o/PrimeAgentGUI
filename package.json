@@ -11,9 +11,11 @@
     "shortcut": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/install-shortcut.ps1",
     "setup:runtime": "node scripts/setup-runtime.mjs",
     "lan:enable": "node scripts/enable-lan.mjs",
+    "tailscale:enable": "node scripts/enable-tailscale.mjs",
     "test": "node --test test/*.test.mjs",
     "test:ui": "node scripts/test-ui.mjs",
     "test:mobile": "node scripts/test-mobile-control.mjs",
+    "test:attachments": "node scripts/test-attachments-ui.mjs",
     "check": "node --check server.mjs && node --check public/app.js",
     "format": "prettier --write --ignore-unknown server.mjs lib public scripts test index.html README.md package.json"
   },

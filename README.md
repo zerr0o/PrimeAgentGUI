@@ -12,6 +12,7 @@
 <p align="center">
   <a href="#démarrage-rapide">Démarrage rapide</a> ·
   <a href="#pendant-que-lagent-travaille">Messages en cours</a> ·
+  <a href="#images-et-pièces-jointes">Pièces jointes</a> ·
   <a href="#vos-modèles-à-portée-de-main">Modèles</a> ·
   <a href="docs/lan.md">Accès mobile</a> ·
   <a href="docs/development.md">Développement</a>
@@ -25,14 +26,15 @@ Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une 
 
 ## Ce que vous pouvez faire
 
-| Fonction                           | Dans le Studio                                                                                   |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------ |
-| **Organiser vos projets**          | Rechercher, renommer, épingler, archiver et reprendre vos sessions.                              |
-| **Suivre le travail**              | Lire les réponses en streaming et déplier une activité regroupant les outils et le raisonnement. |
-| **Intervenir en direct**           | Réorienter l’agent ou préparer un message à la suite, sans arrêter son travail.                  |
-| **Retrouver vos modèles**          | Rechercher par nom ou fournisseur, gérer vos favoris et choisir le niveau de réflexion.          |
-| **Travailler en parallèle**        | Lancer des exécutions dans plusieurs sessions et passer de l’une à l’autre.                      |
-| **Retrouver le Studio sur mobile** | Piloter le PC depuis un téléphone sur le réseau local, avec un code d’accès.                     |
+| Fonction                           | Dans le Studio                                                                                             |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Organiser vos projets**          | Rechercher, renommer, épingler, archiver et reprendre vos sessions.                                        |
+| **Suivre le travail**              | Lire les réponses en streaming et déplier une activité regroupant les outils et le raisonnement.           |
+| **Intervenir en direct**           | Réorienter l’agent ou préparer un message à la suite, sans arrêter son travail.                            |
+| **Joindre des images et fichiers** | Choisir une photo ou un document, les déposer dans la conversation ou les coller depuis le presse-papiers. |
+| **Retrouver vos modèles**          | Rechercher par nom ou fournisseur, gérer vos favoris et choisir le niveau de réflexion.                    |
+| **Travailler en parallèle**        | Lancer des exécutions dans plusieurs sessions et passer de l’une à l’autre.                                |
+| **Retrouver le Studio sur mobile** | Piloter le PC depuis un téléphone en Wi-Fi ou via Tailscale, avec un code d’accès.                         |
 
 Les exécutions continuent lorsque vous changez de session, rechargez la page ou fermez l’onglet. Le serveur doit rester en marche.
 
@@ -78,6 +80,23 @@ Vous pouvez modifier les messages en attente, les réordonner, les retirer ou le
 
 ![Messages pendant une exécution sur PC : file d’attente, réorientation, message à la suite et commande d’arrêt séparée.](docs/screenshots/desktop-live-messages.png)
 
+## Images et pièces jointes
+
+Deux boutons distincts accompagnent le champ de saisie : **Photo** ouvre le sélecteur d’images du téléphone ou du PC ; **Pièce jointe** accepte tout type de fichier. Vous pouvez aussi **glisser-déposer** les fichiers dans la conversation, ou **coller** les images et documents que le navigateur reçoit du presse-papiers. Le collage de texte habituel reste disponible.
+
+Les aperçus permettent de retirer une pièce avant l’envoi. Les pièces du brouillon restent dans ce navigateur après un rechargement. Vous pouvez les envoyer seules, avec une consigne, en **Réorienter** ou **À la suite**. Dans la conversation, cliquez sur une image pour l’agrandir ou sur un fichier pour le télécharger.
+
+![Pièces jointes sur PC : image et document dans la conversation, aperçus du brouillon et boutons Photo et Pièce jointe distincts.](docs/screenshots/desktop-attachments.png)
+
+Les images **PNG, JPEG, GIF et WebP** sont transmises au moteur avec leurs pixels ; choisissez un modèle compatible avec les images. Les autres fichiers sont conservés sur le PC et leur chemin est transmis à Prime Agent pour ses outils. Les autres formats d’image peuvent être joints comme fichiers.
+
+| Par message | Nombre maximal | Taille par pièce | Taille cumulée |
+| ----------- | -------------- | ---------------- | -------------- |
+| Images      | 4              | 4 Mo             | 8 Mo           |
+| Fichiers    | 8              | 10 Mo            | 20 Mo          |
+
+Vous pouvez combiner images et fichiers, dans la limite de **8 pièces jointes au total**. Ces fonctions sont aussi disponibles sur le téléphone, en Wi-Fi ou via Tailscale. Les fichiers envoyés sont conservés sur le PC ; les brouillons appartiennent au navigateur dans lequel vous les préparez.
+
 ## Vos modèles à portée de main
 
 Recherchez un modèle par son **nom, son fournisseur ou son identifiant**. Les favoris restent en tête du sélecteur et sont enregistrés dans votre navigateur. Le catalogue dépend des modèles disponibles dans votre installation Prime Agent.
@@ -114,7 +133,15 @@ Vous pouvez créer ou reprendre une session, envoyer des messages et suivre le t
 
 L’accès utilise HTTP sur le réseau local, avec authentification par code. Le Studio est une application personnelle locale : il n’est pas destiné à être exposé sur Internet.
 
-[Configurer l’accès mobile, le code et le mode lecture seule →](docs/lan.md)
+Pour accéder au Studio **hors du Wi-Fi, en 4G/5G**, connectez le PC et le téléphone à Tailscale, puis lancez sur le PC :
+
+```powershell
+npm run tailscale:enable
+```
+
+La commande affiche l’adresse Tailscale et conserve l’accès LAN ainsi que le code existant. Redémarrez le Studio après la fin des exécutions, puis ouvrez cette adresse sur le téléphone avec Tailscale activé.
+
+[Configurer le LAN, Tailscale, le code et le mode lecture seule →](docs/lan.md)
 
 ## Documentation
 
@@ -131,6 +158,7 @@ npm run check
 npm test
 npm run test:ui
 npm run test:mobile
+npm run test:attachments
 ```
 
 Les tests automatiques utilisent des données temporaires et un moteur simulé. Les tests de navigateur nécessitent Microsoft Edge ; les tests réels facultatifs avec Luna sont documentés séparément.

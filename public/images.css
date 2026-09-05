@@ -1,0 +1,184 @@
+.attach-image-button {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  display: grid;
+  place-items: center;
+  padding: 7px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+}
+.attach-image-button svg {
+  width: 21px;
+  height: 21px;
+}
+.attach-image-button:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+.attach-image-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.image-draft-tray {
+  display: flex;
+  gap: 8px;
+  padding: 6px 4px 8px;
+  margin: -4px;
+  flex-wrap: wrap;
+  max-height: 156px;
+  overflow-y: auto;
+}
+.image-draft-tray[hidden],
+.image-draft-note[hidden] {
+  display: none;
+}
+.image-draft {
+  width: 66px;
+  height: 66px;
+  position: relative;
+}
+.image-draft:has(.file-draft-name) {
+  width: 150px;
+}
+.image-draft img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+.image-remove {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 20px;
+  cursor: pointer;
+}
+.image-draft-note {
+  margin: 3px 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.file-draft-name {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 10px 20px 10px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.message-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text);
+  background: var(--surface);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.message-file::before {
+  content: '↧';
+  color: var(--muted);
+}
+.image-drop-target {
+  outline: 2px solid var(--accent, #b7b2e7);
+  outline-offset: 2px;
+}
+.message-images {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 10px 0;
+}
+.message-image {
+  max-width: min(240px, 100%);
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: zoom-in;
+  background: var(--surface);
+}
+.message-image img {
+  display: block;
+  max-width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+}
+.image-viewer {
+  max-width: 94vw;
+  max-height: 94dvh;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 46px 12px 12px;
+  background: var(--surface);
+  color: var(--text);
+}
+.image-viewer::backdrop {
+  background: #000b;
+}
+.image-viewer > img {
+  display: block;
+  max-width: 88vw;
+  max-height: 80dvh;
+  object-fit: contain;
+}
+.image-viewer-close {
+  position: absolute;
+  right: 8px;
+  top: 6px;
+  border: 0;
+  border-radius: 6px;
+  padding: 8px 12px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+@media (max-width: 760px) {
+  .attach-image-button {
+    width: 40px;
+    height: 44px;
+    flex-basis: 40px;
+  }
+  .image-remove {
+    width: 32px;
+    height: 32px;
+  }
+}
+.composer-input-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+#composer-form .composer-input-row textarea {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+}
+.attachment-controls {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 2px;
+}

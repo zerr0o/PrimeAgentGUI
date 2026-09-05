@@ -2,6 +2,8 @@ import { marked } from '/vendor/marked.js';
 import DOMPurify from '/vendor/purify.js';
 import { createConversationRenderer } from './conversation.js';
 import { createLiveMessages } from './live-messages.js';
+import { createImageComposer, renderImages } from './images.js';
+let imageComposer;
 let liveMessagesUI;
 const $ = (id) => document.getElementById(id);
 const icons = {
@@ -448,6 +450,7 @@ function resizeComposer() {
   updateComposer();
 }
 function updateComposer() {
+  imageComposer?.update();
   const running = isRunning(activeRun());
   $('send-button').hidden = running;
   $('stop-button').hidden = !running;
@@ -455,7 +458,8 @@ function updateComposer() {
   $('send-button').disabled =
     state.readOnly ||
     state.projectOverview ||
-    !$('composer').value.trim() ||
+    (!$('composer').value.trim() && !imageComposer?.hasImages()) ||
+    imageComposer?.blocked() ||
     !state.projectCwd ||
     state.sending ||
     state.loading ||
@@ -937,10 +941,7 @@ function renderMessage(m, index) {
         el('span', '', m.stopReason === 'aborted' ? 'Réponse interrompue.' : 'Aucun contenu textuel.'),
       );
   }
-  if (m.attachments?.length)
-    body.append(
-      el('div', 'attachment-note', `${m.attachments.length} pièce(s) jointe(s) dans la session native.`),
-    );
+  if (m.attachments?.length) body.append(renderImages(m.attachments));
   n.append(body);
   if (m.text) {
     const actions = el('div', 'message-actions'),
@@ -1344,7 +1345,12 @@ async function sendMessage(event) {
   event?.preventDefault();
   if (isRunning(activeRun())) return liveMessagesUI?.submitDraft();
   if (state.readOnly || $('send-button').disabled || state.sending) return;
-  const message = $('composer').value.trim(),
+  const imageDraft = imageComposer?.snapshot();
+  const images = imageDraft?.images || [];
+  const files = imageDraft?.files || [];
+  const originalDraft = $('composer').value;
+  const message =
+      originalDraft.trim() || (images.length || files.length ? 'Analyse les pièces jointes.' : ''),
     cwd = state.projectCwd,
     sessionId = state.sessionId,
     base = [...activeMessages()],
@@ -1357,6 +1363,8 @@ async function sendMessage(event) {
       body: {
         cwd,
         message,
+        ...(images.length ? { images } : {}),
+        ...(files.length ? { files } : {}),
         ...(sessionId ? { sessionId } : {}),
         ...($('model-select').value ? { model: $('model-select').value } : {}),
         ...($('thinking-select').value ? { thinking: $('thinking-select').value } : {}),
@@ -1365,14 +1373,24 @@ async function sendMessage(event) {
     Object.assign(run, {
       initialized: true,
       base,
-      messages: [{ id: `${run.id}-user`, role: 'user', text: message, tools: [], timestamp: run.startedAt }],
+      messages: [
+        {
+          id: `${run.id}-user`,
+          role: 'user',
+          text: message,
+          attachments: [...images, ...(run.attachments || [])],
+          tools: [],
+          timestamp: run.startedAt,
+        },
+      ],
       lastSeq: 0,
       currentMessage: null,
     });
     state.runs.set(run.id, run);
+    if (imageDraft) imageComposer.accepted(imageDraft);
     if (run.sessionId) upsertSession(run.sessionId, run);
     if (token === state.requestId) {
-      $('composer').value = '';
+      if ($('composer').value === originalDraft) $('composer').value = '';
       saveDraft();
       state.viewRunId = run.id;
       state.sessionId = run.sessionId || sessionId;
@@ -1695,6 +1713,7 @@ function populateModels(catalog) {
 async function bootstrap() {
   try {
     const data = await api('/api/bootstrap');
+    state.attachmentsAvailable = data.preferences?.attachments === true;
     state.readOnly = data.preferences?.readOnly === true;
     state.remote = data.preferences?.remote === true || state.readOnly;
     applyAccessMode();
@@ -1883,8 +1902,20 @@ async function exportSession(id = state.sessionId) {
 }
 
 hydrateIcons();
+imageComposer = createImageComposer({
+  getContext: () => ({
+    key: draftKey(),
+    available: state.attachmentsAvailable === true,
+    disabled: state.readOnly || state.projectOverview || state.sending || !state.projectCwd,
+    input: state.models.find((model) => model.id === ($('model-select').value || state.modelCatalogDefault))
+      ?.input,
+  }),
+  onChange: () => updateComposer(),
+  onError: (error) => toast(error.message || String(error), true),
+});
 liveMessagesUI = createLiveMessages({
   api,
+  imageComposer,
   getContext: () => {
     const run = activeRun();
     return {

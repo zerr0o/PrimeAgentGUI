@@ -3,11 +3,14 @@
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
-import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createAgentRuntime, discoverCli } from '../lib/agent.mjs';
 import { createStore } from '../lib/store.mjs';
+import { createFileStore, appendFileMessage, splitFileMessage } from '../lib/files.mjs';
+import { imageMessageText } from '../lib/images.mjs';
 
 if (!process.argv.includes('--run-native')) {
   console.log('Test natif isolé : node scripts/smoke-live-messages.mjs --run-native');
@@ -18,7 +21,10 @@ const cli = discoverCli();
 assert.ok(cli?.packageDir, 'Prime Agent doit être installé pour ce test natif.');
 const root = fileURLToPath(new URL('..', import.meta.url));
 const smokeRoot = resolve(root, '.local', 'live-message-smoke');
-const directory = join(smokeRoot, `${Date.now()}-${randomUUID().slice(0, 8)}`);
+const withAttachments = process.argv.includes('--attachments');
+const directory = withAttachments
+  ? await mkdtemp(join(tmpdir(), 'pimg-'))
+  : join(smokeRoot, `${Date.now()}-${randomUUID().slice(0, 8)}`);
 const cwd = join(directory, 'project');
 const agentDir = join(directory, 'agent');
 const sessionDir = join(agentDir, 'sessions');
@@ -27,6 +33,21 @@ const gateRelease = join(cwd, 'release-tool.txt');
 const gateFinished = join(cwd, 'tool-finished.txt');
 const reportPath = join(directory, 'report.json');
 const report = { at: new Date().toISOString(), passed: false, directory, checks: [], requests: [] };
+const images = withAttachments
+  ? [
+      {
+        type: 'image',
+        mimeType: 'image/png',
+        data: (await readFile(join(root, 'assets', 'prime-agent.png'))).toString('base64'),
+      },
+    ]
+  : [];
+const fileStore = createFileStore(join(directory, 'uploads'));
+const uploaded = withAttachments
+  ? await fileStore.save([
+      { name: 'essai avec espaces.txt', data: Buffer.from('NATIVE_FILE_CONTENT').toString('base64') },
+    ])
+  : [];
 const original = 'BRIDGE_ROOT';
 const steeringOriginal = 'BRIDGE_STEER_ORIGINAL';
 const steeringEdited = 'BRIDGE_STEER_EDITED';
@@ -97,6 +118,9 @@ await Promise.all([mkdir(cwd, { recursive: true }), mkdir(sessionDir, { recursiv
 const gateCode = [
   'from pathlib import Path',
   'import time',
+  ...(withAttachments
+    ? [`assert Path(${JSON.stringify(uploaded[0].path)}).read_text(encoding='utf8') == 'NATIVE_FILE_CONTENT'`]
+    : []),
   `Path(${JSON.stringify(gateStarted)}).write_text('started', encoding='utf8')`,
   'deadline = time.monotonic() + 90',
   `while not Path(${JSON.stringify(gateRelease)}).exists():`,
@@ -119,10 +143,18 @@ const provider = createServer(async (request, response) => {
     assert.equal(input.model, 'queue-smoke');
     const userMessages = input.messages
       .filter((message) => message.role === 'user')
-      .map((m) => textOf(m.content));
+      .map((m) => splitFileMessage(imageMessageText(textOf(m.content))).text);
     const latest = userMessages.at(-1);
     const index = report.requests.length;
     report.requests.push({ index, latestUserMessage: latest });
+    if (withAttachments) {
+      const parts = input.messages.filter((message) => message.role === 'user').at(-1).content;
+      assert.ok(
+        Array.isArray(parts) &&
+          parts.some((part) => part.type === 'image_url' && part.image_url?.url?.startsWith('data:image/')),
+        'Le fournisseur reçoit les pixels de l’image',
+      );
+    }
     response.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
     const frame = (delta, finishReason = null) =>
       response.write(
@@ -182,7 +214,7 @@ await Promise.all([
                 id: 'queue-smoke',
                 name: 'Queue fixture',
                 reasoning: false,
-                input: ['text'],
+                input: ['text', 'image'],
                 contextWindow: 131072,
                 maxTokens: 4096,
               },
@@ -229,7 +261,8 @@ try {
       cwd,
       model: 'studio-fixture/queue-smoke',
       thinking: 'off',
-      message: original,
+      message: appendFileMessage(original, uploaded),
+      ...(images.length ? { images } : {}),
       onEvent: (event) => events.push(event),
     }),
     60000,
@@ -260,11 +293,26 @@ try {
   const initial = await client.getSnapshot(handle.sessionId, cwd);
   assert.equal(initial.state.isStreaming, true);
   assert.equal(
-    (await client.send(handle.sessionId, cwd, { message: steeringOriginal, mode: 'steer' })).accepted,
+    (
+      await client.send(handle.sessionId, cwd, {
+        message: steeringOriginal,
+        mode: 'steer',
+        ...(images.length ? { images } : {}),
+      })
+    ).accepted,
     true,
   );
   for (const message of [followOriginal, followDeleted, followLast]) {
-    assert.equal((await client.send(handle.sessionId, cwd, { message, mode: 'follow_up' })).accepted, true);
+    assert.equal(
+      (
+        await client.send(handle.sessionId, cwd, {
+          message,
+          mode: 'follow_up',
+          ...(images.length ? { images } : {}),
+        })
+      ).accepted,
+      true,
+    );
   }
   let snapshot = await client.getSnapshot(handle.sessionId, cwd);
   assert.deepEqual(
@@ -315,6 +363,17 @@ try {
   const history = await store.history(handle.sessionId);
   const delivered = history.messages.filter((message) => message.role === 'user').map((m) => m.text);
   assert.deepEqual(delivered, [original, steeringEdited, followLast, followEdited]);
+  if (withAttachments) {
+    const users = history.messages.filter((message) => message.role === 'user');
+    assert.deepEqual(
+      users.map((message) => message.attachments.filter((item) => item.type === 'image').length),
+      [1, 1, 1, 1],
+    );
+    assert.equal(users[0].attachments.find((item) => item.type === 'file')?.name, uploaded[0].name);
+    report.checks.push(
+      'Pixels reçus par le fournisseur, fichiers lus par Python, images et fichiers conservés dans l’historique après édition de la file.',
+    );
+  }
   assert.deepEqual(
     report.requests.map((request) => request.latestUserMessage),
     delivered,
