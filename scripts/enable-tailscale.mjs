@@ -30,7 +30,7 @@ export async function enableTailscale({ root = APP_ROOT, interfaces = networkInt
   }
   if (!Number.isInteger(config.port) || config.port < 1024 || config.port > 65535)
     throw new Error('Port distant invalide. La configuration a été conservée.');
-  config.tailscale = { enabled: true, host };
+  config.tailscale = { ...config.tailscale, enabled: true, host };
   await mkdir(directory, { recursive: true });
   const temporary = `${file}.${randomBytes(6).toString('hex')}.tmp`;
   await writeFile(temporary, JSON.stringify(config, null, 2) + '\n', { mode: 0o600 });

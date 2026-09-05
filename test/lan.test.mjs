@@ -93,7 +93,7 @@ function http(port, path, { method = 'GET', headers = {}, body } = {}) {
   });
 }
 
-async function fixture(t, permissions = {}) {
+async function fixture(t, permissions = {}, extraOptions = {}) {
   const root = await mkdtemp(join(tmpdir(), 'prime-studio-lan-'));
   const cwd = join(root, 'project');
   const sessionDir = join(root, 'sessions');
@@ -113,7 +113,14 @@ async function fixture(t, permissions = {}) {
       .join('\n') + '\n',
   );
   const runtime = fakeRuntime();
-  const app = createApp({ sessionDir, dataDir: join(root, 'data'), initialCwd: cwd, runtime });
+  const app = createApp({
+    agentHome: join(root, 'agent'),
+    sessionDir,
+    dataDir: join(root, 'data'),
+    initialCwd: cwd,
+    runtime,
+    ...extraOptions,
+  });
   await new Promise((done) => app.server.listen(0, '127.0.0.1', done));
   const upstreamPort = app.server.address().port;
   const salt = 'e54d6dd09bb15f7c347b38b671472aa9';
@@ -143,6 +150,117 @@ async function fixture(t, permissions = {}) {
   }
   return { api, local, login, authenticate, runtime, app, cwd, port, config };
 }
+
+test('logout revokes this browser and its SSE, keeps another browser connected, and leaves the agent running', async (t) => {
+  for (const readOnly of [true, false]) {
+    const f = await fixture(t, { readOnly });
+    const cookie = await f.authenticate(),
+      otherCookie = await f.authenticate();
+    const started = await f.local('/api/runs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cwd: f.cwd, message: 'Running fixture' }),
+    });
+    const stream = await new Promise((done, reject) => {
+      const req = request(
+        {
+          hostname: '127.0.0.1',
+          port: f.port,
+          path: `/api/runs/${started.json.id}/events`,
+          headers: { Cookie: cookie },
+        },
+        (response) => {
+          response.resume();
+          response.on('error', () => {});
+          done(response);
+        },
+      );
+      req.on('error', reject);
+      req.end();
+    });
+    let streamClosed = false;
+    stream.on('close', () => {
+      streamClosed = true;
+    });
+    const loggedOut = await f.api('/lan/logout', { method: 'POST', headers: { Cookie: cookie } });
+    assert.equal(loggedOut.status, 200);
+    assert.match(loggedOut.headers['set-cookie'][0], /Max-Age=0/);
+    await until(() => streamClosed);
+    assert.equal((await f.api('/api/bootstrap', { headers: { Cookie: cookie } })).status, 401);
+    assert.equal((await f.api('/api/bootstrap', { headers: { Cookie: otherCookie } })).status, 200);
+    assert.equal(f.runtime.controls[0].cancelCalls, 0);
+    assert.equal((await f.local('/api/runs')).json.runs.length, 1);
+    assert.equal((await f.api('/lan/logout', { method: 'POST' })).status, 401);
+    f.runtime.controls[0].finish();
+  }
+});
+
+test('MCP management passes only authenticated control routes and stays unavailable to read-only clients', async (t) => {
+  const calls = [];
+  const methods = [
+    'list',
+    'upsert',
+    'toggle',
+    'remove',
+    'probe',
+    'login',
+    'disconnect',
+    'complete',
+    'job',
+    'cancel',
+  ];
+  const mcp = Object.fromEntries(
+    methods.map((name) => [
+      name,
+      (body) => {
+        calls.push({ name, body });
+        return { ok: true };
+      },
+    ]),
+  );
+  const f = await fixture(t, { readOnly: false }, { mcp });
+  const headers = { Cookie: await f.authenticate(), 'Content-Type': 'application/json' };
+  const id = '12345678-1234-1234-1234-123456789012';
+  const routes = [
+    ['GET', '/api/mcp'],
+    ['POST', '/api/mcp'],
+    ['PATCH', '/api/mcp'],
+    ['DELETE', '/api/mcp'],
+    ['POST', '/api/mcp/test'],
+    ['POST', '/api/mcp/login'],
+    ['POST', '/api/mcp/disconnect'],
+    ['POST', '/api/mcp/login/complete'],
+    ['GET', `/api/mcp/login/${id}`],
+    ['DELETE', `/api/mcp/login/${id}`],
+  ];
+  for (const [method, path] of routes) {
+    const body = method === 'GET' ? undefined : JSON.stringify({ name: 'fixture', revision: 'r1' });
+    assert.equal(
+      (await f.api(path, { method, headers: { 'Content-Type': 'application/json' }, body })).status,
+      401,
+    );
+    assert.equal((await f.api(path, { method, headers, body })).status, 200);
+  }
+  assert.deepEqual(
+    calls.map((c) => c.name),
+    methods,
+  );
+  assert.equal(
+    (
+      await f.api('/api/mcp', {
+        method: 'POST',
+        headers: { ...headers, Origin: 'https://attacker.example' },
+        body: '{}',
+      })
+    ).status,
+    403,
+  );
+  const ro = await fixture(t, { readOnly: true }, { mcp });
+  const readHeaders = { Cookie: await ro.authenticate(), 'Content-Type': 'application/json' };
+  assert.equal((await ro.api('/api/mcp', { headers: readHeaders })).status, 404);
+  assert.equal((await ro.api('/api/mcp', { method: 'POST', headers: readHeaders, body: '{}' })).status, 405);
+  assert.equal(calls.length, 10);
+});
 
 test('LAN address selection accepts only valid RFC1918 IPv4 addresses', () => {
   for (const ip of ['10.0.0.1', '10.255.255.254', '172.16.0.1', '172.31.255.254', '192.168.1.25'])
@@ -289,6 +407,44 @@ test('a phone can open the login page from an external chat link without allowin
   assert.equal((await api('/', { headers })).status, 200);
   assert.equal((await api('/api/bootstrap', { headers })).status, 403);
   assert.equal((await api('/', { headers: { ...headers, 'Sec-Fetch-Dest': 'iframe' } })).status, 403);
+});
+
+test('service-worker navigation can reload the landing page without exempting APIs or commands', async (t) => {
+  const { api, authenticate, login } = await fixture(t);
+  const headers = {
+    'Sec-Fetch-Site': 'cross-site',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Dest': 'empty',
+  };
+  for (const path of ['/', '/index.html', '/?installed=true']) {
+    const landing = await api(path, { headers });
+    assert.equal(landing.status, 200);
+    assert.match(landing.text, /Code d’accès/);
+  }
+  const cookie = await authenticate();
+  for (const path of ['/api/bootstrap', '/api/history?id=private', '/api/runs', '/public/app.js'])
+    assert.equal((await api(path, { headers: { ...headers, Cookie: cookie } })).status, 403);
+  for (const invalid of [
+    { Host: 'attacker.example' },
+    { Origin: 'https://attacker.example' },
+    { Origin: 'null' },
+    { 'Sec-Fetch-Mode': 'cors' },
+    { 'Sec-Fetch-Mode': 'no-cors' },
+    { 'Sec-Fetch-Dest': 'iframe' },
+    { 'Sec-Fetch-Dest': 'image' },
+  ])
+    assert.equal((await api('/', { headers: { ...headers, ...invalid } })).status, 403);
+  assert.equal((await login(ACCESS_CODE, headers)).status, 403);
+  assert.equal(
+    (
+      await api('/api/runs', {
+        method: 'POST',
+        headers: { ...headers, Cookie: cookie, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Rejected' }),
+      })
+    ).status,
+    403,
+  );
 });
 
 test('LAN SSE streams promptly, resumes with Last-Event-ID, and disconnect preserves execution', async (t) => {

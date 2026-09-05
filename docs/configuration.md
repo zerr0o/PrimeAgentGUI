@@ -14,6 +14,8 @@ Avant une écriture, le Studio conserve une copie `models.json.prime-studio.bak`
 
 ## Données et configuration
 
+Le [gestionnaire MCP](mcp.md), distinct du configurateur de modèles, est également disponible à distance en contrôle complet. Il modifie le champ natif `mcpServers` de `settings.json` et confie les identifiants OAuth au stockage `auth.json` de Prime Agent. Les écritures des valeurs par défaut des modèles et des MCP utilisent le même verrou natif pour préserver les changements simultanés.
+
 | Emplacement                                                | Contenu                                                                                                                                                       |
 | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `~/.prime/agent/sessions/`                                 | Conversations natives de Prime Agent                                                                                                                          |
@@ -23,6 +25,8 @@ Avant une écriture, le Studio conserve une copie `models.json.prime-studio.bak`
 | `~/.prime/agent/sessions/.studio-images/`                  | Images transmises au CLI, également enregistrées dans les messages natifs                                                                                     |
 | IndexedDB du navigateur                                    | Pièces jointes des brouillons, séparées par session ou nouveau projet                                                                                         |
 | Stockage local du navigateur                               | Brouillons, thème et préférences de saisie                                                                                                                    |
+| Cache Storage du navigateur                                | Icônes et écran de reconnexion de la PWA ; aucune conversation ni pièce jointe envoyée                                                                        |
+| `.local/lan-access.json`                                   | Code d’accès haché et passerelles LAN, Tailscale et HTTPS PWA                                                                                                 |
 | `.local/logs/server.log`                                   | Journal du serveur lancé en arrière-plan                                                                                                                      |
 | `.local/logs/launcher.log`                                 | Diagnostics du lanceur                                                                                                                                        |
 

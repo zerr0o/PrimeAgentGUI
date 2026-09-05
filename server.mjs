@@ -9,6 +9,8 @@ import { createAgentRuntime } from './lib/agent.mjs';
 import { createLanGateway } from './lib/lan.mjs';
 import { createModelConfigStore } from './lib/model-config.mjs';
 import { createModelDefaultsStore } from './lib/model-defaults.mjs';
+import { openDirectory } from './lib/open-directory.mjs';
+import { createMcpService } from './lib/mcp-service.mjs';
 import { createLiveMessages, routeLiveMessages } from './lib/live-messages.mjs';
 import { createLiveSessionClient } from './lib/live-session-client.mjs';
 import { validateImages, imageBodyLimit } from './lib/images.mjs';
@@ -24,6 +26,7 @@ const MIME = {
   '.png': 'image/png',
   '.ico': 'image/x-icon',
   '.woff2': 'font/woff2',
+  '.webmanifest': 'application/manifest+json',
 };
 const publicRun = ({ id, sessionId, cwd, status, startedAt, endedAt, error, model, thinking, prompt }) => ({
   id,
@@ -77,6 +80,7 @@ export function createApp(options = {}) {
     options.runtime || createAgentRuntime({ agentHome, sessionDir, cliPath: process.env.PRIME_AGENT_CLI });
   const modelConfig = options.modelConfig || createModelConfigStore({ agentHome });
   const modelDefaults = options.modelDefaults || createModelDefaultsStore({ agentHome });
+  const mcp = options.mcp || createMcpService({ agentHome });
   const runs = new Map(),
     sessionLocks = new Set();
   const liveMessages = createLiveMessages({
@@ -352,6 +356,24 @@ export function createApp(options = {}) {
         return;
       }
       if (method === 'GET' && path === '/api/model-config') return json(res, 200, await modelConfig.list());
+      if (path === '/api/mcp' && method === 'GET') return json(res, 200, await mcp.list());
+      if (path === '/api/mcp' && method === 'POST')
+        return json(res, 200, await mcp.upsert(await readBody(req)));
+      if (path === '/api/mcp' && method === 'PATCH')
+        return json(res, 200, await mcp.toggle(await readBody(req)));
+      if (path === '/api/mcp' && method === 'DELETE')
+        return json(res, 200, await mcp.remove(await readBody(req)));
+      if (path === '/api/mcp/test' && method === 'POST')
+        return json(res, 200, await mcp.probe(await readBody(req)));
+      if (path === '/api/mcp/login' && method === 'POST')
+        return json(res, 200, await mcp.login(await readBody(req)));
+      if (path === '/api/mcp/disconnect' && method === 'POST')
+        return json(res, 200, await mcp.disconnect(await readBody(req)));
+      if (path === '/api/mcp/login/complete' && method === 'POST')
+        return json(res, 200, await mcp.complete(await readBody(req)));
+      const mcpJob = path.match(/^\/api\/mcp\/login\/([a-f0-9-]{36})$/);
+      if (mcpJob && method === 'GET') return json(res, 200, mcp.job(mcpJob[1]));
+      if (mcpJob && method === 'DELETE') return json(res, 200, mcp.cancel(mcpJob[1]));
       if (method === 'GET' && path === '/api/model-defaults')
         return json(res, 200, await modelDefaults.get());
       if (method === 'POST' && path === '/api/model-defaults')
@@ -390,6 +412,16 @@ export function createApp(options = {}) {
           method === 'POST' ? 201 : 200,
           await store.project(await readBody(req), method === 'PATCH'),
         );
+      if (method === 'POST' && path === '/api/projects/open') {
+        const project = await store.findProject((await readBody(req)).cwd);
+        return json(res, 200, await (options.openDirectory || openDirectory)(project.cwd));
+      }
+      if (method === 'DELETE' && path === '/api/projects') {
+        const project = await store.findProject((await readBody(req)).cwd);
+        if (activeRuns().some((run) => cwdKey(run.cwd) === cwdKey(project.cwd)))
+          throw new HttpError(409, 'Un agent travaille dans ce projet. Attendez sa fin avant de le retirer.');
+        return json(res, 200, await store.removeProject(project.cwd));
+      }
       if (method === 'PATCH' && path === '/api/sessions')
         return json(res, 200, await store.patchSession(await readBody(req)));
       if (method === 'GET' && path === '/api/runs') return json(res, 200, { runs: activeRuns() });
@@ -415,8 +447,15 @@ export function createApp(options = {}) {
           file = join(ROOT, 'node_modules', 'marked', 'lib', 'marked.esm.js');
         else if (path === '/vendor/purify.js')
           file = join(ROOT, 'node_modules', 'dompurify', 'dist', 'purify.es.mjs');
+        else if (path === '/favicon.ico') file = join(ROOT, 'assets', 'prime-agent.ico');
+        else if (path === '/manifest.webmanifest') file = join(ROOT, 'public', 'manifest.webmanifest');
+        else if (path === '/service-worker.js') file = join(ROOT, 'public', 'service-worker.js');
         else if (path.startsWith('/public/')) {
           const base = resolve(ROOT, 'public');
+          file = resolve(ROOT, '.' + decodeURIComponent(path));
+          if (!file.startsWith(base + sep)) throw new HttpError(404, 'Fichier introuvable.');
+        } else if (path.startsWith('/assets/')) {
+          const base = resolve(ROOT, 'assets');
           file = resolve(ROOT, '.' + decodeURIComponent(path));
           if (!file.startsWith(base + sep)) throw new HttpError(404, 'Fichier introuvable.');
         }
@@ -447,6 +486,7 @@ export function createApp(options = {}) {
   server.requestTimeout = 30000;
   server.headersTimeout = 15000;
   async function close() {
+    mcp.close?.();
     closing = true;
     clearInterval(cleanup);
     await runtime.close();
@@ -471,16 +511,36 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.m
       if (!Number.isInteger(config.port) || config.port < 1024 || config.port > 65535 || config.port === port)
         throw new Error('Port mobile invalide.');
       const endpoints = [
-        ...(config.enabled === true ? [{ host: config.host, name: 'LAN' }] : []),
-        ...(config.tailscale?.enabled === true ? [{ host: config.tailscale.host, name: 'Tailscale' }] : []),
+        ...(config.enabled === true ? [{ host: config.host, name: 'LAN', listenPort: config.port }] : []),
+        ...(config.tailscale?.enabled === true
+          ? [{ host: config.tailscale.host, name: 'Tailscale', listenPort: config.port }]
+          : []),
+        ...(config.tailscale?.https?.enabled === true
+          ? [
+              {
+                host: '127.0.0.1',
+                name: 'PWA HTTPS',
+                listenPort: config.tailscale.https.port,
+                publicOrigin: config.tailscale.https.origin,
+              },
+            ]
+          : []),
       ];
-      for (const { host, name } of endpoints) {
+      for (const { host, name, listenPort, publicOrigin } of endpoints) {
         try {
-          const gateway = createLanGateway({ host, upstreamPort: port, config });
+          if (
+            !Number.isInteger(listenPort) ||
+            listenPort < 1024 ||
+            listenPort > 65535 ||
+            listenPort === port ||
+            (publicOrigin && listenPort === config.port)
+          )
+            throw new Error('Port de passerelle invalide.');
+          const gateway = createLanGateway({ host, upstreamPort: port, config, publicOrigin });
           remoteServers.push(gateway);
           gateway.on('error', (error) => console.error(`Accès ${name} indisponible : ${error.message}`));
-          gateway.listen(config.port, host, () =>
-            console.log(`Accès ${name} — http://${host}:${config.port}`),
+          gateway.listen(listenPort, host, () =>
+            console.log(`Accès ${name} — ${publicOrigin || `http://${host}:${listenPort}`}`),
           );
         } catch (error) {
           console.error(`Accès ${name} indisponible : ${error.message}`);

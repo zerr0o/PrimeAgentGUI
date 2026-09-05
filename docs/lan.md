@@ -34,11 +34,11 @@ npm run tailscale:enable
 
 La commande détecte l’interface Tailscale et affiche l’adresse `http://100.x.y.z:3089`. Elle conserve l’accès LAN, le port, le code existant et les permissions. Si aucun accès distant n’était configuré, elle crée un code à huit chiffres et l’affiche une seule fois, sans activer le LAN.
 
-Attendez la fin des exécutions, puis redémarrez le Studio. Depuis le téléphone en 4G/5G, activez Tailscale et ouvrez l’adresse affichée. Saisissez le code habituel : les projets, sessions, messages en direct et commandes sont les mêmes qu’en Wi-Fi. Il n’est pas nécessaire d’activer Tailscale Serve, Funnel ou une redirection de port sur le routeur.
+Attendez la fin des exécutions, puis redémarrez le Studio. Depuis le téléphone en 4G/5G, activez Tailscale et ouvrez l’adresse affichée. Saisissez le code habituel : les projets, sessions, messages en direct et commandes sont les mêmes qu’en Wi-Fi. Cet accès HTTP fonctionne sans Tailscale Serve ; [l’installation PWA](pwa.md) utilise Serve pour fournir HTTPS.
 
 Le Studio ouvre une seconde écoute sur l’adresse IPv4 de l’interface Tailscale, en plus de celle du LAN. Cette passerelle n’accepte que les pairs de la plage Tailscale `100.64.0.0/10` et les connexions locales ; l’authentification du Studio reste obligatoire. Le trafic entre appareils est chiffré par Tailscale. Le configurateur de modèles et les routes réservées au PC restent inaccessibles à distance.
 
-La configuration est conservée dans `tailscale: { enabled: true, host: "100.x.y.z" }` au sein de `.local/lan-access.json`. Pour désactiver uniquement Tailscale, passez `tailscale.enabled` à `false` et redémarrez. Le champ `enabled` principal continue de contrôler uniquement le LAN. Les deux accès partagent le code et le mode `readOnly`, mais demandent chacun une connexion dans le navigateur.
+La configuration est conservée dans `tailscale: { enabled: true, host: "100.x.y.z" }` au sein de `.local/lan-access.json`. Pour désactiver l’accès HTTP Tailscale, passez `tailscale.enabled` à `false` et redémarrez. Le champ `enabled` principal contrôle uniquement le LAN ; l’éventuelle passerelle PWA utilise `tailscale.https.enabled`. Ces accès partagent le code et le mode `readOnly`, mais demandent chacun une connexion dans le navigateur.
 
 Connectez Tailscale avant de lancer le Studio. Si son adresse change, relancez `tailscale:enable` puis redémarrez le Studio après la fin des exécutions. Relancer `lan:enable` conserve l’adresse Tailscale mais renouvelle le code partagé.
 

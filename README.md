@@ -14,7 +14,9 @@
   <a href="#pendant-que-lagent-travaille">Messages en cours</a> ·
   <a href="#images-et-pièces-jointes">Pièces jointes</a> ·
   <a href="#vos-modèles-à-portée-de-main">Modèles</a> ·
+  <a href="docs/mcp.md">Connexions MCP</a> ·
   <a href="docs/lan.md">Accès mobile</a> ·
+  <a href="docs/pwa.md">Installer l’app</a> ·
   <a href="docs/development.md">Développement</a>
 </p>
 
@@ -26,17 +28,33 @@ Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une 
 
 ## Ce que vous pouvez faire
 
-| Fonction                           | Dans le Studio                                                                                             |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| **Organiser vos projets**          | Rechercher, renommer, épingler, archiver et reprendre vos sessions.                                        |
-| **Suivre le travail**              | Lire les réponses en streaming et déplier une activité regroupant les outils et le raisonnement.           |
-| **Intervenir en direct**           | Réorienter l’agent ou préparer un message à la suite, sans arrêter son travail.                            |
-| **Joindre des images et fichiers** | Choisir une photo ou un document, les déposer dans la conversation ou les coller depuis le presse-papiers. |
-| **Retrouver vos modèles**          | Rechercher par nom ou fournisseur, gérer vos favoris et choisir le niveau de réflexion.                    |
-| **Travailler en parallèle**        | Lancer des exécutions dans plusieurs sessions et passer de l’une à l’autre.                                |
-| **Retrouver le Studio sur mobile** | Piloter le PC depuis un téléphone en Wi-Fi ou via Tailscale, avec un code d’accès.                         |
+| Fonction                           | Dans le Studio                                                                                                                    |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| **Organiser vos projets**          | Ouvrir leurs dossiers sur le PC, les épingler ou les retirer du Studio avec confirmation ; organiser et reprendre leurs sessions. |
+| **Suivre le travail**              | Lire les réponses en streaming et déplier une activité regroupant les outils et le raisonnement.                                  |
+| **Intervenir en direct**           | Réorienter l’agent ou préparer un message à la suite, sans arrêter son travail.                                                   |
+| **Joindre des images et fichiers** | Choisir une photo ou un document, les déposer dans la conversation ou les coller depuis le presse-papiers.                        |
+| **Retrouver vos modèles**          | Rechercher par nom ou fournisseur, gérer vos favoris et choisir le niveau de réflexion.                                           |
+| **Connecter des outils MCP**       | Gérer les serveurs HTTP et stdio, OAuth, les variables, les outils autorisés et les tests de connexion.                           |
+| **Travailler en parallèle**        | Lancer des exécutions dans plusieurs sessions et passer de l’une à l’autre.                                                       |
+| **Retrouver le Studio sur mobile** | Piloter le PC depuis un téléphone en Wi-Fi ou via Tailscale, avec un code d’accès.                                                |
+| **Installer le Studio**            | Ajouter une icône sur l’écran d’accueil et ouvrir le Studio dans sa propre fenêtre, via HTTPS.                                    |
 
 Les exécutions continuent lorsque vous changez de session, rechargez la page ou fermez l’onglet. Le serveur doit rester en marche.
+
+Le menu **⋯** de chaque projet fonctionne aussi sur mobile ; le clic droit est disponible sur PC. Retirer un projet masque son entrée dans le Studio et conserve son dossier et ses sessions. Vous pouvez retrouver ceux-ci en ajoutant à nouveau le dossier. Un projet avec une exécution active ne peut pas être retiré.
+
+Dans le Studio distant, **Préférences → Se déconnecter** ferme l’accès de ce navigateur et revient au code d’accès. Les agents et les autres appareils connectés continuent de fonctionner.
+
+## Vos outils et services MCP
+
+**Préférences → Connexions MCP → Gérer les MCP** permet d’ajouter, modifier, tester, activer ou supprimer des connexions natives de Prime Agent. Les serveurs **HTTP** et **stdio** sont pris en charge, avec les connexions **OAuth**, les variables d’environnement et les restrictions d’outils. Linear et Notion sont proposés comme intégrations natives.
+
+Les tests découvrent les outils sans en exécuter. Les nouveaux réglages s’appliquent aux nouvelles sessions ; les sessions déjà en cours continuent avec leur configuration actuelle. Consultez le [guide MCP](docs/mcp.md), notamment pour effectuer une connexion OAuth depuis un téléphone.
+
+<p align="center">
+  <img src="docs/screenshots/desktop-mcp.png" width="680" alt="Gestionnaire MCP du Studio sur PC : intégrations natives et serveur HTTP de démonstration.">
+</p>
 
 ## Démarrage rapide
 
@@ -143,12 +161,27 @@ La commande affiche l’adresse Tailscale et conserve l’accès LAN ainsi que l
 
 [Configurer le LAN, Tailscale, le code et le mode lecture seule →](docs/lan.md)
 
+## Installer le Studio comme une application
+
+Le Studio est une **PWA installable**. Avec Tailscale connecté sur le PC et le téléphone, préparez son adresse HTTPS privée :
+
+```powershell
+npm run pwa:enable
+```
+
+La commande conserve votre code d’accès et affiche une adresse `https://nom-du-pc.nom-du-reseau.ts.net`. Attendez la fin des exécutions, puis redémarrez le Studio. Ouvrez cette adresse dans le navigateur du téléphone et utilisez **Installer le Studio**. Sur iPhone, passez par **Safari → Partager → Sur l’écran d’accueil**.
+
+La PWA conserve les commandes et pièces jointes du site. En cas de coupure, un écran **Réessayer** permet de retrouver la connexion. Le PC reste nécessaire pour exécuter les agents ; fermer l’application les laisse travailler.
+
+[Installation Android, iPhone et PC, HTTPS et fonctionnement hors ligne →](docs/pwa.md)
+
 ## Documentation
 
 | Guide                                             | Contenu                                                                       |
 | ------------------------------------------------- | ----------------------------------------------------------------------------- |
 | [Configuration et données](docs/configuration.md) | Modèles, valeurs par défaut, stockage et variables d’environnement.           |
 | [Accès mobile](docs/lan.md)                       | Activation, adresse réseau, authentification et permissions.                  |
+| [Application installable](docs/pwa.md)            | Installation PWA, HTTPS privé et reconnexion.                                 |
 | [Développement](docs/development.md)              | Architecture, processus Windows silencieux, tests et captures reproductibles. |
 
 Pour vérifier le projet :
@@ -159,6 +192,7 @@ npm test
 npm run test:ui
 npm run test:mobile
 npm run test:attachments
+npm run test:pwa
 ```
 
 Les tests automatiques utilisent des données temporaires et un moteur simulé. Les tests de navigateur nécessitent Microsoft Edge ; les tests réels facultatifs avec Luna sont documentés séparément.

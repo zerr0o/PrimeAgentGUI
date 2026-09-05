@@ -40,6 +40,22 @@ const message = (id, parentId, role, content, extra = {}) => ({
   message: { role, content, ...extra },
 });
 
+test('removing a project persists across reload and native discovery, preserves files, and supports re-adding', async (t) => {
+  const { store, native, options } = await fixture(t);
+  const file = await native('kept-session', [message('kept', null, 'user', 'À conserver')]);
+  const before = await readFile(file, 'utf8');
+  await store.project({ cwd: options.initialCwd, pinned: true }, true);
+  assert.equal((await store.overview()).projects[0].pinned, true);
+  await store.removeProject(options.initialCwd);
+  assert.deepEqual((await store.overview()).projects, []);
+  const reopened = createStore(options);
+  assert.deepEqual((await reopened.overview()).projects, []);
+  assert.equal(await readFile(file, 'utf8'), before);
+  assert.equal((await reopened.history('kept-session')).messages[0].text, 'À conserver');
+  await reopened.project({ cwd: options.initialCwd });
+  assert.equal((await reopened.overview()).projects[0].sessions[0].id, 'kept-session');
+});
+
 test('native history follows the selected branch and attaches tool results to their call', async (t) => {
   const { store, native } = await fixture(t);
   const usage = { input: 12, output: 30, totalTokens: 42, cost: { total: 0.001 } };

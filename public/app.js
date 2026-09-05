@@ -3,6 +3,7 @@ import DOMPurify from '/vendor/purify.js';
 import { createConversationRenderer } from './conversation.js';
 import { createLiveMessages } from './live-messages.js';
 import { createImageComposer, renderImages } from './images.js';
+import { createMcpSettings } from './mcp.js';
 let imageComposer;
 let liveMessagesUI;
 const $ = (id) => document.getElementById(id);
@@ -401,9 +402,12 @@ function applyAccessMode() {
   $('remote-view-banner').hidden = !state.remote;
   $('remote-view-label').textContent = state.readOnly ? 'Consultation à distance' : 'Studio à distance';
   $('remote-view-detail').textContent = state.readOnly ? '· lecture seule' : '· contrôle complet';
+  $('session-location').textContent = state.remote ? 'Sessions sur le PC connecté' : 'Sessions sur ce PC';
   $('composer').disabled = state.readOnly;
   $('enter-to-send').closest('.settings-row').hidden = state.readOnly;
   $('model-config-settings').hidden = state.remote;
+  $('logout-button').hidden = !state.remote;
+  $('mcp-settings').hidden = state.readOnly;
   const skipLink = document.querySelector('.skip-link');
   skipLink.href = state.readOnly ? '#conversation-scroll' : '#composer';
   skipLink.textContent = state.readOnly ? 'Aller à la conversation' : 'Aller au message';
@@ -487,6 +491,7 @@ function renderProjects() {
   root.replaceChildren();
   const items = [...state.projects].sort((a, b) => Number(b.pinned) - Number(a.pinned));
   for (const p of items) {
+    const entry = el('div', 'project-entry');
     const b = el('button', `project-row${samePath(p.cwd, state.projectCwd) ? ' active' : ''}`);
     b.title = p.cwd;
     b.setAttribute('aria-pressed', String(samePath(p.cwd, state.projectCwd)));
@@ -498,7 +503,28 @@ function renderProjects() {
       count.title = 'Dossier introuvable';
     }
     b.onclick = () => selectProject(p.cwd);
-    root.append(b);
+    b.oncontextmenu = (e) => {
+      if (!state.readOnly) {
+        e.preventDefault();
+        openProjectMenu(p.cwd, b);
+      }
+    };
+    entry.append(b);
+    if (!state.readOnly) {
+      const more = el('button', 'project-more');
+      more.type = 'button';
+      more.setAttribute('aria-label', `Options du projet ${p.name}`);
+      more.setAttribute('aria-haspopup', 'menu');
+      more.append(icon('more'));
+      more.onclick = () => openProjectMenu(p.cwd, more);
+      entry.append(more);
+    }
+    if (p.pinned) {
+      const pin = icon('pin');
+      pin.classList.add('project-pin');
+      b.insertBefore(pin, count);
+    }
+    root.append(entry);
   }
   if (!items.length) {
     const empty = el(
@@ -1783,24 +1809,123 @@ async function addProject(e) {
     b.disabled = false;
   }
 }
+let sessionMenuAnchor, projectMenuAnchor, menuProjectCwd;
+function positionMenu(menu, anchor) {
+  if (menu.hidden || !anchor) return;
+  const v = window.visualViewport,
+    left = v?.offsetLeft || 0,
+    top = v?.offsetTop || 0,
+    width = v?.width || innerWidth,
+    height = v?.height || innerHeight;
+  const r = anchor.getBoundingClientRect();
+  menu.style.maxHeight = `${Math.max(80, height - 24)}px`;
+  menu.style.left = `${Math.max(left + 12, Math.min(left + width - menu.offsetWidth - 12, r.right - menu.offsetWidth))}px`;
+  menu.style.top = `${Math.max(top + 12, Math.min(top + height - menu.offsetHeight - 12, r.bottom + 5))}px`;
+}
+function positionMenus() {
+  positionMenu($('session-menu'), sessionMenuAnchor);
+  positionMenu($('project-menu'), projectMenuAnchor);
+}
+function closeProjectMenu() {
+  $('project-menu').hidden = true;
+  projectMenuAnchor?.setAttribute('aria-expanded', 'false');
+}
+function openProjectMenu(cwd, anchor) {
+  if (state.readOnly) return;
+  closeSessionMenu();
+  closeProjectMenu();
+  const p = state.projects.find((p) => samePath(p.cwd, cwd));
+  if (!p) return;
+  menuProjectCwd = cwd;
+  projectMenuAnchor = anchor;
+  $('project-pin-label').textContent = p.pinned ? 'Désépingler' : 'Épingler';
+  $('project-menu').querySelector('[data-project-action="open"]').disabled = p.exists === false;
+  $('project-menu').hidden = false;
+  anchor.setAttribute('aria-expanded', 'true');
+  positionMenus();
+  $('project-menu').querySelector('button:not(:disabled)').focus({ preventScroll: true });
+}
+async function projectMenuAction(action) {
+  const p = state.projects.find((p) => samePath(p.cwd, menuProjectCwd));
+  closeProjectMenu();
+  if (!p || state.readOnly) return;
+  try {
+    if (action === 'open') {
+      await api('/api/projects/open', { method: 'POST', body: { cwd: p.cwd } });
+      toast('Dossier ouvert sur le PC.');
+    } else if (action === 'pin') {
+      await api('/api/projects', { method: 'PATCH', body: { cwd: p.cwd, pinned: !p.pinned } });
+      await refreshOverview();
+    } else if (action === 'remove') {
+      $('remove-project-name').textContent = p.name;
+      $('remove-project-dialog').dataset.cwd = p.cwd;
+      $('remove-project-error').hidden = true;
+      $('remove-project-dialog').showModal();
+    }
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+async function removeProject(event) {
+  event.preventDefault();
+  const button = event.currentTarget.querySelector('[type="submit"]'),
+    cwd = $('remove-project-dialog').dataset.cwd;
+  button.disabled = true;
+  try {
+    await api('/api/projects', { method: 'DELETE', body: { cwd } });
+    const wasSelected = samePath(cwd, state.projectCwd);
+    await refreshOverview();
+    $('remove-project-dialog').close();
+    if (wasSelected) {
+      saveDraft();
+      resetView();
+      state.projectCwd = state.projects[0]?.cwd || null;
+      saveSelection();
+      restoreDraft();
+      renderNavigation();
+      renderMessages(true);
+    }
+    toast('Projet retiré du Studio.');
+  } catch (error) {
+    $('remove-project-error').textContent = error.message;
+    $('remove-project-error').hidden = false;
+  } finally {
+    button.disabled = false;
+  }
+}
+async function logout() {
+  const button = $('logout-button');
+  button.disabled = true;
+  try {
+    saveDraft();
+    const response = await fetch('/lan/logout', { method: 'POST' });
+    if (!response.ok && response.status !== 401) throw new Error('La déconnexion a échoué. Réessayez.');
+    location.replace('/');
+  } catch (error) {
+    toast(error.message, true);
+    button.disabled = false;
+  }
+}
 function closeSessionMenu() {
   $('session-menu').hidden = true;
+  sessionMenuAnchor?.setAttribute('aria-expanded', 'false');
   $('session-menu-button').setAttribute('aria-expanded', 'false');
 }
 function openSessionMenu(id, anchor) {
   if (state.readOnly) return;
+  closeProjectMenu();
+  sessionMenuAnchor = anchor;
   state.menuSessionId = id;
   const s = session(id);
   if (!s) return;
   const menu = $('session-menu');
   $('pin-label').textContent = s.pinned ? 'Désépingler' : 'Épingler';
   $('archive-label').textContent = s.archived ? 'Désarchiver' : 'Archiver';
-  const r = anchor.getBoundingClientRect();
   menu.hidden = false;
-  menu.style.left = `${Math.min(innerWidth - 219, Math.max(12, r.right - 203))}px`;
-  menu.style.top = `${Math.min(innerHeight - menu.offsetHeight - 12, r.bottom + 5)}px`;
+  positionMenus();
+  anchor.setAttribute('aria-expanded', 'true');
   $('session-menu-button').setAttribute('aria-expanded', 'true');
-  menu.querySelector('button').focus();
+  menu.querySelector('button').focus({ preventScroll: true });
 }
 async function patchSession(id, patch) {
   await api('/api/sessions', { method: 'PATCH', body: { id, ...patch } });
@@ -1973,6 +2098,12 @@ $('session-menu').onclick = (e) => {
 $('export-session').onclick = () => exportSession();
 $('copy-project-path').onclick = () => copyText(state.projectCwd, 'Chemin du projet copié.');
 $('open-settings').onclick = () => $('settings-dialog').showModal();
+$('project-menu').onclick = (e) => {
+  const button = e.target.closest('[data-project-action]');
+  if (button) void projectMenuAction(button.dataset.projectAction);
+};
+$('remove-project-form').onsubmit = removeProject;
+$('logout-button').onclick = logout;
 $('open-model-config').onclick = () => void openModelConfig();
 $('default-main-model').onchange = () => {
   $('save-default-model').disabled = $('default-main-model').value === (state.modelDefaults?.mainModel || '');
@@ -2098,6 +2229,7 @@ document.querySelectorAll('[data-prompt]').forEach(
     }),
 );
 document.addEventListener('click', (e) => {
+  if (!e.target.closest('#project-menu') && !e.target.closest('.project-more')) closeProjectMenu();
   if (
     !e.target.closest('#session-menu') &&
     !e.target.closest('#session-menu-button') &&
@@ -2107,6 +2239,7 @@ document.addEventListener('click', (e) => {
 });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
+    closeProjectMenu();
     closeSessionMenu();
     closeSidebar();
     $('details-panel').classList.remove('mobile-open');
@@ -2124,9 +2257,10 @@ document.addEventListener('keydown', (e) => {
       if (!document.querySelector('dialog[open]')) newSession();
     }
   }
-  if (!$('session-menu').hidden && ['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) {
+  const openMenu = [$('session-menu'), $('project-menu')].find((menu) => !menu.hidden);
+  if (openMenu && ['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) {
     e.preventDefault();
-    const items = [...$('session-menu').querySelectorAll('button')];
+    const items = [...openMenu.querySelectorAll('button:not(:disabled)')];
     let i = items.indexOf(document.activeElement);
     i =
       e.key === 'Home'
@@ -2139,9 +2273,11 @@ document.addEventListener('keydown', (e) => {
 });
 window.addEventListener('resize', () => {
   applyPreferences();
-  closeSessionMenu();
+  positionMenus();
   resizeComposer();
 });
+window.visualViewport?.addEventListener('resize', positionMenus);
+window.visualViewport?.addEventListener('scroll', positionMenus);
 matchMedia('(prefers-color-scheme: light)').addEventListener('change', applyPreferences);
 window.addEventListener('storage', (event) => {
   if (event.key !== 'prime-studio.preferences') return;
@@ -2166,4 +2302,5 @@ setInterval(() => {
 setInterval(() => {
   if (state.initialized) void refreshOverview();
 }, 10000);
+createMcpSettings({ api, toast });
 void bootstrap();

@@ -2,19 +2,30 @@
 <html lang="fr" data-theme="dark">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content"
+    />
     <meta name="color-scheme" content="dark light" />
     <meta name="theme-color" content="#1b1c1e" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Prime Agent" />
     <title>Prime Agent Studio</title>
-    <link
-      rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='11' fill='%23b8b4ec'/%3E%3Cpath d='M12 28V12h10a6 6 0 0 1 0 12h-5v4zm5-11v2h5a1 1 0 0 0 0-2z' fill='%2324262b'/%3E%3C/svg%3E"
-    />
+    <link rel="icon" type="image/svg+xml" href="/assets/prime-agent.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/prime-agent-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/assets/prime-agent-512.png" />
+    <link rel="alternate icon" type="image/png" sizes="256x256" href="/assets/prime-agent.png" />
+    <link rel="shortcut icon" href="/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/prime-agent-180.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <script src="/public/theme.js"></script>
+    <script src="/public/viewport.js" defer></script>
     <link rel="stylesheet" href="/public/styles.css" />
     <link rel="stylesheet" href="/public/conversation.css" />
     <link rel="stylesheet" href="/public/live-messages.css" />
     <link rel="stylesheet" href="/public/images.css" />
+    <link rel="stylesheet" href="/public/pwa.css" />
+    <link rel="stylesheet" href="/public/mcp.css" />
   </head>
   <body>
     <a class="skip-link" href="#composer">Aller au message</a>
@@ -80,6 +91,9 @@
             <span id="connection-dot" class="status-dot waiting"></span
             ><span id="connection-label">Connexion…</span><span id="cli-version" class="version-label"></span>
           </div>
+          <button id="pwa-install" class="sidebar-settings pwa-install" type="button">
+            Installer le Studio
+          </button>
           <button id="open-settings" class="sidebar-settings">
             <span data-icon="settings"></span>Préférences<span class="settings-shortcut">Studio local</span>
           </button>
@@ -318,8 +332,8 @@
               </form>
               <div class="composer-footnote">
                 <span
-                  ><span class="tiny-shield" data-icon="shield"></span>Interface locale · sessions sur cet
-                  ordinateur</span
+                  ><span class="tiny-shield" data-icon="shield"></span
+                  ><span id="session-location">Sessions sur ce PC</span></span
                 ><span id="send-hint">Entrée pour envoyer · Maj Entrée pour un saut de ligne</span>
               </div>
             </div>
@@ -389,6 +403,33 @@
         <span data-icon="archive"></span><span id="archive-label">Archiver</span>
       </button>
     </div>
+    <div id="project-menu" class="popover-menu" role="menu" aria-label="Options du projet" hidden>
+      <button role="menuitem" data-project-action="open">
+        <span data-icon="folder"></span>Ouvrir le dossier sur le PC
+      </button>
+      <button role="menuitem" data-project-action="pin">
+        <span data-icon="pin"></span><span id="project-pin-label">Épingler</span>
+      </button>
+      <div class="menu-divider"></div>
+      <button role="menuitem" class="danger-text" data-project-action="remove">
+        <span data-icon="x"></span>Supprimer du Studio
+      </button>
+    </div>
+    <dialog id="remove-project-dialog" class="modal">
+      <form id="remove-project-form">
+        <h2>Supprimer ce projet du Studio ?</h2>
+        <p id="remove-project-name"></p>
+        <p>
+          Le dossier et les sessions restent sur le PC. Vous pourrez les retrouver en ajoutant à nouveau ce
+          dossier.
+        </p>
+        <div id="remove-project-error" class="form-error" role="alert" hidden></div>
+        <div class="modal-actions">
+          <button type="button" class="secondary-button" data-close-dialog>Annuler</button
+          ><button type="submit" class="primary-button danger-button">Supprimer du Studio</button>
+        </div>
+      </form>
+    </dialog>
     <dialog id="project-dialog" class="modal">
       <form id="project-form">
         <div class="modal-heading">
@@ -527,6 +568,13 @@
           <span data-icon="model"></span>Configurer
         </button>
       </div>
+      <div id="mcp-settings" class="settings-row">
+        <div>
+          <label for="open-mcp-settings">Connexions MCP</label>
+          <p>Connectez des outils et services à Prime Agent.</p>
+        </div>
+        <button id="open-mcp-settings" type="button" class="secondary-button">Gérer les MCP</button>
+      </div>
       <div class="settings-about">
         <span class="status-dot"></span>
         <div>
@@ -534,7 +582,10 @@
           <p id="settings-runtime">Interface locale pour Prime Agent</p>
         </div>
       </div>
-      <div class="modal-actions"><button class="primary-button" data-close-dialog>Terminé</button></div>
+      <div class="modal-actions settings-actions">
+        <button id="logout-button" class="danger-text" type="button" hidden>Se déconnecter</button
+        ><button class="primary-button" data-close-dialog>Terminé</button>
+      </div>
     </dialog>
     <dialog id="model-config-dialog" class="modal model-config-modal">
       <div class="modal-heading model-config-heading">
@@ -705,5 +756,6 @@
     </dialog>
     <div id="toasts" class="toasts" aria-live="polite" aria-atomic="false"></div>
     <script type="module" src="/public/app.js"></script>
+    <script type="module" src="/public/pwa.js"></script>
   </body>
 </html>

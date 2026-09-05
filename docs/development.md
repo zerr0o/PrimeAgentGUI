@@ -37,7 +37,9 @@ npm run check
 npm test
 npm run test:ui
 npm run test:mobile
+npm run test:layout
 npm run test:attachments
+npm run test:pwa
 ```
 
 Les tests automatiques utilisent des données temporaires et un faux moteur, sans consommation de modèle. Les tests Windows vérifient également les paramètres natifs de création des processus, le lancement VBS, la réutilisation du serveur et l’arrêt des descendants. Les tests de navigateur utilisent Microsoft Edge installé localement et produisent des captures dans `test-results/`.
@@ -75,6 +77,34 @@ node scripts/smoke-live-messages.mjs --run-native --attachments
 
 Le premier scénario vérifie les sélecteurs réels, le collage, le dépôt, les brouillons, les téléchargements, les deux modes d’envoi et la disposition mobile/PC via la passerelle authentifiée. Le second utilise le vrai moteur, un outil Python et un fournisseur simulé local : il vérifie les pixels reçus, la lecture des fichiers et leur conservation après édition de la file, sans consommer de compte modèle ni toucher aux sessions utilisateur.
 
+## PWA et HTTPS privé
+
+`public/manifest.webmanifest` décrit l’application autonome et ses icônes. `public/pwa.js` propose le dialogue natif d’installation ou une aide adaptée au navigateur, sur la page de connexion et dans le menu. Le service worker `/service-worker.js` conserve uniquement une liste fixe d’icônes, le manifeste, une feuille de style et l’écran de reconnexion. Les API, les flux SSE, les soumissions et les fichiers utilisateur sont exclus. Les pages authentifiées ne sont jamais enregistrées dans Cache Storage.
+
+`lib/pwa.mjs` définit les seules ressources publiques nécessaires à l’installation et valide l’origine HTTPS Tailscale. `lib/lan.mjs` accepte cette origine uniquement sur la passerelle loopback dédiée, conserve les contrôles Host/Origin et émet un cookie Secure. Les en-têtes de proxy ne définissent pas l’origine de confiance. `scripts/enable-pwa.mjs` préserve la configuration existante et pointe Tailscale Serve vers cette passerelle, jamais directement vers l’API locale.
+
+`npm run test:pwa` utilise un profil Edge temporaire pour vérifier les critères d’installation via CDP, le service worker, l’absence de données privées dans le cache, le retour hors ligne, la conservation des brouillons et les instructions iPhone. Le dialogue d’installation est simulé pour ne pas installer réellement une application sur le PC pendant les tests. Les tests HTTP dans `test/pwa.test.mjs` couvrent l’authentification HTTPS, les ressources publiques, les origines et les conflits de configuration Serve.
+
+`public/viewport.js` ajuste la hauteur du chat au viewport visible, y compris lorsque le clavier réduit seulement celui-ci. Le zoom tactile reste libre. Les marges système sont réservées autour de l’interface ; le pied de page secondaire est masqué sur mobile. `npm run test:layout` vérifie une longue conversation en portrait, paysage et avec des géométries simulées de clavier et de barre système. Ces simulations ne remplacent pas un test sur un téléphone physique.
+
+Le test PWA couvre aussi une arrivée depuis un autre site suivie d’un rechargement avec le service worker actif. Ce relais conserve le mode de navigation mais peut transmettre `Sec-Fetch-Dest: empty`. La passerelle accepte ce cas uniquement pour les ouvertures GET de `/` et `/index.html`, tout en conservant les vérifications Host/Origin, l’authentification et les protections des API.
+
+## Projets, déconnexion et MCP
+
+`npm run test:workspace` vérifie les menus de projet et de session sur écran tactile, leur stabilité lors du redimensionnement, le retrait confirmé avec conservation des fichiers, les formulaires MCP et la déconnexion d’un navigateur pendant une exécution simulée. Les captures PC/mobile sont conservées dans `test-results/`.
+
+Sous Windows, `lib/open-directory.mjs` utilise un assistant PowerShell masqué et une demande ShellExecute explicitement visible pour l’Explorateur. Une fenêtre existante du même dossier est réutilisée, y compris si un ancien lancement l’avait masquée. La notification de succès attend la confirmation d’une fenêtre visible et non minimisée ; les processus des agents conservent leur lancement silencieux. Le chemin est transmis comme donnée, sans construction de commande PowerShell.
+
+`npm run test:explorer` est un test Windows facultatif qui ouvre réellement un dossier temporaire dans l’Explorateur depuis un processus masqué, vérifie sa visibilité, reproduit une fenêtre invisible et vérifie sa restauration sans doublon. Il ferme uniquement la fenêtre du dossier temporaire créé par le scénario. Ce test de bureau est séparé de `npm test`, qui ne doit pas ouvrir de dossiers pendant ses vérifications ordinaires.
+
+`lib/mcp-config.mjs` valide le format natif, masque les secrets renvoyés au navigateur et écrit uniquement `mcpServers` avec `FileSettingsStorage.withLock`. Les valeurs par défaut des modèles utilisent le même verrou. Chaque modification MCP vérifie la révision de la configuration pour refuser un écrasement depuis un écran périmé. `lib/prime-native.mjs` charge les modules de l’installation Prime Agent résolue par le Studio ; une installation incompatible produit une erreur explicite.
+
+`lib/mcp-service.mjs` possède uniquement ses processus de découverte et d’autorisation. `scripts/mcp-probe-worker.mjs` et `scripts/mcp-probe.py` utilisent le stockage OAuth et le client Python `rlm.mcp` natifs. `scripts/mcp-oauth-worker.mjs` utilise le fournisseur OAuth natif avec saisie de l’URL complète depuis un autre appareil. Les délais, annulations et arrêts sont limités aux processus du gestionnaire. Aucun arrêt de daemon ni rechargement d’une session utilisateur n’est déclenché.
+
+`test/mcp.test.mjs` couvre les écritures concurrentes avec les réglages de modèles, les secrets, les conflits, les serveurs réservés, une connexion stdio et une connexion HTTP avec le véritable client Python, ainsi qu’un parcours OAuth HTTPS complet avec PKCE et retour mobile. Ces tests utilisent uniquement des serveurs, fichiers et certificats temporaires ; ils n’utilisent aucun compte de fournisseur. Ils nécessitent Prime Agent installé et, pour les connexions, `npm run setup:runtime`.
+
+Les routes MCP sont `/api/mcp` (GET/POST/PATCH/DELETE), `/api/mcp/test`, `/api/mcp/login`, `/api/mcp/disconnect`, `/api/mcp/login/complete` (POST), et `/api/mcp/login/:id` (GET/DELETE). La passerelle les refuse en lecture seule. `POST /lan/logout` révoque le cookie courant et ses connexions de proxy, y compris SSE, sans arrêter les exécutions. `DELETE /api/projects` retire les métadonnées de projet ; un marqueur persistant empêche leur réimportation immédiate depuis les sessions natives.
+
 ## Organisation du code
 
 `server.mjs` expose l’API locale et les flux SSE. `lib/store.mjs` lit les sessions natives et conserve les préférences. `lib/agent.mjs` gère le CLI, les modèles, les événements et l’arrêt. `public/` contient l’interface. `runtime/` isole les correctifs de sous-processus. `scripts/` contient les lanceurs et outils de vérification.
@@ -88,5 +118,7 @@ node scripts/capture-readme.mjs
 ```
 
 Le script ouvre la véritable interface dans Microsoft Edge sans fenêtre visible, sur un serveur temporaire distinct. Les projets, conversations, modèles et événements sont des données de démonstration. Aucun agent natif ni compte de fournisseur n’est utilisé, et aucune session du Studio en cours n’est modifiée.
+
+`npm run test:workspace -- --capture-docs` régénère la capture du gestionnaire MCP avec une configuration de démonstration isolée. Les comptes utilisateur sont conservés.
 
 Les captures sont enregistrées dans `docs/screenshots/`. Quatre vues du bureau sont capturées en 1600 × 1000, dont une conversation avec images, documents et aperçus de pièces jointes. Le sélecteur de modèles est cadré sur sa fenêtre pour rester lisible dans le README. Les fichiers de démonstration restent dans le dossier temporaire du scénario. Le rapport se trouve dans `test-results/readme-captures.json`. `PRIME_STUDIO_BROWSER` permet de choisir un autre canal Playwright installé, par exemple `chrome`.

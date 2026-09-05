@@ -85,7 +85,7 @@ function fakeRuntime() {
   return runtime;
 }
 
-async function fixture(t) {
+async function fixture(t, extraOptions = {}) {
   const root = await mkdtemp(join(tmpdir(), 'prime-studio-server-'));
   const cwd = join(root, 'project é');
   const sessionDir = join(root, 'sessions');
@@ -107,7 +107,7 @@ async function fixture(t) {
       .join('\n') + '\n',
   );
   const runtime = fakeRuntime();
-  const app = createApp({ agentHome, sessionDir, dataDir, initialCwd: cwd, runtime });
+  const app = createApp({ agentHome, sessionDir, dataDir, initialCwd: cwd, runtime, ...extraOptions });
   await new Promise((done) => app.server.listen(0, '127.0.0.1', done));
   const port = app.server.address().port;
   let closed = false;
@@ -186,6 +186,28 @@ function decodeEvents(text) {
     .filter((line) => line.startsWith('data: '))
     .map((line) => JSON.parse(line.slice(6)));
 }
+
+test('project context actions only open registered folders and removal never stops an active agent', async (t) => {
+  const opened = [];
+  const f = await fixture(t, {
+    openDirectory: async (cwd) => {
+      opened.push(cwd);
+      return { opened: true };
+    },
+  });
+  assert.equal((await f.api('/api/projects/open', { method: 'POST', body: { cwd: f.root } })).status, 404);
+  assert.equal(opened.length, 0);
+  assert.equal((await f.api('/api/projects/open', { method: 'POST', body: { cwd: f.cwd } })).status, 200);
+  assert.deepEqual(opened, [f.cwd]);
+  await f.run();
+  assert.equal((await f.api('/api/projects', { method: 'DELETE', body: { cwd: f.cwd } })).status, 409);
+  assert.equal(f.runtime.controls[0].cancelCalls, 0);
+  f.runtime.controls[0].finish();
+  assert.equal((await f.api('/api/runs')).json.runs.length, 0);
+  assert.equal((await f.api('/api/projects', { method: 'DELETE', body: { cwd: f.cwd } })).status, 200);
+  assert.equal((await f.api('/api/overview')).json.projects.length, 0);
+  assert.equal((await f.api('/api/history?id=native-session')).status, 200);
+});
 
 test('SSE disconnect preserves execution and Last-Event-ID replays only unseen events', async (t) => {
   const { app, runtime, api, run, sse } = await fixture(t);
