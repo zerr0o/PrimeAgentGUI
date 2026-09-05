@@ -11,6 +11,8 @@ import { createModelConfigStore } from './lib/model-config.mjs';
 import { createModelDefaultsStore } from './lib/model-defaults.mjs';
 import { createLiveMessages, routeLiveMessages } from './lib/live-messages.mjs';
 import { createLiveSessionClient } from './lib/live-session-client.mjs';
+import { validateImages, imageBodyLimit } from './lib/images.mjs';
+import { createFileStore, validateFiles, appendFileMessage, splitFileMessage } from './lib/files.mjs';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const VERSION = '2.0.0';
@@ -33,7 +35,8 @@ const publicRun = ({ id, sessionId, cwd, status, startedAt, endedAt, error, mode
   error,
   model,
   thinking,
-  prompt,
+  prompt: splitFileMessage(prompt).text,
+  attachments: splitFileMessage(prompt).attachments,
 });
 
 async function readBody(req) {
@@ -43,14 +46,18 @@ async function readBody(req) {
   const chunks = [];
   for await (const chunk of req) {
     length += chunk.length;
-    if (length > 512 * 1024) throw new HttpError(413, 'La demande dépasse 512 Ko.');
+    if (length > imageBodyLimit(req.url.split('?')[0]))
+      throw new HttpError(413, 'La demande dépasse la taille autorisée.');
     chunks.push(chunk);
   }
   try {
     const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
     if (!body || Array.isArray(body) || typeof body !== 'object') throw new Error();
+    if (length > 512 * 1024 && !body.images?.length && !body.files?.length)
+      throw new HttpError(413, 'La demande dépasse 512 Ko.');
     return body;
-  } catch {
+  } catch (error) {
+    if (error.status) throw error;
     throw new HttpError(400, 'La demande JSON est invalide.');
   }
 }
@@ -65,6 +72,7 @@ export function createApp(options = {}) {
   const sessionDir = options.sessionDir || process.env.PRIME_AGENT_SESSION_DIR || join(agentHome, 'sessions');
   const dataDir = options.dataDir || process.env.PRIME_AGENT_GUI_DATA_DIR || join(ROOT, '.local');
   const store = options.store || createStore({ sessionDir, dataDir, initialCwd: options.initialCwd || ROOT });
+  const fileStore = createFileStore(join(dataDir, 'attachments'));
   const runtime =
     options.runtime || createAgentRuntime({ agentHome, sessionDir, cliPath: process.env.PRIME_AGENT_CLI });
   const modelConfig = options.modelConfig || createModelConfigStore({ agentHome });
@@ -72,6 +80,7 @@ export function createApp(options = {}) {
   const runs = new Map(),
     sessionLocks = new Set();
   const liveMessages = createLiveMessages({
+    fileStore,
     getRuns: () => [...runs.values()],
     getClient: () => {
       if (options.liveClient) return options.liveClient;
@@ -152,7 +161,7 @@ export function createApp(options = {}) {
       run.bytes -= Buffer.byteLength(removed.wire);
     }
     for (const client of run.clients) {
-      if (client.writableLength > 1024 * 1024) {
+      if (client.writableLength > 16 * 1024 * 1024) {
         client.destroy();
         run.clients.delete(client);
       } else client.write(wire);
@@ -167,9 +176,21 @@ export function createApp(options = {}) {
     if (activeRuns().length >= 8)
       throw new HttpError(429, 'Huit sessions tournent déjà. Arrêtez-en une avant de continuer.');
     const cwd = await validateDirectory(body.cwd);
-    if (typeof body.message !== 'string' || !body.message.trim())
+    const images = validateImages(body.images);
+    const files = validateFiles(body.files);
+    if (images.length + files.length > 8) throw new HttpError(400, 'Ajoutez au maximum 8 pièces jointes.');
+    if (typeof body.message !== 'string' || (!body.message.trim() && !images.length && !files.length))
       throw new HttpError(400, 'Écrivez un message avant de l’envoyer.');
     if (body.message.length > 200000) throw new HttpError(400, 'Le message dépasse 200 000 caractères.');
+    if (images.length) {
+      const catalog = await models();
+      const selected = catalog.models?.find((model) => model.id === (body.model || catalog.default?.model));
+      if (selected?.input && !selected.input.includes('image'))
+        throw new HttpError(
+          400,
+          'Ce modèle ne prend pas en charge les images. Choisissez un modèle compatible.',
+        );
+    }
     if (
       body.model !== undefined &&
       (typeof body.model !== 'string' || body.model.length > 300 || /[\r\n\0]/.test(body.model))
@@ -202,7 +223,7 @@ export function createApp(options = {}) {
       startedAt: new Date().toISOString(),
       model: body.model || null,
       thinking: body.thinking || null,
-      prompt: body.message,
+      prompt: body.message.trim() || 'Analyse les pièces jointes.',
       seq: 0,
       events: [],
       bytes: 0,
@@ -211,9 +232,11 @@ export function createApp(options = {}) {
     };
     runs.set(run.id, run);
     try {
+      run.prompt = appendFileMessage(run.prompt, await fileStore.save(files));
       run.handle = await runtime.start({
         cwd,
-        message: body.message.trim(),
+        message: run.prompt,
+        ...(images.length ? { images } : {}),
         sessionId: existing?.id,
         sessionFile: existing?.file,
         model: body.model || undefined,
@@ -307,10 +330,27 @@ export function createApp(options = {}) {
         });
       if (method === 'GET' && path === '/api/bootstrap') {
         const [overview, version, catalog] = await Promise.all([store.overview(), status(), models()]);
-        return json(res, 200, { ...overview, version, models: catalog, runs: activeRuns(), preferences: {} });
+        return json(res, 200, {
+          ...overview,
+          version,
+          models: catalog,
+          runs: activeRuns(),
+          preferences: { attachments: true },
+        });
       }
       if (method === 'GET' && path === '/api/version') return json(res, 200, await status());
       if (method === 'GET' && path === '/api/models') return json(res, 200, await models());
+      if (method === 'GET' && /^\/api\/files\/[a-f0-9-]+$/.test(path)) {
+        const file = await fileStore.read(path.slice('/api/files/'.length));
+        res.writeHead(200, {
+          'Content-Type': 'application/octet-stream',
+          'Content-Length': file.data.length,
+          'Content-Disposition': `attachment; filename="attachment"; filename*=UTF-8''${encodeURIComponent(file.name.toWellFormed()).replace(/['()*]/g, (value) => '%' + value.charCodeAt(0).toString(16))}`,
+          'Cache-Control': 'no-store',
+        });
+        res.end(file.data);
+        return;
+      }
       if (method === 'GET' && path === '/api/model-config') return json(res, 200, await modelConfig.list());
       if (method === 'GET' && path === '/api/model-defaults')
         return json(res, 200, await modelDefaults.get());
@@ -422,19 +462,30 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.m
   if (!Number.isInteger(port) || port < 1 || port > 65535)
     throw new Error('PORT doit être compris entre 1 et 65535.');
   const app = createApp();
-  let lanServer,
-    shuttingDown = false;
+  const remoteServers = [];
+  let shuttingDown = false;
   async function startLan() {
     try {
       const config = JSON.parse(await readFile(join(ROOT, '.local', 'lan-access.json'), 'utf8'));
-      if (config.enabled !== true || shuttingDown) return;
+      if (shuttingDown) return;
       if (!Number.isInteger(config.port) || config.port < 1024 || config.port > 65535 || config.port === port)
         throw new Error('Port mobile invalide.');
-      lanServer = createLanGateway({ host: config.host, upstreamPort: port, config });
-      lanServer.on('error', (error) => console.error(`Accès mobile indisponible : ${error.message}`));
-      lanServer.listen(config.port, config.host, () =>
-        console.log(`Consultation mobile — http://${config.host}:${config.port}`),
-      );
+      const endpoints = [
+        ...(config.enabled === true ? [{ host: config.host, name: 'LAN' }] : []),
+        ...(config.tailscale?.enabled === true ? [{ host: config.tailscale.host, name: 'Tailscale' }] : []),
+      ];
+      for (const { host, name } of endpoints) {
+        try {
+          const gateway = createLanGateway({ host, upstreamPort: port, config });
+          remoteServers.push(gateway);
+          gateway.on('error', (error) => console.error(`Accès ${name} indisponible : ${error.message}`));
+          gateway.listen(config.port, host, () =>
+            console.log(`Accès ${name} — http://${host}:${config.port}`),
+          );
+        } catch (error) {
+          console.error(`Accès ${name} indisponible : ${error.message}`);
+        }
+      }
     } catch (error) {
       if (error.code !== 'ENOENT') console.error(`Accès mobile indisponible : ${error.message}`);
     }
@@ -454,8 +505,10 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.m
   for (const signal of ['SIGINT', 'SIGTERM'])
     process.once(signal, () => {
       shuttingDown = true;
-      lanServer?.closeAllConnections();
-      lanServer?.close();
+      for (const gateway of remoteServers) {
+        gateway.closeAllConnections();
+        gateway.close();
+      }
       const timer = setTimeout(() => process.exit(1), 10000);
       timer.unref();
       app.close().then(() => process.exit(0));
