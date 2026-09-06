@@ -4,6 +4,7 @@ import { createConversationRenderer } from './conversation.js';
 import { createLiveMessages } from './live-messages.js';
 import { createImageComposer, renderImages } from './images.js';
 import { createMcpSettings } from './mcp.js';
+import { createProviderSettings } from './providers.js';
 import { createCommands } from './commands.js';
 import { composerText, setComposerText, composerCommand } from './composer.js';
 import { createInspector } from './inspector.js';
@@ -413,6 +414,7 @@ function applyAccessMode() {
   $('composer').disabled = state.readOnly;
   $('enter-to-send').closest('.settings-row').hidden = state.readOnly;
   $('model-config-settings').hidden = state.remote;
+  $('provider-settings').hidden = state.remote || !state.providersAvailable;
   $('logout-button').hidden = !state.remote;
   $('mcp-settings').hidden = state.readOnly;
   const skipLink = document.querySelector('.skip-link');
@@ -1766,6 +1768,7 @@ async function bootstrap() {
     state.attachmentsAvailable = data.preferences?.attachments === true;
     state.inspectorAvailable = data.preferences?.inspector === true;
     state.nativeFileOpen = data.preferences?.nativeFileOpen === true;
+    state.providersAvailable = data.preferences?.providers === true;
     state.readOnly = data.preferences?.readOnly === true;
     state.remote = data.preferences?.remote === true || state.readOnly;
     applyAccessMode();
@@ -2439,4 +2442,13 @@ setInterval(() => {
   if (state.initialized) void refreshOverview();
 }, 10000);
 createMcpSettings({ api, toast });
+createProviderSettings({
+  api,
+  toast,
+  allowed: () => !state.remote && state.providersAvailable,
+  onChanged: async () => {
+    const catalog = await api('/api/models');
+    updateModelsAfterConfiguration({ catalog });
+  },
+});
 void bootstrap();

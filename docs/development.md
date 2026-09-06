@@ -4,7 +4,7 @@
 
 ## Installation et développement
 
-Prérequis : **Node.js 22.8 ou ultérieur**, Prime Agent installé et un fournisseur déjà configuré dans Prime Agent. La version locale validée est **0.9.2** ; l’intégration a aussi été vérifiée avec **0.9.1**. Le GUI réutilise les comptes existants et ne demande pas de copier une clé API dans le navigateur.
+Prérequis : **Node.js 22.8 ou ultérieur** et Prime Agent installé. Configurez un fournisseur avant le premier message, dans Prime Agent ou dans le panneau local **Fournisseurs**. La version locale validée est **0.9.2** ; l’intégration a aussi été vérifiée avec **0.9.1**. Le GUI réutilise les comptes existants sans redemander leurs clés.
 
 ```powershell
 npm ci
@@ -17,6 +17,10 @@ Il n’y a pas d’étape de compilation. Les bibliothèques Markdown sont servi
 Sous Windows, le moteur Python est provisionné dans `.local/kernel-venv` pour contourner un problème de chemin `bin/python` du CLI 0.9.1. La commande `npm run setup:runtime` prépare ce moteur ; sinon, la préparation se fait au premier message et nécessite Internet. Le GUI transmet ensuite son chemin à Prime Agent sans modifier l’installation globale. Un `PRIME_AGENT_KERNEL_PYTHON` explicitement configuré reste prioritaire.
 
 ## Processus Windows silencieux
+
+La gestion des fournisseurs utilise `lib/provider-service.mjs` et un processus masqué `scripts/provider-auth-worker.mjs`. `lib/provider-auth.mjs` charge le catalogue et les flux OAuth natifs sans extension de projet. Les clés passent par stdin ; seules les informations d’affichage et les étapes de connexion reviennent au navigateur. Les écritures utilisent `FileAuthStorageBackend` et `AuthStorage`, avec une révision du fournisseur vérifiée sous verrou. La fermeture d’un parcours n’arrête que son processus de connexion. Les routes `/api/providers` et leurs sous-routes ne figurent pas dans la liste d’accès de la passerelle distante.
+
+`npm run test:providers` vérifie l’ajout et le retrait de clés dans un stockage natif temporaire, l’actualisation des modèles, le parcours OAuth simulé, la conservation du brouillon et le refus des routes sur mobile et PC distant. `test/providers.test.mjs` couvre les verrous, conflits, clés invalides, commandes de secrets non exécutées, annulations et délais OAuth. Aucun compte personnel n’est connecté ou déconnecté par ces tests.
 
 Le serveur appelle directement le fichier JavaScript du CLI avec Node, sans passer par un lanceur `.cmd` ni une console PowerShell.
 

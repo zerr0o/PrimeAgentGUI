@@ -1,0 +1,283 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, readFile, writeFile, rm, access } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { EventEmitter } from 'node:events';
+import { PassThrough } from 'node:stream';
+import { createProviderAuth, credentialRevision } from '../lib/provider-auth.mjs';
+import { createProviderService } from '../lib/provider-service.mjs';
+
+async function fixture(t) {
+  const agentHome = await mkdtemp(join(tmpdir(), 'prime-studio-providers-'));
+  t.after(() => rm(agentHome, { recursive: true, force: true }));
+  return {
+    agentHome,
+    authPath: join(agentHome, 'auth.json'),
+    store: () => createProviderAuth({ agentHome }),
+  };
+}
+test('native provider listing never refreshes tokens or runs credential commands; writes preserve other providers and MCP', async (t) => {
+  const { agentHome, authPath, store } = await fixture(t);
+  const marker = join(agentHome, 'command-must-not-run.txt');
+  const initial = {
+    'mcp:notes': { type: 'oauth', access: 'mcp-private', refresh: 'refresh-private', expires: 0 },
+    anthropic: { type: 'oauth', access: 'private-anthropic', refresh: 'private-refresh', expires: 0 },
+    openai: { type: 'api_key', key: 'private-openai' },
+    groq: { type: 'api_key', key: `!echo unwanted > "${marker}"` },
+  };
+  await writeFile(authPath, JSON.stringify(initial));
+  const sdk = await store(),
+    list = sdk.list();
+  assert.doesNotMatch(
+    JSON.stringify(list),
+    /private-openai|mcp-private|refresh-private|private-anthropic|command-must-not-run/,
+  );
+  await assert.rejects(access(marker));
+  assert(!list.providers.some((p) => p.id.startsWith('mcp:')));
+  assert(
+    list.providers.some(
+      (p) => p.id === 'openai-codex' && p.methods.includes('oauth') && !p.methods.includes('api_key'),
+    ),
+  );
+  assert.deepEqual(JSON.parse(await readFile(authPath)), initial);
+  const rev = list.providers.find((p) => p.id === 'openai').revision;
+  // An MCP login occurred after this view was loaded.
+  initial['mcp:another'] = { type: 'api_key', key: 'another-private' };
+  await writeFile(authPath, JSON.stringify(initial));
+  await sdk.save({ provider: 'openai', revision: rev, kind: 'key', value: 'replacement-private' });
+  const saved = JSON.parse(await readFile(authPath));
+  assert.deepEqual(saved['mcp:another'], initial['mcp:another']);
+  assert.deepEqual(saved['mcp:notes'], initial['mcp:notes']);
+  assert.deepEqual(saved.groq, initial.groq);
+  assert.equal(saved.openai.key, 'replacement-private');
+  const fresh = await store();
+  fresh.remove({
+    provider: 'openai',
+    revision: fresh.list().providers.find((p) => p.id === 'openai').revision,
+  });
+  assert.deepEqual(JSON.parse(await readFile(authPath)), {
+    'mcp:notes': initial['mcp:notes'],
+    anthropic: initial.anthropic,
+    groq: initial.groq,
+    'mcp:another': initial['mcp:another'],
+  });
+});
+test('native lock rejects stale edits and removal of the same provider', async (t) => {
+  const { authPath, store } = await fixture(t);
+  await writeFile(authPath, JSON.stringify({ openai: { type: 'api_key', key: 'first' } }));
+  const stale = await store(),
+    revision = stale.list().providers.find((p) => p.id === 'openai').revision;
+  const concurrent = {
+    openai: { type: 'api_key', key: 'second' },
+    'mcp:test': { type: 'api_key', key: 'kept' },
+  };
+  await writeFile(authPath, JSON.stringify(concurrent));
+  await assert.rejects(
+    stale.save({ provider: 'openai', revision, kind: 'key', value: 'third' }),
+    (e) => e.status === 409,
+  );
+  assert.throws(
+    () => stale.remove({ provider: 'openai', revision }),
+    (e) => e.status === 409,
+  );
+  assert.deepEqual(JSON.parse(await readFile(authPath)), concurrent);
+});
+test('invalid and command-backed key input cannot execute or corrupt stored connections', async (t) => {
+  const { authPath, store } = await fixture(t);
+  const sdk = await store(),
+    revision = credentialRevision(null);
+  for (const [provider, value, kind] of [
+    ['openai', '!echo secret', 'key'],
+    ['__proto__', 'key', 'key'],
+    ['mcp:test', 'key', 'key'],
+    ['openai', 'a\nb', 'key'],
+    ['openai-codex', 'value', 'key'],
+    ['unknown-new', 'value', 'key'],
+    ['openai', 'STUDIO_PROVIDER_MISSING_TEST_VAR', 'environment'],
+  ])
+    await assert.rejects(sdk.save({ provider, revision, kind, value }));
+  assert.deepEqual(JSON.parse(await readFile(authPath)), {});
+  await writeFile(authPath, '{"broken":');
+  await assert.rejects(store());
+  assert.equal(await readFile(authPath, 'utf8'), '{"broken":');
+  await writeFile(authPath, '[]');
+  await assert.rejects(store());
+  assert.equal(await readFile(authPath, 'utf8'), '[]');
+});
+test('hidden auth worker writes real native credentials without returning keys and honors busy sessions', async (t) => {
+  const { agentHome, authPath } = await fixture(t);
+  let busy = false,
+    changed = 0;
+  const service = createProviderService({ agentHome, isBusy: () => busy, onChanged: () => changed++ });
+  t.after(() => service.close());
+  const data = await service.list(),
+    entry = data.providers.find((p) => p.id === 'deepseek');
+  busy = true;
+  const result = await service.save({
+    provider: entry.id,
+    revision: entry.revision,
+    kind: 'key',
+    value: 'test-deepseek-secret',
+  });
+  assert.doesNotMatch(JSON.stringify(result), /test-deepseek-secret/);
+  assert.equal(JSON.parse(await readFile(authPath)).deepseek.key, 'test-deepseek-secret');
+  const revision = credentialRevision({ type: 'api_key', key: 'test-deepseek-secret' });
+  await assert.rejects(service.remove({ provider: 'deepseek', revision }), (e) => e.status === 409);
+  await assert.rejects(
+    service.save({ provider: 'deepseek', revision, kind: 'key', value: 'other' }),
+    (e) => e.status === 409,
+  );
+  busy = false;
+  await service.remove({ provider: 'deepseek', revision });
+  assert.equal(changed, 2);
+});
+
+test('an environment connection cannot be overridden while agents are active; variable references remain native', async (t) => {
+  const { agentHome, authPath } = await fixture(t);
+  let busy = true;
+  const service = createProviderService({
+    agentHome,
+    isBusy: () => busy,
+    environment: {
+      ...process.env,
+      DEEPSEEK_API_KEY: 'environment-private-value',
+      STUDIO_TEST_KEY: 'environment-private-value',
+    },
+  });
+  t.after(() => service.close());
+  const data = await service.list(),
+    entry = data.providers.find((p) => p.id === 'deepseek');
+  assert.equal(entry.configured, true);
+  assert.equal(entry.source, 'environment');
+  assert.equal(entry.stored, false);
+  assert.doesNotMatch(JSON.stringify(data), /environment-private-value/);
+  const body = {
+    provider: entry.id,
+    revision: entry.revision,
+    kind: 'environment',
+    value: 'STUDIO_TEST_KEY',
+  };
+  await assert.rejects(service.save(body), (e) => e.status === 409);
+  assert.deepEqual(JSON.parse(await readFile(authPath)), {});
+  busy = false;
+  await service.save(body);
+  assert.equal(JSON.parse(await readFile(authPath)).deepseek.key, 'STUDIO_TEST_KEY');
+});
+
+export function fakeAuthSpawn(onRequest) {
+  const spawned = [];
+  const spawnProcess = (command, args, options) => {
+    const child = new EventEmitter();
+    child.stdin = new PassThrough();
+    child.stdout = new PassThrough();
+    child.killed = false;
+    child.kill = () => {
+      if (child.killed) return;
+      child.killed = true;
+      child.emit('close', 0);
+    };
+    let buffer = '';
+    child.send = (data) => child.stdout.write(JSON.stringify(data) + '\n');
+    child.stdin.on('data', (chunk) => {
+      buffer += chunk;
+      let i;
+      while ((i = buffer.indexOf('\n')) >= 0) {
+        const line = buffer.slice(0, i);
+        buffer = buffer.slice(i + 1);
+        onRequest(child, JSON.parse(line));
+      }
+    });
+    spawned.push({ child, command, args, options });
+    return child;
+  };
+  return { spawnProcess, spawned };
+}
+const promptId = '12345678-abcd-1234-abcd-123456789012';
+test('OAuth handles manual input, selection, cancellation, completion and timeout in its own hidden worker', async (t) => {
+  const answers = [];
+  const fake = fakeAuthSpawn((child, data) => {
+    if (data.operation === 'login')
+      queueMicrotask(() =>
+        child.send({
+          type: 'auth',
+          url: 'https://github.com/login/device',
+          instructions: 'Code : DEMO-CODE',
+        }),
+      );
+    else answers.push(data);
+  });
+  let changed = 0;
+  const service = createProviderService({
+    agentHome: 'unused-fixture',
+    spawnProcess: fake.spawnProcess,
+    onChanged: () => changed++,
+  });
+  t.after(() => service.close());
+  const body = { provider: 'github-copilot', revision: credentialRevision(null) };
+  let job = service.login(body);
+  await new Promise((r) => setImmediate(r));
+  const { child, options, args } = fake.spawned[0];
+  assert.equal(options.windowsHide, true);
+  assert.equal(options.shell, false);
+  assert.equal(args.length, 1);
+  child.send({
+    type: 'prompt',
+    prompt: { id: promptId, kind: 'text', message: 'Domaine', allowEmpty: true },
+  });
+  assert.equal(service.job(job.id).prompts.length, 1);
+  service.answer(job.id, { promptId, value: '' });
+  assert.equal(answers[0].value, '');
+  child.send({
+    type: 'prompt',
+    prompt: { id: promptId, kind: 'select', message: 'Compte', options: [{ id: 'one', label: 'Personnel' }] },
+  });
+  assert.throws(
+    () => service.answer(job.id, { promptId, value: 'bad' }),
+    (e) => e.status === 400,
+  );
+  service.answer(job.id, { promptId, value: 'one' });
+  child.send({ type: 'prompt', prompt: { id: promptId, kind: 'commit' } });
+  assert.equal(service.job(job.id).status, 'saving');
+  assert.throws(
+    () => service.cancel(job.id),
+    (e) => e.status === 409,
+  );
+  child.send({ type: 'result', result: { saved: true } });
+  assert.equal(service.job(job.id).status, 'complete');
+  assert.equal(changed, 1);
+  job = service.login(body);
+  assert.equal(service.cancel(job.id).status, 'cancelled');
+  fake.spawned[1].child.send({ type: 'result', result: { saved: true } });
+  assert.equal(changed, 1);
+  const expiry = createProviderService({
+    agentHome: 'unused-fixture',
+    spawnProcess: fake.spawnProcess,
+    timeoutMs: 20,
+  });
+  t.after(() => expiry.close());
+  const expires = expiry.login(body);
+  await new Promise((r) => setTimeout(r, 40));
+  assert.equal(expiry.job(expires.id).status, 'error');
+});
+test('OAuth refuses unsafe authorization URLs and rechecks busy status before saving', async (t) => {
+  let busy = false;
+  const fake = fakeAuthSpawn(() => {}),
+    service = createProviderService({
+      agentHome: 'unused',
+      spawnProcess: fake.spawnProcess,
+      isBusy: () => busy,
+    });
+  t.after(() => service.close());
+  let job = service.login({ provider: 'openai-codex', revision: credentialRevision(null) });
+  fake.spawned[0].child.send({ type: 'auth', url: 'javascript:alert(1)' });
+  assert.equal(service.job(job.id).status, 'error');
+  job = service.login({
+    provider: 'openai-codex',
+    revision: credentialRevision({ type: 'oauth', access: 'old' }),
+  });
+  busy = true;
+  fake.spawned[1].child.send({ type: 'prompt', prompt: { id: promptId, kind: 'commit' } });
+  assert.equal(service.job(job.id).status, 'error');
+  assert.equal(fake.spawned[1].child.killed, true);
+});

@@ -15,6 +15,7 @@
   <a href="#images-et-pièces-jointes">Pièces jointes</a> ·
   <a href="#vos-modèles-à-portée-de-main">Modèles</a> ·
   <a href="docs/mcp.md">Connexions MCP</a> ·
+  <a href="docs/providers.md">Fournisseurs</a> ·
   <a href="docs/commands.md">Commandes et skills</a> ·
   <a href="docs/inspector.md">Agents et fichiers</a> ·
   <a href="docs/lan.md">Accès mobile</a> ·
@@ -28,7 +29,7 @@
 
 Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une application accessible depuis le navigateur. Suivez les réponses en direct, retrouvez vos projets et continuez une conversation sans ouvrir de terminal. Sous Windows, les agents et leurs outils démarrent en arrière-plan, sans fenêtres PowerShell intempestives.
 
-**Version 2.1.0** — [Télécharger le code source et consulter les notes de version](https://github.com/zerr0o/PrimeAgentGUI/releases/latest). Cette version ajoute le suivi des sous-agents, l’exploration des fichiers et les aperçus de documents directement depuis la conversation.
+**Version 2.2.0** — [Télécharger le code source et consulter les notes de version](https://github.com/zerr0o/PrimeAgentGUI/releases/latest). Cette version ajoute la gestion graphique des fournisseurs sur PC : connexions par compte, clés API et déconnexion avec confirmation.
 
 ## Ce que vous pouvez faire
 
@@ -42,6 +43,7 @@ Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une 
 | **Joindre des images et fichiers** | Choisir une photo ou un document, les déposer dans la conversation ou les coller depuis le presse-papiers.                        |
 | **Retrouver vos modèles**          | Rechercher par nom ou fournisseur, gérer vos favoris et choisir le niveau de réflexion.                                           |
 | **Connecter des outils MCP**       | Gérer les serveurs HTTP et stdio, OAuth, les variables, les outils autorisés et les tests de connexion.                           |
+| **Gérer les fournisseurs**         | Sur le PC, connecter un compte, enregistrer une clé API et retirer des identifiants avec confirmation.                            |
 | **Travailler en parallèle**        | Lancer des exécutions dans plusieurs sessions et passer de l’une à l’autre.                                                       |
 | **Retrouver le Studio sur mobile** | Piloter le PC depuis un téléphone en Wi-Fi ou via Tailscale, avec un code d’accès.                                                |
 | **Installer le Studio**            | Ajouter une icône sur l’écran d’accueil et ouvrir le Studio dans sa propre fenêtre, via HTTPS.                                    |
@@ -78,7 +80,7 @@ Les tests découvrent les outils sans en exécuter. Les nouveaux réglages s’a
 
 ## Démarrage rapide
 
-**Prérequis :** Windows, **Node.js 22.8 ou ultérieur**, Prime Agent installé et un fournisseur déjà configuré dans le CLI. L’intégration a été vérifiée avec **Prime Agent 0.9.1 et 0.9.2**, y compris les adaptations Windows.
+**Prérequis :** Windows, **Node.js 22.8 ou ultérieur** et Prime Agent installé. Un fournisseur doit être configuré avant le premier message, depuis le CLI ou le panneau **Fournisseurs** du Studio sur le PC. L’intégration a été vérifiée avec **Prime Agent 0.9.1 et 0.9.2**, y compris les adaptations Windows ; le nouveau panneau de connexion a été vérifié avec **0.9.2**.
 
 Téléchargez **Source code (zip)** depuis la [dernière release](https://github.com/zerr0o/PrimeAgentGUI/releases/latest) et extrayez l’archive, ou clonez ce dépôt. Ouvrez ensuite un terminal dans le dossier extrait :
 
@@ -151,6 +153,10 @@ Vous pouvez combiner images et fichiers, dans la limite de **8 pièces jointes a
 
 ## Vos modèles à portée de main
 
+Sur le PC, **Préférences → Fournisseurs → Gérer les connexions** permet de connecter les comptes pris en charge par Prime Agent, d’ajouter ou remplacer une clé API et de retirer des identifiants avec confirmation. La recherche affiche l’état de configuration et la provenance des identifiants. Ce panneau reste réservé à l’adresse locale du PC ; les routes correspondantes sont bloquées à distance. Le [guide des fournisseurs](docs/providers.md) détaille les parcours de connexion et le comportement pendant les sessions actives.
+
+![Gestion des fournisseurs sur PC : recherche, état des connexions, comptes et clés API. Données de démonstration.](docs/screenshots/desktop-providers.png)
+
 Recherchez un modèle par son **nom, son fournisseur ou son identifiant**. Les favoris restent en tête du sélecteur et sont enregistrés dans votre navigateur. Le catalogue dépend des modèles disponibles dans votre installation Prime Agent.
 
 <p align="center">
@@ -214,6 +220,7 @@ La PWA conserve les commandes et pièces jointes du site. En cas de coupure, un 
 | Guide                                             | Contenu                                                                         |
 | ------------------------------------------------- | ------------------------------------------------------------------------------- |
 | [Configuration et données](docs/configuration.md) | Modèles, valeurs par défaut, stockage et variables d’environnement.             |
+| [Fournisseurs](docs/providers.md)                 | Connexions par compte, clés API, déconnexion et accès réservé au PC.            |
 | [Accès mobile](docs/lan.md)                       | Activation, adresse réseau, authentification et permissions.                    |
 | [Application installable](docs/pwa.md)            | Installation PWA, HTTPS privé et reconnexion.                                   |
 | [Développement](docs/development.md)              | Architecture, processus Windows silencieux, tests et captures reproductibles.   |
@@ -231,6 +238,7 @@ npm run test:mobile
 npm run test:attachments
 npm run test:pwa
 npm run test:inspector
+npm run test:providers
 ```
 
 Les tests automatiques utilisent des données temporaires et un moteur simulé. Les tests de navigateur nécessitent Microsoft Edge ; les tests réels facultatifs avec Luna sont documentés séparément.

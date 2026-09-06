@@ -11,6 +11,7 @@ import { createModelConfigStore } from './lib/model-config.mjs';
 import { createModelDefaultsStore } from './lib/model-defaults.mjs';
 import { openDirectory } from './lib/open-directory.mjs';
 import { createMcpService } from './lib/mcp-service.mjs';
+import { createProviderService } from './lib/provider-service.mjs';
 import { createCommandService, parseCommand, validateCommand } from './lib/commands.mjs';
 import { createLiveMessages, routeLiveMessages } from './lib/live-messages.mjs';
 import { createLiveSessionClient } from './lib/live-session-client.mjs';
@@ -21,7 +22,7 @@ import { openFile as openLocalFile, fileLaunchMode } from './lib/open-file.mjs';
 import { createSessionInspector } from './lib/session-inspector.mjs';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
-const VERSION = '2.1.0';
+const VERSION = '2.2.0';
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -87,6 +88,13 @@ export function createApp(options = {}) {
   const mcp = options.mcp || createMcpService({ agentHome });
   const runs = new Map(),
     sessionLocks = new Set();
+  const providers =
+    options.providers ||
+    createProviderService({
+      agentHome,
+      isBusy: () => activeRuns().length > 0,
+      onChanged: () => invalidateModels(),
+    });
   const projectFiles = createProjectFiles({ store, protectedRoots: [agentHome, sessionDir, dataDir] });
   const inspector = createSessionInspector({
     store,
@@ -383,7 +391,7 @@ export function createApp(options = {}) {
           version,
           models: catalog,
           runs: activeRuns(),
-          preferences: { attachments: true, inspector: true, nativeFileOpen: true },
+          preferences: { attachments: true, inspector: true, nativeFileOpen: true, providers: true },
         });
       }
       if (method === 'GET' && path === '/api/version') return json(res, 200, await status());
@@ -455,6 +463,18 @@ export function createApp(options = {}) {
         res.end(file.data);
         return;
       }
+      if (method === 'GET' && path === '/api/providers') return json(res, 200, await providers.list());
+      if (method === 'POST' && path === '/api/providers/key')
+        return json(res, 200, await providers.save(await readBody(req)));
+      if (method === 'POST' && path === '/api/providers/disconnect')
+        return json(res, 200, await providers.remove(await readBody(req)));
+      if (method === 'POST' && path === '/api/providers/login')
+        return json(res, 200, providers.login(await readBody(req)));
+      const providerJob = path.match(/^\/api\/providers\/login\/([a-f0-9-]{36})$/);
+      if (providerJob && method === 'GET') return json(res, 200, providers.job(providerJob[1]));
+      if (providerJob && method === 'POST')
+        return json(res, 200, providers.answer(providerJob[1], await readBody(req)));
+      if (providerJob && method === 'DELETE') return json(res, 200, providers.cancel(providerJob[1]));
       if (method === 'GET' && path === '/api/model-config') return json(res, 200, await modelConfig.list());
       if (path === '/api/commands' && method === 'GET')
         return json(
@@ -596,6 +616,7 @@ export function createApp(options = {}) {
   server.headersTimeout = 15000;
   async function close() {
     mcp.close?.();
+    providers.close?.();
     commands.close?.();
     closing = true;
     clearInterval(cleanup);

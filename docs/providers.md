@@ -1,0 +1,33 @@
+# Fournisseurs de modèles
+
+Sur le PC qui exécute le Studio, ouvrez **http://127.0.0.1:3088 → Préférences → Fournisseurs → Gérer les connexions**. Ce panneau est réservé à l’accès local du PC : il n’est pas disponible par le LAN, Tailscale ou la PWA distante, même en contrôle complet.
+
+## Comptes et clés API
+
+La liste utilise le catalogue de l’installation Prime Agent, avec une recherche par nom ou identifiant. Elle indique les modèles connus et l’origine de la configuration. **Configuré** signifie qu’un moyen d’authentification a été trouvé ; l’ouverture de ce panneau n’envoie pas de requête de génération pour vérifier un abonnement, un quota ou une clé.
+
+- **Connecter un compte** lance le parcours natif du fournisseur. Ouvrez la page officielle avec le bouton proposé, autorisez la connexion et revenez au Studio. Selon le fournisseur, un code, un domaine ou un choix peut être demandé. Une saisie manuelle du code ou de l’adresse de retour est proposée quand le moteur la prend en charge.
+- **Ajouter une clé API** enregistre une clé dans le stockage natif de Prime Agent. Une clé déjà enregistrée n’est jamais préremplie ni renvoyée au navigateur.
+- **Variable d’environnement** enregistre le nom d’une variable existante dans l’environnement du serveur. La variable doit déjà être définie et non vide. Ce panneau ne modifie pas les variables système.
+
+Avec Prime Agent 0.9.2, les parcours par compte disponibles sont ceux d’OpenAI Codex, Anthropic et GitHub Copilot. Les règles d’accès et de facturation restent celles du fournisseur ; consultez la [documentation native des fournisseurs](https://github.com/PrimeIntellect-ai/prime-agent/blob/v0.9.2/packages/coding-agent/docs/providers.md).
+
+Azure et Cloudflare demandent des paramètres d’environnement complémentaires. Bedrock et Vertex utilisent leurs réglages cloud existants ; une indication dans leur carte explique où les configurer. Les fournisseurs personnalisés doivent d’abord être définis dans **Modèles et valeurs par défaut**.
+
+## Déconnexion et sessions en cours
+
+**Déconnecter** demande une confirmation, puis retire uniquement les identifiants enregistrés pour ce fournisseur dans `auth.json`. Les conversations, les modèles personnalisés, les connexions MCP et les autres fournisseurs restent en place. Les variables d’environnement, les paramètres de `models.json` et la connexion Prime CLI ne sont pas supprimés : ils peuvent donc continuer à fournir un accès.
+
+Pour Prime Inference, `PRIME_API_KEY` et la configuration Prime CLI ont priorité sur la clé enregistrée dans `auth.json`.
+
+L’ajout d’un fournisseur reste possible pendant le travail des agents. Le remplacement ou le retrait d’identifiants existants attend la fin des exécutions du Studio. Les agents lancés dans un autre terminal partagent ces identifiants : attendez aussi la fin de leur travail avant de les remplacer ou de les retirer. Le panneau n’arrête aucune session et ne recharge aucun worker actif.
+
+Après un enregistrement réussi, le catalogue de modèles du Studio est actualisé. Prime Agent reste responsable de l’utilisation et du renouvellement des identifiants. Fermer la fenêtre de connexion conserve le parcours OAuth en cours ; rouvrez **Fournisseurs** pour le retrouver. **Annuler la connexion** ferme seulement le processus de connexion. Un parcours inachevé expire au bout de cinq minutes.
+
+## Stockage et accès
+
+Les clés et jetons sont conservés sur le PC dans le fichier natif `~/.prime/agent/auth.json`. Les écritures utilisent le verrou natif de Prime Agent et vérifient que les identifiants du fournisseur n’ont pas été modifiés entre-temps. Une modification simultanée d’un autre fournisseur ou d’un MCP est conservée.
+
+Les opérations s’exécutent dans un processus Windows masqué, indépendant des agents. Les clés et codes saisis ne sont pas placés dans les arguments de lancement, les journaux ou le stockage du navigateur. Les routes de gestion sont refusées par la passerelle distante ; masquer le bouton n’est pas la seule restriction.
+
+Les tests automatiques emploient des fichiers temporaires et des clés factices. Le stockage natif et les restrictions d’accès sont vérifiés réellement ; les autorisations OAuth sont simulées pour ne connecter ni déconnecter aucun compte personnel.

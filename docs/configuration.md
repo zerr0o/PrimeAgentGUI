@@ -14,6 +14,8 @@ Avant une écriture, le Studio conserve une copie `models.json.prime-studio.bak`
 
 ## Données et configuration
 
+Le [panneau Fournisseurs](providers.md), disponible uniquement depuis l’adresse locale du PC, gère les identifiants natifs de `auth.json`. Il propose les parcours par compte, les clés API et la déconnexion avec confirmation. Les secrets enregistrés ne sont pas renvoyés au navigateur ; les réglages externes et les identifiants MCP sont conservés.
+
 Le [gestionnaire MCP](mcp.md), distinct du configurateur de modèles, est également disponible à distance en contrôle complet. Il modifie le champ natif `mcpServers` de `settings.json` et confie les identifiants OAuth au stockage `auth.json` de Prime Agent. Les écritures des valeurs par défaut des modèles et des MCP utilisent le même verrou natif pour préserver les changements simultanés.
 
 | Emplacement                                                | Contenu                                                                                                                                                       |

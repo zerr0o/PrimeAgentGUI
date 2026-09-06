@@ -26,6 +26,7 @@
     <link rel="stylesheet" href="/public/images.css" />
     <link rel="stylesheet" href="/public/pwa.css" />
     <link rel="stylesheet" href="/public/mcp.css" />
+    <link rel="stylesheet" href="/public/providers.css" />
     <link rel="stylesheet" href="/public/commands.css" />
     <link rel="stylesheet" href="/public/inspector.css" />
   </head>
@@ -429,7 +430,7 @@
                   conversation.
                 </p>
                 <div class="context-footer">
-                  <span>PRIME AGENT STUDIO</span><span id="studio-version">2.1</span>
+                  <span>PRIME AGENT STUDIO</span><span id="studio-version">2.2</span>
                 </div>
               </div>
             </div>
@@ -645,6 +646,15 @@
         </div>
         <button id="open-model-config" class="secondary-button" type="button">
           <span data-icon="model"></span>Configurer
+        </button>
+      </div>
+      <div id="provider-settings" class="settings-row" hidden>
+        <div>
+          <label for="open-provider-settings">Fournisseurs</label>
+          <p>Connectez vos comptes et gérez les clés API de Prime Agent.</p>
+        </div>
+        <button id="open-provider-settings" type="button" class="secondary-button">
+          Gérer les connexions
         </button>
       </div>
       <div id="mcp-settings" class="settings-row">

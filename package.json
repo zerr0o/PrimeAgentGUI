@@ -1,6 +1,6 @@
 {
   "name": "prime-agent-studio",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "private": true,
   "type": "module",
   "description": "Espace de travail local pour Prime Agent, avec sessions persistantes et lancement Windows silencieux.",
@@ -19,6 +19,7 @@
     "test:mobile": "node scripts/test-mobile-control.mjs",
     "test:workspace": "node scripts/test-workspace-ui.mjs",
     "test:inspector": "node scripts/test-inspector-ui.mjs",
+    "test:providers": "node scripts/test-providers-ui.mjs",
     "test:commands": "node scripts/test-commands-ui.mjs && node scripts/test-command-chips.mjs",
     "test:commands:native": "node scripts/test-commands-native.mjs",
     "test:explorer": "node scripts/test-open-directory.mjs",
