@@ -7,9 +7,10 @@ try {
   const python = await ensureLocalKernel({
     packageDir: cli.packageDir,
     env: agentEnvironment(),
+    cwd: process.argv[2] || process.cwd(),
     onProgress: (message) => console.log(message),
   });
-  console.log(`Noyau Python prêt : ${python}`);
+  console.log(`Python vérifié : ${python}`);
 } catch (error) {
   console.error(error.message);
   process.exitCode = 1;

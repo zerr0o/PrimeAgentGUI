@@ -29,14 +29,14 @@
 
 Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une application accessible depuis le navigateur. Suivez les réponses en direct, retrouvez vos projets et continuez une conversation sans ouvrir de terminal. Sous Windows, les agents et leurs outils démarrent en arrière-plan, sans fenêtres PowerShell intempestives.
 
-**Version 2.3.0** — [Télécharger le code source et consulter les notes de version](https://github.com/zerr0o/PrimeAgentGUI/releases/latest). Choisissez le modèle et la réflexion des sous-agents, suivez le raisonnement en direct et modifiez le code d’accès mobile depuis le PC.
+**Version 2.4.0** — [Télécharger le code source et consulter les notes de version](https://github.com/zerr0o/PrimeAgentGUI/releases/latest). Les skills Python sont préparées pour les parents et les sous-agents, et les projets signalent leur activité et leurs réponses non lues.
 
-## Nouveautés de la version 2.3
+## Nouveautés de la version 2.4
 
-- **Sous-agents maîtrisés** : modèle et niveau de réflexion par défaut, réglages globaux sur PC ou propres à un projet dans l’onglet **Agents**, accessibles avant le premier message.
-- **Un même sélecteur de modèles** : catalogue, recherche intégrée et favoris partagés entre conversations, modèle principal par défaut et sous-agents. **Nouvelle session** et **Ctrl+N** reprennent le modèle par défaut.
-- **Raisonnement à suivre en direct** : modes **Masqué**, **Aperçu** et **Détaillé** ; l’aperçu suit les deux dernières lignes avec leur formatage Markdown. Les cartes des agents indiquent la réflexion réellement utilisée.
-- **Code mobile modifiable sur PC** : un PIN commun au Wi-Fi, à Tailscale et à la PWA, appliqué immédiatement. Les appareils se reconnectent ; les agents continuent leur travail.
+- **Skills Python complètes** : correction de la préparation du kernel Windows, qui installait le runtime mais omettait les skills. Les packages activés et leurs dépendances locales sont maintenant installés et leurs imports vérifiés, notamment `agent_message.send`.
+- **Messagerie entre agents vérifiée** : de vrais messages passent dans les deux sens entre parent et enfant, y compris après arrêt du moteur et reprise de la conversation. Chaque kernel utilise les skills de sa session.
+- **Réparation automatique** : les anciens environnements incomplets sont remplacés par une génération validée, sans suppression manuelle. Un Python externe reste sous votre contrôle et reçoit un diagnostic précis.
+- **Projets à suivre d’un regard** : point **vert** pendant une exécution, **bleu** pour une réponse terminée non lue ; le vert est prioritaire. Les non-lus persistent après rechargement, sur PC et mobile.
 
 ![Modèle principal et sous-agents : mêmes sélecteurs avec recherche et favoris dans les préférences du PC.](docs/screenshots/desktop-model-defaults.png)
 
@@ -62,6 +62,8 @@ Les exécutions continuent lorsque vous changez de session, rechargez la page ou
 
 Le menu **⋯** de chaque projet fonctionne aussi sur mobile ; le clic droit est disponible sur PC. Retirer un projet masque son entrée dans le Studio et conserve son dossier et ses sessions. Vous pouvez retrouver ceux-ci en ajoutant à nouveau le dossier. Un projet avec une exécution active ne peut pas être retiré.
 
+Dans la liste des projets, le dossier devient un **point vert** lorsqu’une session travaille, ou un **point bleu** lorsqu’une réponse terminée reste à lire. Le vert est prioritaire. La session concernée porte aussi un point bleu : consultez sa dernière réponse pour l’effacer. Ce suivi est conservé après rechargement et partagé entre les onglets d’un même navigateur ; il reste indépendant sur chaque appareil.
+
 Dans le Studio distant, **Préférences → Se déconnecter** ferme l’accès de ce navigateur et revient au code d’accès. Les agents et les autres appareils connectés continuent de fonctionner.
 
 Sur le PC, **Préférences → Accès mobile → Changer le code** modifie le PIN à huit chiffres du Wi-Fi, de Tailscale et de la PWA. Les appareils doivent se reconnecter avec le nouveau code ; les agents continuent, sans redémarrage du Studio.
@@ -69,6 +71,8 @@ Sur le PC, **Préférences → Accès mobile → Changer le code** modifie le PI
 ## Commandes et skills à portée de main
 
 Tapez **`/`** ou utilisez le bouton **/** près des pièces jointes pour rechercher une commande, un skill ou un prompt du projet. Les raccourcis ouvrent les panneaux du Studio ; `/compact`, `/refine`, `/goal` et `/autonomous` sont exécutés par Prime Agent, y compris dans la file d’une session active. `/skill:nom` charge un skill avec vos consignes. Consultez le [guide des commandes, skills et prompts](docs/commands.md) pour les syntaxes et les commandes réservées au terminal.
+
+Les skills Python sont préparées selon les réglages natifs du projet, pour le parent comme pour ses sous-agents. La [configuration du Python et la réparation des anciennes installations](docs/configuration.md#python-et-skills) détaillent la préparation automatique et le cas d’un `PRIME_AGENT_KERNEL_PYTHON` fourni par l’utilisateur.
 
 ## Session, agents et fichiers
 
@@ -132,6 +136,8 @@ npm run start:silent
 ```
 
 Vos réglages locaux et les sessions natives de Prime Agent sont conservés. Pour une installation depuis une archive, remplacez les fichiers du Studio par ceux de la nouvelle release en conservant le dossier `.local`, puis relancez les étapes d’installation.
+
+**Depuis une version 2.3 ou antérieure :** exécutez bien `npm ci` puis `npm run setup:runtime` et redémarrez le Studio pour charger le correctif des skills Python. Les kernels déjà ouverts conservent leur environnement jusqu’à leur redémarrage.
 
 ## Pendant que l’agent travaille
 

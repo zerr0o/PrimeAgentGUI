@@ -25,7 +25,7 @@ import { openFile as openLocalFile, fileLaunchMode } from './lib/open-file.mjs';
 import { createSessionInspector } from './lib/session-inspector.mjs';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
-const VERSION = '2.3.0';
+const VERSION = '2.4.0';
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',

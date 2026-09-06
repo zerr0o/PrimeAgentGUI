@@ -30,6 +30,8 @@ Le [gestionnaire MCP](mcp.md), distinct du configurateur de modèles, est égale
 | `~/.prime/agent/settings.json`, `models.json`, `auth.json` | Configuration du moteur ; le configurateur peut écrire `models.json` et les valeurs par défaut de `settings.json`, sans transmettre les secrets à l’interface |
 | `.local/workspace.json`                                    | Projets, titres, épingles et archives du GUI                                                                                                                  |
 | `.local/subagent-defaults.json`                            | Modèle et réflexion des sous-agents : valeurs globales et exceptions par projet                                                                               |
+| `.local/kernel-venv/`                                      | Environnements Python par configuration de skills, avec marqueurs de validation ; les générations précédentes restent disponibles                             |
+| `.local/kernel-ready.json`                                 | Chemin du dernier Python entièrement préparé et vérifié par le Studio                                                                                         |
 | `.local/attachments/`                                      | Fichiers joints originaux et métadonnées de téléchargement ; à conserver pour pouvoir les relire depuis les sessions                                          |
 | `~/.prime/agent/sessions/.studio-images/`                  | Images transmises au CLI, également enregistrées dans les messages natifs                                                                                     |
 | IndexedDB du navigateur                                    | Pièces jointes des brouillons, séparées par session ou nouveau projet                                                                                         |
@@ -39,14 +41,31 @@ Le [gestionnaire MCP](mcp.md), distinct du configurateur de modèles, est égale
 | `.local/logs/server.log`                                   | Journal du serveur lancé en arrière-plan                                                                                                                      |
 | `.local/logs/launcher.log`                                 | Diagnostics du lanceur                                                                                                                                        |
 
-| Variable d’environnement       | Rôle                                                |
-| ------------------------------ | --------------------------------------------------- |
-| `PORT`                         | Port HTTP, `3088` par défaut                        |
-| `PRIME_AGENT_CLI`              | Chemin du `cli.js` ou du dossier npm de Prime Agent |
-| `PRIME_AGENT_CODING_AGENT_DIR` | Dossier de configuration de Prime Agent             |
-| `PRIME_AGENT_SESSION_DIR`      | Dossier des sessions à lire et à créer              |
-| `PRIME_AGENT_GUI_DATA_DIR`     | Dossier des métadonnées GUI, `.local` par défaut    |
-| `PRIME_AGENT_GUI_NODE`         | Exécutable Node utilisé par le lanceur VBS          |
-| `PRIME_AGENT_KERNEL_PYTHON`    | Python contenant le moteur `prime-agent-runtime`    |
+| Variable d’environnement       | Rôle                                                                                                          |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `PORT`                         | Port HTTP, `3088` par défaut                                                                                  |
+| `PRIME_AGENT_CLI`              | Chemin du `cli.js` ou du dossier npm de Prime Agent                                                           |
+| `PRIME_AGENT_CODING_AGENT_DIR` | Dossier de configuration de Prime Agent                                                                       |
+| `PRIME_AGENT_SESSION_DIR`      | Dossier des sessions à lire et à créer                                                                        |
+| `PRIME_AGENT_GUI_DATA_DIR`     | Dossier des métadonnées GUI, `.local` par défaut                                                              |
+| `PRIME_AGENT_GUI_NODE`         | Exécutable Node utilisé par le lanceur VBS                                                                    |
+| `PRIME_AGENT_KERNEL_PYTHON`    | Python externe déjà préparé : runtime, bibliothèques et skills Python ; vérifié sans installation automatique |
+| `PRIME_GUI_UV`                 | Chemin de l’exécutable `uv` utilisé pour préparer les environnements du Studio                                |
+
+### Python et skills
+
+Sans Python externe configuré, le Studio prépare sous Windows le runtime et les skills Python activées pour le projet. La découverte suit les réglages de Prime Agent, y compris les chemins supplémentaires et les skills désactivées. Les parents et leurs sous-agents utilisent cette préparation, y compris après reprise.
+
+Pour réparer une ancienne installation où `agent_message` manque, lancez sur le PC :
+
+```powershell
+npm run setup:runtime
+npm stop
+npm run start:silent
+```
+
+Il n’est pas nécessaire de supprimer l’ancien venv. La préparation vérifie les imports et crée automatiquement un environnement complet si nécessaire. Pour un autre projet : `npm run setup:runtime -- "C:\chemin du projet"`. Un kernel déjà ouvert garde son environnement jusqu’à son redémarrage ; l’arrêt du Studio termine aussi ses exécutions en cours, mais conserve les conversations.
+
+Si `PRIME_AGENT_KERNEL_PYTHON` est défini, vous gérez les packages de ce Python. Le Studio n’y installe rien et indique précisément les imports manquants. Le runtime et la messagerie activée sont obligatoires ; une autre skill indisponible est signalée comme optionnelle. Un message de préparation réussie n’est émis pour un environnement géré qu’après vérification complète.
 
 Le serveur de commande écoute uniquement sur `127.0.0.1`. L’accès mobile facultatif passe par une passerelle authentifiée qui autorise les commandes selon son mode. Les origines externes et les noms d’hôte inconnus sont refusés ; seuls les fichiers de l’interface et les routes autorisées sont servis. Ne l’exposez pas via un proxy public : c’est une application personnelle locale.

@@ -23,6 +23,7 @@
   --accent-bg: #302e40;
   --accent-text: #d4d0f4;
   --green: #96bca5;
+  --blue: #88b6f6;
   --red: #e8a2a2;
   --amber: #dab982;
   --code: #161719;
@@ -55,6 +56,7 @@
   --accent-bg: #eae7f6;
   --accent-text: #5f568f;
   --green: #4f8568;
+  --blue: #286ac4;
   --red: #ae4f50;
   --amber: #947036;
   --code: #f0f0ed;
@@ -549,6 +551,23 @@ kbd {
   border-radius: 50%;
   box-shadow: 0 0 0 3px #96bca518;
   animation: pulse 1.7s ease-in-out infinite;
+}
+.unread-dot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  background: var(--blue);
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 12%, transparent);
+}
+.project-activity-dot {
+  margin-inline: 5px;
+}
+.project-session-unread {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--blue);
 }
 .sidebar-footer {
   border-top: 1px solid var(--line-soft);

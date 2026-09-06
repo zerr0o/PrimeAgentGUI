@@ -12,6 +12,7 @@ import { createCommands } from './commands.js';
 import { composerText, setComposerText, composerCommand } from './composer.js';
 import { createInspector } from './inspector.js';
 import { fileLinkRenderer, bindFileLinks } from './file-links.js';
+import { createSessionActivity } from './session-activity.js';
 let imageComposer;
 let liveMessagesUI;
 let commandsUI;
@@ -127,6 +128,11 @@ const state = {
   modelCatalogDefault: '',
 };
 const selection = readStorage('selection', {});
+const sessionActivity = createSessionActivity({
+  read: readStorage,
+  write: writeStorage,
+  loadHistory: (id) => api(`/api/history?id=${encodeURIComponent(id)}`),
+});
 const normalizedPath = (p) =>
   String(p || '')
     .replaceAll('\\', '/')
@@ -536,7 +542,14 @@ function renderProjects() {
     const b = el('button', `project-row${samePath(p.cwd, state.projectCwd) ? ' active' : ''}`);
     b.title = p.cwd;
     b.setAttribute('aria-pressed', String(samePath(p.cwd, state.projectCwd)));
-    b.append(icon('folder'), el('span', 'project-label', p.name || p.cwd.split(/[\\/]/).pop()));
+    const running = [...state.runs.values()].some((run) => samePath(run.cwd, p.cwd) && isRunning(run));
+    const unread = (p.sessions || []).some((s) => sessionActivity.isUnread(s.id));
+    const status = running ? 'running' : unread ? 'unread' : 'idle';
+    b.dataset.activity = status;
+    b.append(
+      status === 'idle' ? icon('folder') : activityDot(status, true),
+      el('span', 'project-label', p.name || p.cwd.split(/[\\/]/).pop()),
+    );
     const count = el('span', 'project-count', String((p.sessions || []).filter((s) => !s.archived).length));
     b.append(count);
     if (p.exists === false) {
@@ -581,6 +594,17 @@ function renderProjects() {
     root.append(empty);
   }
 }
+function activityDot(status, project = false) {
+  const dot = el(
+    'span',
+    `${status === 'running' ? 'running' : 'unread'}-dot${project ? ' project-activity-dot' : ''}`,
+  );
+  const label = status === 'running' ? 'Agent en cours' : 'Réponse terminée non lue';
+  dot.title = label;
+  dot.setAttribute('role', 'img');
+  dot.setAttribute('aria-label', label);
+  return dot;
+}
 function groupLabel(s) {
   if (s.pinned) return 'Épinglées';
   const age = (Date.now() - toTime(s.updatedAt)) / 86400000;
@@ -622,8 +646,10 @@ function renderSessions() {
     b.title = s.title || 'Sans titre';
     b.setAttribute('aria-current', s.id === state.sessionId ? 'page' : 'false');
     const running = [...state.runs.values()].some((r) => r.sessionId === s.id && isRunning(r));
+    const unread = sessionActivity.isUnread(s.id);
+    row.dataset.activity = running ? 'running' : unread ? 'unread' : 'idle';
     b.append(
-      running ? el('span', 'running-dot') : icon(s.pinned ? 'pin' : 'chat'),
+      running || unread ? activityDot(running ? 'running' : 'unread') : icon(s.pinned ? 'pin' : 'chat'),
       el('span', 'session-title', s.title || 'Nouvelle session'),
     );
     b.onclick = () => selectSession(s.id, s.cwd);
@@ -701,14 +727,25 @@ function renderProjectOverview() {
         Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || toTime(b.updatedAt) - toTime(a.updatedAt),
     );
   const runningIds = new Set([...state.runs.values()].filter(isRunning).map((r) => r.sessionId));
-  const signature = JSON.stringify([p.cwd, state.readOnly, state.archived, query, items, [...runningIds]]);
+  const unreadIds = items.filter((s) => sessionActivity.isUnread(s.id)).map((s) => s.id);
+  const signature = JSON.stringify([
+    p.cwd,
+    state.readOnly,
+    state.archived,
+    query,
+    items,
+    [...runningIds],
+    unreadIds,
+  ]);
   if (signature === projectListSignature) return;
   projectListSignature = signature;
   const root = $('project-session-list');
   root.replaceChildren();
   for (const s of items) {
     const running = Boolean(s.runId || (s.id && runningIds.has(s.id)));
+    const unread = unreadIds.includes(s.id);
     const card = el('button', `project-session-card${running ? ' is-running' : ''}`);
+    card.dataset.activity = running ? 'running' : unread ? 'unread' : 'idle';
     card.type = 'button';
     if (s.id) card.dataset.sessionId = s.id;
     if (s.runId) card.dataset.runId = s.runId;
@@ -719,6 +756,10 @@ function renderProjectOverview() {
     if (running) {
       const status = el('span', 'project-session-running');
       status.append(el('span', 'running-dot'), document.createTextNode('Agent en cours'));
+      meta.append(status);
+    } else if (unread) {
+      const status = el('span', 'project-session-unread');
+      status.append(activityDot('unread'), document.createTextNode('Réponse non lue'));
       meta.append(status);
     } else if (s.pinned) meta.append(el('span', '', 'Épinglée'));
     if (Number.isFinite(s.messageCount))
@@ -1045,12 +1086,43 @@ function nearBottom() {
   const s = $('conversation-scroll');
   return s.scrollHeight - s.scrollTop - s.clientHeight < 110;
 }
+function markVisibleSessionRead() {
+  if (
+    document.hidden ||
+    state.loading ||
+    state.projectOverview ||
+    !state.sessionId ||
+    isRunning(activeRun()) ||
+    !nearBottom() ||
+    document.querySelector('dialog[open], #sidebar.mobile-open, #details-panel.mobile-open')
+  )
+    return;
+  if (sessionActivity.markRead(state.sessionId, activeMessages())) {
+    renderProjects();
+    renderSessions();
+    renderProjectOverview();
+  }
+}
+async function syncSessionActivity() {
+  const token = state.requestId;
+  const histories = await sessionActivity.sync(allSessions(), [...state.runs.values()]);
+  const current = histories.find((history) => history.id === state.sessionId);
+  if (current && token === state.requestId && !state.loading && !state.viewRunId && !isRunning(activeRun())) {
+    state.history = current.messages || [];
+    renderMessages();
+  }
+  markVisibleSessionRead();
+  renderProjects();
+  renderSessions();
+  renderProjectOverview();
+}
 function scrollBottom(smooth = false) {
   $('conversation-scroll').scrollTo({
     top: $('conversation-scroll').scrollHeight,
     behavior: smooth && !matchMedia('(prefers-reduced-motion: reduce)').matches ? 'smooth' : 'instant',
   });
   $('scroll-bottom').hidden = true;
+  markVisibleSessionRead();
 }
 let renderScheduled = false;
 function scheduleMessages() {
@@ -1160,6 +1232,7 @@ async function selectSession(id, cwd) {
     }
     if (token !== state.requestId) return;
     state.history = h.messages || [];
+    if (h.id && !running) sessionActivity.observe(h);
     if (running) {
       state.viewRunId = running.id;
       if (!running.initialized) initializeRun(running, state.history);
@@ -1401,6 +1474,7 @@ async function finishRun(run, e) {
     if (run.sessionId) {
       try {
         const h = await api(`/api/history?id=${encodeURIComponent(run.sessionId)}`);
+        sessionActivity.observe(h);
         if (state.viewRunId === run.id && h.messages?.length) {
           state.history = h.messages;
           if (e.error)
@@ -1541,6 +1615,7 @@ function refreshOverview() {
         }
         setConnection(true);
         renderNavigation();
+        await syncSessionActivity();
       } catch {
         setConnection(false);
       }
@@ -1793,6 +1868,7 @@ async function bootstrap() {
     state.remote = data.preferences?.remote === true || state.readOnly;
     applyAccessMode();
     state.projects = data.projects || [];
+    sessionActivity.initialize(allSessions());
     state.version = data.version || {};
     for (const run of data.runs || []) state.runs.set(run.id, run);
     populateModels(data.models);
@@ -1820,6 +1896,7 @@ async function bootstrap() {
       renderMessages();
     }
     saveSelection();
+    void syncSessionActivity();
   } catch (e) {
     setConnection(false);
     banner(`Impossible de joindre le serveur. ${e.message}`, true);
@@ -2309,6 +2386,7 @@ $('toggle-details').onclick = () => {
 $('scroll-bottom').onclick = () => scrollBottom(true);
 $('conversation-scroll').onscroll = () => {
   $('scroll-bottom').hidden = state.projectOverview || nearBottom();
+  markVisibleSessionRead();
 };
 $('composer').oninput = () => {
   saveDraft();
@@ -2470,6 +2548,12 @@ window.visualViewport?.addEventListener('resize', positionMenus);
 window.visualViewport?.addEventListener('scroll', positionMenus);
 matchMedia('(prefers-color-scheme: light)').addEventListener('change', applyPreferences);
 window.addEventListener('storage', (event) => {
+  if (event.key?.startsWith('prime-studio.session-activity.')) {
+    renderProjects();
+    renderSessions();
+    renderProjectOverview();
+    return;
+  }
   if (event.key !== 'prime-studio.preferences') return;
   const latest = storedPreferences();
   prefs.modelFavorites = Array.isArray(latest.modelFavorites) ? latest.modelFavorites : [];
