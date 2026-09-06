@@ -6,9 +6,12 @@ import { createImageComposer, renderImages } from './images.js';
 import { createMcpSettings } from './mcp.js';
 import { createCommands } from './commands.js';
 import { composerText, setComposerText, composerCommand } from './composer.js';
+import { createInspector } from './inspector.js';
+import { fileLinkRenderer, bindFileLinks } from './file-links.js';
 let imageComposer;
 let liveMessagesUI;
 let commandsUI;
+let inspectorUI;
 const $ = (id) => document.getElementById(id);
 const icons = {
   plus: 'M12 5v14M5 12h14',
@@ -396,8 +399,9 @@ function applyPreferences() {
     );
   }
   const open = $('toggle-details').getAttribute('aria-pressed') === 'true';
-  $('toggle-details').title = open ? 'Masquer le contexte' : 'Afficher le contexte';
+  $('toggle-details').title = open ? 'Masquer le panneau' : 'Afficher le panneau Session, Agents et Fichiers';
   $('toggle-details').setAttribute('aria-label', $('toggle-details').title);
+  inspectorUI?.update();
 }
 function applyAccessMode() {
   document.documentElement.dataset.readOnly = String(state.readOnly);
@@ -819,6 +823,7 @@ function renderDetails() {
       );
     else if ($('global-banner').dataset.persistent !== 'true') banner('');
   }
+  inspectorUI?.update();
 }
 function renderNavigation() {
   renderProjects();
@@ -828,28 +833,34 @@ function renderNavigation() {
   updateComposer();
 }
 marked.setOptions({ gfm: true, breaks: false });
-function markdown(text) {
+function markdown(text, { cwd = state.projectCwd, basePath = '' } = {}) {
   const n = el('div', 'markdown');
-  n.innerHTML = DOMPurify.sanitize(marked.parse(String(text || '')), {
-    USE_PROFILES: { html: true },
-    FORBID_TAGS: [
-      'style',
-      'form',
-      'input',
-      'button',
-      'textarea',
-      'select',
-      'iframe',
-      'video',
-      'audio',
-      'object',
-      'embed',
-      'svg',
-      'math',
-    ],
-    FORBID_ATTR: ['style', 'id', 'name', 'target'],
-  });
+  const references = [];
+  n.innerHTML = DOMPurify.sanitize(
+    marked.parse(String(text || ''), { renderer: fileLinkRenderer(marked, references) }),
+    {
+      USE_PROFILES: { html: true },
+      FORBID_TAGS: [
+        'style',
+        'form',
+        'input',
+        'button',
+        'textarea',
+        'select',
+        'iframe',
+        'video',
+        'audio',
+        'object',
+        'embed',
+        'svg',
+        'math',
+      ],
+      FORBID_ATTR: ['style', 'id', 'name', 'target'],
+    },
+  );
+  bindFileLinks(n, references, (reference) => inspectorUI?.openDocument(reference, { cwd, basePath }));
   n.querySelectorAll('a').forEach((a) => {
+    if (a.classList.contains('document-link')) return;
     const href = a.getAttribute('href') || '';
     if (!/^(https?:|mailto:|#|\/)/i.test(href)) {
       a.removeAttribute('href');
@@ -1753,6 +1764,8 @@ async function bootstrap() {
   try {
     const data = await api('/api/bootstrap');
     state.attachmentsAvailable = data.preferences?.attachments === true;
+    state.inspectorAvailable = data.preferences?.inspector === true;
+    state.nativeFileOpen = data.preferences?.nativeFileOpen === true;
     state.readOnly = data.preferences?.readOnly === true;
     state.remote = data.preferences?.remote === true || state.readOnly;
     applyAccessMode();
@@ -2040,6 +2053,23 @@ async function exportSession(id = state.sessionId) {
 }
 
 hydrateIcons();
+inspectorUI = createInspector({
+  api,
+  markdown,
+  getContext: () => ({
+    cwd: state.projectCwd,
+    sessionId: state.sessionId || activeRun()?.sessionId,
+    enabled: state.inspectorAvailable === true,
+    readOnly: state.readOnly,
+    remote: state.remote,
+    nativeFileOpen: state.nativeFileOpen,
+    online: state.online,
+  }),
+  onClose: () => {
+    $('toggle-details').click();
+    $('toggle-details').focus();
+  },
+});
 imageComposer = createImageComposer({
   getContext: () => ({
     key: draftKey(),
@@ -2116,6 +2146,7 @@ commandsUI = createCommands({
         }
         break;
       case 'session':
+        inspectorUI.setTab('session');
         if (innerWidth <= 1080) $('details-panel').classList.add('mobile-open');
         else {
           prefs.details = true;
@@ -2343,6 +2374,7 @@ document.addEventListener('click', (e) => {
 });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
+    if ($('inspector-viewer').open) return;
     closeProjectMenu();
     closeSessionMenu();
     closeSidebar();

@@ -16,9 +16,12 @@ import { createLiveMessages, routeLiveMessages } from './lib/live-messages.mjs';
 import { createLiveSessionClient } from './lib/live-session-client.mjs';
 import { validateImages, imageBodyLimit } from './lib/images.mjs';
 import { createFileStore, validateFiles, appendFileMessage, splitFileMessage } from './lib/files.mjs';
+import { createProjectFiles } from './lib/project-files.mjs';
+import { openFile as openLocalFile, fileLaunchMode } from './lib/open-file.mjs';
+import { createSessionInspector } from './lib/session-inspector.mjs';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
-const VERSION = '2.0.0';
+const VERSION = '2.1.0';
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -84,6 +87,19 @@ export function createApp(options = {}) {
   const mcp = options.mcp || createMcpService({ agentHome });
   const runs = new Map(),
     sessionLocks = new Set();
+  const projectFiles = createProjectFiles({ store, protectedRoots: [agentHome, sessionDir, dataDir] });
+  const inspector = createSessionInspector({
+    store,
+    agentHome,
+    sessionDir,
+    getRun: (id) => [...runs.values()].findLast((run) => run.sessionId === id),
+    getClient: () => {
+      if (options.inspectorClient) return options.inspectorClient;
+      const endpoint = runtime.getLiveEndpoint?.();
+      return endpoint ? createLiveSessionClient(endpoint) : null;
+    },
+    readEdges: options.readInspectorEdges,
+  });
   const commands =
     options.commands ||
     createCommandService({
@@ -367,11 +383,67 @@ export function createApp(options = {}) {
           version,
           models: catalog,
           runs: activeRuns(),
-          preferences: { attachments: true },
+          preferences: { attachments: true, inspector: true, nativeFileOpen: true },
         });
       }
       if (method === 'GET' && path === '/api/version') return json(res, 200, await status());
       if (method === 'GET' && path === '/api/models') return json(res, 200, await models());
+      if (method === 'GET' && path === '/api/inspector')
+        return json(
+          res,
+          200,
+          await inspector.inspect(url.searchParams.get('cwd'), url.searchParams.get('sessionId')),
+        );
+      if (method === 'GET' && path === '/api/inspector/history')
+        return json(
+          res,
+          200,
+          await inspector.history(
+            url.searchParams.get('cwd'),
+            url.searchParams.get('sessionId'),
+            url.searchParams.get('agentId'),
+          ),
+        );
+      if (method === 'POST' && path === '/api/project-files/open') {
+        const body = await readBody(req);
+        const file = await projectFiles.localFile(body.cwd, body.path);
+        fileLaunchMode(file);
+        return json(res, 200, await (options.openFile || openLocalFile)(file));
+      }
+      if (method === 'GET' && path.startsWith('/api/project-files')) {
+        const cwd = url.searchParams.get('cwd'),
+          file = url.searchParams.get('path') || '';
+        if (path === '/api/project-files')
+          return json(
+            res,
+            200,
+            await projectFiles.list(cwd, file, Number(url.searchParams.get('offset') || 0)),
+          );
+        if (path === '/api/project-files/changes') return json(res, 200, await projectFiles.changes(cwd));
+        if (path === '/api/project-files/preview')
+          return json(res, 200, await projectFiles.preview(cwd, file));
+        if (path === '/api/project-files/resolve')
+          return json(
+            res,
+            200,
+            await projectFiles.resolveReference(
+              cwd,
+              url.searchParams.get('reference'),
+              url.searchParams.get('basePath') || '',
+            ),
+          );
+        if (path === '/api/project-files/diff') return json(res, 200, await projectFiles.diff(cwd, file));
+        if (path === '/api/project-files/download') {
+          const result = await projectFiles.download(cwd, file);
+          res.writeHead(200, {
+            'Content-Type': 'application/octet-stream',
+            'Content-Length': result.data.length,
+            'Content-Disposition': `attachment; filename="file"; filename*=UTF-8''${encodeURIComponent(result.name.toWellFormed()).replace(/['()*]/g, (value) => '%' + value.charCodeAt(0).toString(16))}`,
+            'Cache-Control': 'no-store',
+          });
+          return res.end(result.data);
+        }
+      }
       if (method === 'GET' && /^\/api\/files\/[a-f0-9-]+$/.test(path)) {
         const file = await fileStore.read(path.slice('/api/files/'.length));
         res.writeHead(200, {

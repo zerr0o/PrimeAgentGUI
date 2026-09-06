@@ -70,6 +70,23 @@ function fixture(options = {}) {
           };
         case 'get_queue':
           return { success: true, data: { steering: [...queue.steering], followUp: [...queue.followUp] } };
+        case 'get_rlm_children':
+          return {
+            success: true,
+            data: {
+              children: [
+                {
+                  id: 'child-one',
+                  parentId: sessionId,
+                  sessionName: 'Audit',
+                  status: 'done',
+                  activity: { kind: 'executing', toolName: 'ipython', privateCredentials: 'secret' },
+                  sessionDir: 'private-secret',
+                  answerPreview: 'A result',
+                },
+              ],
+            },
+          };
         case 'get_commands':
           return {
             success: true,
@@ -140,6 +157,19 @@ test('snapshot observes the exact native header without lifecycle commands or pr
   assert.deepEqual(
     f.calls.map((call) => call.type),
     ['get_state', 'get_session_header', 'get_queue'],
+  );
+  assert.ok(f.instances.every((instance) => instance.closed));
+});
+
+test('inspector observes sub-agents without attaching or exposing private metadata', async () => {
+  const f = fixture();
+  const snapshot = await f.client.getInspector(sessionId, cwd);
+  assert.equal(snapshot.state.isRunningTools, true);
+  assert.equal(snapshot.children[0].activity.kind, 'executing');
+  assert.ok(!JSON.stringify(snapshot).includes('secret'));
+  assert.deepEqual(
+    f.calls.map((call) => call.type),
+    ['get_state', 'get_session_header', 'get_rlm_children'],
   );
   assert.ok(f.instances.every((instance) => instance.closed));
 });

@@ -16,6 +16,7 @@
   <a href="#vos-modèles-à-portée-de-main">Modèles</a> ·
   <a href="docs/mcp.md">Connexions MCP</a> ·
   <a href="docs/commands.md">Commandes et skills</a> ·
+  <a href="docs/inspector.md">Agents et fichiers</a> ·
   <a href="docs/lan.md">Accès mobile</a> ·
   <a href="docs/pwa.md">Installer l’app</a> ·
   <a href="docs/development.md">Développement</a>
@@ -27,12 +28,16 @@
 
 Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une application accessible depuis le navigateur. Suivez les réponses en direct, retrouvez vos projets et continuez une conversation sans ouvrir de terminal. Sous Windows, les agents et leurs outils démarrent en arrière-plan, sans fenêtres PowerShell intempestives.
 
+**Version 2.1.0** — [Télécharger le code source et consulter les notes de version](https://github.com/zerr0o/PrimeAgentGUI/releases/latest). Cette version ajoute le suivi des sous-agents, l’exploration des fichiers et les aperçus de documents directement depuis la conversation.
+
 ## Ce que vous pouvez faire
 
 | Fonction                           | Dans le Studio                                                                                                                    |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | **Organiser vos projets**          | Ouvrir leurs dossiers sur le PC, les épingler ou les retirer du Studio avec confirmation ; organiser et reprendre leurs sessions. |
 | **Suivre le travail**              | Lire les réponses en streaming et déplier une activité regroupant les outils et le raisonnement.                                  |
+| **Inspecter une session**          | Consulter son état et sa consommation, suivre les sous-agents et ouvrir leurs échanges sans changer de session.                   |
+| **Consulter les fichiers**         | Parcourir le projet, lire les changements Git, prévisualiser et ouvrir les fichiers sur PC ou mobile.                             |
 | **Intervenir en direct**           | Réorienter l’agent ou préparer un message à la suite, sans arrêter son travail.                                                   |
 | **Joindre des images et fichiers** | Choisir une photo ou un document, les déposer dans la conversation ou les coller depuis le presse-papiers.                        |
 | **Retrouver vos modèles**          | Rechercher par nom ou fournisseur, gérer vos favoris et choisir le niveau de réflexion.                                           |
@@ -51,6 +56,16 @@ Dans le Studio distant, **Préférences → Se déconnecter** ferme l’accès d
 
 Tapez **`/`** ou utilisez le bouton **/** près des pièces jointes pour rechercher une commande, un skill ou un prompt du projet. Les raccourcis ouvrent les panneaux du Studio ; `/compact`, `/refine`, `/goal` et `/autonomous` sont exécutés par Prime Agent, y compris dans la file d’une session active. `/skill:nom` charge un skill avec vos consignes. Consultez le [guide des commandes, skills et prompts](docs/commands.md) pour les syntaxes et les commandes réservées au terminal.
 
+## Session, agents et fichiers
+
+Le panneau de droite propose trois onglets : **Session** pour l’état et les tokens, **Agents** pour les délégations et leurs échanges, **Fichiers** pour parcourir le projet ou consulter les changements Git. Sur téléphone, le bouton de panneau en haut à droite ouvre ces vues en pleine hauteur.
+
+Les fichiers s’affichent en lecture seule, avec un rendu Markdown, du JSON indenté et une bascule **Aperçu / Source**. Les liens vers des documents dans la conversation ouvrent le même visualiseur. **Ouvrir** lance le fichier dans son application sur le PC ; depuis le téléphone, le bouton indique **Ouvrir sur le PC**. Les changements Git concernent tout le projet, y compris le travail d’autres sessions. Le [guide du panneau](docs/inspector.md) détaille le suivi en direct et les limites des aperçus.
+
+![Panneau Agents sur PC : agent principal, délégations et état de chaque tâche.](docs/screenshots/desktop-inspector-agents.png)
+
+![Aperçu Markdown sur PC, ouvert depuis un lien dans la conversation, avec accès au texte source et ouverture dans une application du PC.](docs/screenshots/desktop-document-preview.png)
+
 ## Vos outils et services MCP
 
 **Préférences → Connexions MCP → Gérer les MCP** permet d’ajouter, modifier, tester, activer ou supprimer des connexions natives de Prime Agent. Les serveurs **HTTP** et **stdio** sont pris en charge, avec les connexions **OAuth**, les variables d’environnement et les restrictions d’outils. Linear et Notion sont proposés comme intégrations natives.
@@ -63,9 +78,9 @@ Les tests découvrent les outils sans en exécuter. Les nouveaux réglages s’a
 
 ## Démarrage rapide
 
-**Prérequis :** Windows, **Node.js 22.8 ou ultérieur**, Prime Agent installé et un fournisseur déjà configuré dans le CLI. L’intégration a été vérifiée avec **Prime Agent 0.9.1** ; les adaptations Windows ciblent cette version.
+**Prérequis :** Windows, **Node.js 22.8 ou ultérieur**, Prime Agent installé et un fournisseur déjà configuré dans le CLI. L’intégration a été vérifiée avec **Prime Agent 0.9.1 et 0.9.2**, y compris les adaptations Windows.
 
-Dans le dossier du projet :
+Téléchargez **Source code (zip)** depuis la [dernière release](https://github.com/zerr0o/PrimeAgentGUI/releases/latest) et extrayez l’archive, ou clonez ce dépôt. Ouvrez ensuite un terminal dans le dossier extrait :
 
 ```powershell
 npm ci
@@ -89,6 +104,20 @@ Le Studio réutilise la configuration de Prime Agent : aucune clé API à coller
 | `npm run stop`         | Fermer le serveur et ses exécutions actives.                        |
 
 **Fermer l’onglet laisse les agents travailler.** Le bouton **Arrêter** termine l’exécution sélectionnée ; `Arreter Prime Agent.vbs` ou `npm run stop` ferme tout le Studio.
+
+### Mettre à jour une installation Git
+
+Attendez la fin des exécutions, puis lancez ces commandes dans le dossier du Studio :
+
+```powershell
+npm run stop
+git pull --ff-only
+npm ci
+npm run setup:runtime
+npm run start:silent
+```
+
+Vos réglages locaux et les sessions natives de Prime Agent sont conservés. Pour une installation depuis une archive, remplacez les fichiers du Studio par ceux de la nouvelle release en conservant le dossier `.local`, puis relancez les étapes d’installation.
 
 ## Pendant que l’agent travaille
 
@@ -182,12 +211,15 @@ La PWA conserve les commandes et pièces jointes du site. En cas de coupure, un 
 
 ## Documentation
 
-| Guide                                             | Contenu                                                                       |
-| ------------------------------------------------- | ----------------------------------------------------------------------------- |
-| [Configuration et données](docs/configuration.md) | Modèles, valeurs par défaut, stockage et variables d’environnement.           |
-| [Accès mobile](docs/lan.md)                       | Activation, adresse réseau, authentification et permissions.                  |
-| [Application installable](docs/pwa.md)            | Installation PWA, HTTPS privé et reconnexion.                                 |
-| [Développement](docs/development.md)              | Architecture, processus Windows silencieux, tests et captures reproductibles. |
+| Guide                                             | Contenu                                                                         |
+| ------------------------------------------------- | ------------------------------------------------------------------------------- |
+| [Configuration et données](docs/configuration.md) | Modèles, valeurs par défaut, stockage et variables d’environnement.             |
+| [Accès mobile](docs/lan.md)                       | Activation, adresse réseau, authentification et permissions.                    |
+| [Application installable](docs/pwa.md)            | Installation PWA, HTTPS privé et reconnexion.                                   |
+| [Développement](docs/development.md)              | Architecture, processus Windows silencieux, tests et captures reproductibles.   |
+| [Agents et fichiers](docs/inspector.md)           | Sous-agents, consommation, changements Git, aperçus et ouverture des documents. |
+| [Commandes et skills](docs/commands.md)           | Commandes natives, raccourcis, skills et prompts du projet.                     |
+| [Connexions MCP](docs/mcp.md)                     | Serveurs, OAuth, outils autorisés et diagnostic des connexions.                 |
 
 Pour vérifier le projet :
 
@@ -198,6 +230,7 @@ npm run test:ui
 npm run test:mobile
 npm run test:attachments
 npm run test:pwa
+npm run test:inspector
 ```
 
 Les tests automatiques utilisent des données temporaires et un moteur simulé. Les tests de navigateur nécessitent Microsoft Edge ; les tests réels facultatifs avec Luna sont documentés séparément.

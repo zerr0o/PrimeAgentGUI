@@ -4,7 +4,7 @@
 
 ## Installation et développement
 
-Prérequis : **Node.js 22.8 ou ultérieur**, Prime Agent installé et un fournisseur déjà configuré dans Prime Agent. La version locale utilisée lors du développement est **0.9.1**. Le GUI réutilise les comptes existants et ne demande pas de copier une clé API dans le navigateur.
+Prérequis : **Node.js 22.8 ou ultérieur**, Prime Agent installé et un fournisseur déjà configuré dans Prime Agent. La version locale validée est **0.9.2** ; l’intégration a aussi été vérifiée avec **0.9.1**. Le GUI réutilise les comptes existants et ne demande pas de copier une clé API dans le navigateur.
 
 ```powershell
 npm ci
@@ -39,6 +39,7 @@ npm run test:ui
 npm run test:mobile
 npm run test:layout
 npm run test:attachments
+npm run test:inspector
 npm run test:pwa
 ```
 
@@ -53,6 +54,16 @@ node scripts/smoke-luna.mjs
 Il utilise `openai-codex/gpt-5.6-luna` et des sessions isolées dans `.local/smoke-sessions`. Il vérifie un appel de l’outil Python vers PowerShell avec le correctif silencieux chargé.
 
 Le scénario réel de délégation, reprise avec outil et interruption se lance explicitement avec `node scripts/smoke-worker-recovery.mjs --run-luna`. Il utilise uniquement Luna et conserve ses sessions et rapports dans `.local/recovery-smoke-workspace/`.
+
+## Panneau Session, Agents et Fichiers
+
+`lib/session-inspector.mjs` reconstruit les délégations depuis les liens du registre natif, sans en créer ni en réparer. Pour une exécution active, `get_state` et `get_rlm_children` enrichissent l’historique ; le client vérifie le propriétaire, le projet et l’en-tête de session avant toute lecture. Aucun `attach`, `detach` ou arrêt n’est émis. Les instantanés sont partagés pendant deux secondes et le navigateur suspend le rafraîchissement quand le panneau est masqué.
+
+`lib/project-files.mjs` limite les chemins aux projets enregistrés, vérifie les cibles réelles des liens et masque les dossiers techniques et privés. Git est exécuté sans shell ni fenêtre, avec limites de temps et de volume, sans verrouillage facultatif, diff externe ou textconv. Les routes `GET /api/inspector*` et `GET /api/project-files*` utilisent les protections d’origine et l’authentification existantes, y compris pour les téléchargements.
+
+Les références de documents passent par `GET /api/project-files/resolve` et la même vérification du projet. `public/file-links.js` relie les liens Markdown et les chemins en code au visualiseur, sans navigation du navigateur. L’ouverture native utilise exclusivement `POST /api/project-files/open`, autorisé aux accès distants en contrôle complet. `lib/open-file.mjs` et le helper Windows transmettent le chemin comme donnée à `ShellExecuteW` avec une fenêtre visible pour l’application, depuis un helper PowerShell masqué. Les scripts sont envoyés au Bloc-notes et les exécutables refusés.
+
+`npm run test:inspector` couvre une hiérarchie imbriquée, l’activité d’un agent réutilisé, les fichiers et diffs, le téléchargement exact, le mode distant en lecture seule, le clavier, les thèmes et les formats 1440, 390 et 320 pixels. Il vérifie que les fichiers natifs, l’index Git et le brouillon restent intacts. `npm run test:commands:native` vérifie aussi la lecture du nouvel instantané auprès du vrai moteur 0.9.2 pendant un outil Python, sans appel à un fournisseur payant.
 
 ## Messages pendant une exécution
 

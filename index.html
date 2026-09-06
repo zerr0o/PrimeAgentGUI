@@ -27,6 +27,7 @@
     <link rel="stylesheet" href="/public/pwa.css" />
     <link rel="stylesheet" href="/public/mcp.css" />
     <link rel="stylesheet" href="/public/commands.css" />
+    <link rel="stylesheet" href="/public/inspector.css" />
   </head>
   <body>
     <a class="skip-link" href="#composer">Aller au message</a>
@@ -339,54 +340,131 @@
               </div>
             </div>
           </section>
-          <aside id="details-panel" class="details-panel" aria-label="Contexte de la session">
-            <div class="details-heading">Contexte<span class="context-dot"></span></div>
-            <section class="context-section">
-              <div class="context-label">PROJET ACTIF</div>
-              <div class="context-project-icon" data-icon="folder"></div>
-              <h2 id="detail-project-name">Votre prochain projet</h2>
-              <p id="detail-project-path" class="project-path">
-                Connectez un dossier local pour donner du contexte à votre agent.
-              </p>
-              <button id="copy-project-path" class="text-button" hidden>
-                <span data-icon="copy"></span>Copier le chemin
+          <aside id="details-panel" class="details-panel" aria-label="Session, agents et fichiers">
+            <div class="inspector-heading">
+              <strong>Espace de travail</strong
+              ><button id="close-inspector" class="icon-button" type="button" aria-label="Fermer le panneau">
+                ×
               </button>
-            </section>
-            <section class="context-section">
-              <div class="context-label">SESSION</div>
-              <dl class="session-properties">
-                <div>
-                  <dt>État</dt>
-                  <dd id="detail-status"><span class="status-dot"></span>Prête à démarrer</dd>
-                </div>
-                <div>
-                  <dt>Messages</dt>
-                  <dd id="detail-message-count">—</dd>
-                </div>
-                <div>
-                  <dt>Dernière activité</dt>
-                  <dd id="detail-updated">—</dd>
-                </div>
-              </dl>
-              <div id="detail-session-id" class="session-id" hidden></div>
-              <button id="export-session" class="text-button" hidden>
-                <span data-icon="download"></span>Exporter la conversation
+            </div>
+            <div class="inspector-tabs" role="tablist" aria-label="Informations du projet">
+              <button
+                id="inspector-tab-session"
+                type="button"
+                role="tab"
+                aria-selected="true"
+                aria-controls="inspector-session"
+              >
+                Session
               </button>
-            </section>
-            <section id="active-runs-section" class="context-section" hidden>
-              <div class="context-label">EN COURS</div>
-              <div id="active-runs"></div>
-            </section>
-            <div class="context-bottom">
-              <div class="context-note-icon" data-icon="terminal"></div>
-              <strong>Le terminal, en toute discrétion.</strong>
-              <p>
-                Prime Agent s’exécute en arrière-plan. Retrouvez ses actions et ses résultats dans la
-                conversation.
-              </p>
-              <div class="context-footer">
-                <span>PRIME AGENT STUDIO</span><span id="studio-version">2.0</span>
+              <button
+                id="inspector-tab-agents"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="inspector-agents"
+                tabindex="-1"
+              >
+                Agents<span id="inspector-agent-count" aria-hidden="true" hidden></span>
+              </button>
+              <button
+                id="inspector-tab-files"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="inspector-files"
+                tabindex="-1"
+              >
+                Fichiers
+              </button>
+            </div>
+            <div
+              id="inspector-session"
+              class="inspector-content"
+              role="tabpanel"
+              aria-labelledby="inspector-tab-session"
+            >
+              <section class="context-section">
+                <div class="context-label">PROJET ACTIF</div>
+                <div class="context-project-icon" data-icon="folder"></div>
+                <h2 id="detail-project-name">Votre prochain projet</h2>
+                <p id="detail-project-path" class="project-path">
+                  Connectez un dossier local pour donner du contexte à votre agent.
+                </p>
+                <button id="copy-project-path" class="text-button" hidden>
+                  <span data-icon="copy"></span>Copier le chemin
+                </button>
+              </section>
+              <section class="context-section">
+                <div class="context-label">SESSION</div>
+                <dl class="session-properties">
+                  <div>
+                    <dt>État</dt>
+                    <dd id="detail-status"><span class="status-dot"></span>Prête à démarrer</dd>
+                  </div>
+                  <div>
+                    <dt>Messages</dt>
+                    <dd id="detail-message-count">—</dd>
+                  </div>
+                  <div>
+                    <dt>Dernière activité</dt>
+                    <dd id="detail-updated">—</dd>
+                  </div>
+                </dl>
+                <div id="detail-session-id" class="session-id" hidden></div>
+                <button id="export-session" class="text-button" hidden>
+                  <span data-icon="download"></span>Exporter la conversation
+                </button>
+              </section>
+              <section id="active-runs-section" class="context-section" hidden>
+                <div class="context-label">EN COURS</div>
+                <div id="active-runs"></div>
+              </section>
+              <section id="inspector-usage" class="context-section" hidden></section>
+              <div class="context-bottom">
+                <div class="context-note-icon" data-icon="terminal"></div>
+                <strong>Le terminal, en toute discrétion.</strong>
+                <p>
+                  Prime Agent s’exécute en arrière-plan. Retrouvez ses actions et ses résultats dans la
+                  conversation.
+                </p>
+                <div class="context-footer">
+                  <span>PRIME AGENT STUDIO</span><span id="studio-version">2.1</span>
+                </div>
               </div>
+            </div>
+            <div
+              id="inspector-agents"
+              class="inspector-content"
+              role="tabpanel"
+              aria-labelledby="inspector-tab-agents"
+              hidden
+            >
+              <div class="inspector-toolbar">
+                <span id="inspector-agent-summary">Délégations de la session</span
+                ><button id="refresh-agents" type="button" class="inspector-refresh">Actualiser</button>
+              </div>
+              <p id="inspector-agent-note" class="inspector-note" role="status"></p>
+              <div id="inspector-agent-list"></div>
+            </div>
+            <div
+              id="inspector-files"
+              class="inspector-content"
+              role="tabpanel"
+              aria-labelledby="inspector-tab-files"
+              hidden
+            >
+              <div class="inspector-toolbar">
+                <span>Fichiers du projet</span
+                ><button id="refresh-files" type="button" class="inspector-refresh">Actualiser</button>
+              </div>
+              <div class="inspector-file-filters" role="group" aria-label="Vue des fichiers">
+                <button id="files-changes" type="button" aria-pressed="true">Modifications</button
+                ><button id="files-all" type="button" aria-pressed="false">Parcourir</button>
+              </div>
+              <p id="inspector-file-note" class="inspector-note" role="status"></p>
+              <div id="inspector-file-breadcrumb" class="inspector-file-breadcrumb"></div>
+              <div id="inspector-file-list"></div>
             </div>
           </aside>
         </div>

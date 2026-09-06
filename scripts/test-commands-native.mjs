@@ -153,6 +153,10 @@ try {
     );
   });
   client = createLiveSessionClient(runtime.getLiveEndpoint());
+  const inspected = await client.getInspector(handle.sessionId, cwd);
+  assert.equal(inspected.state.isRunningTools, true);
+  assert.ok(Array.isArray(inspected.children));
+  assert.equal(completed, false, 'Inspecting agents never interrupts or attaches to the worker');
   const loaded = await client.getCommands(handle.sessionId, cwd);
   assert.ok(loaded.some((c) => c.name === 'skill:studio-check'));
   assert.ok(loaded.some((c) => c.name === 'review'));
