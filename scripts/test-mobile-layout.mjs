@@ -205,5 +205,5 @@ try {
   await new Promise((done) => gateway.close(done));
   await app.close();
   assert.ok(resolve(dir).startsWith(resolve(tmpdir()) + sep));
-  await rm(dir, { recursive: true, force: true });
+  await rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 }

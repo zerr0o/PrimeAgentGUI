@@ -15,13 +15,92 @@
   margin: 14px 0;
 }
 .activity-stack > summary {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 11px;
   padding: 14px;
   min-height: 62px;
   cursor: pointer;
   list-style: none;
+}
+.activity-reasoning-preview {
+  grid-column: 2 / -1;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+  max-height: 3.1em;
+  overflow: hidden;
+  display: block;
+  scrollbar-width: none;
+  pointer-events: none;
+}
+.activity-stack[open] .activity-reasoning-preview,
+.activity-reasoning-preview[hidden] {
+  display: none;
+}
+.reasoning-markdown {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.reasoning-markdown .markdown {
+  font: inherit;
+  color: inherit;
+}
+.activity-reasoning-preview .markdown * {
+  margin-block: 0;
+}
+.activity-reasoning-preview .markdown :is(h1, h2, h3, h4, h5, h6, pre, code) {
+  font-size: inherit;
+  line-height: inherit;
+}
+.activity-reasoning-preview .markdown pre {
+  padding: 0;
+  border: 0;
+  background: none;
+  white-space: pre-wrap;
+}
+.activity-reasoning-preview .markdown :is(.code-header, .code-toolbar, .code-bar) {
+  display: none;
+}
+.reasoning-settings {
+  flex-wrap: wrap;
+}
+.reasoning-selector {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.reasoning-selector label {
+  position: relative;
+  cursor: pointer;
+}
+.reasoning-selector input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.reasoning-selector span {
+  display: grid;
+  place-items: center;
+  min-height: 40px;
+  border-radius: 7px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.reasoning-selector input:checked + span {
+  background: var(--accent-bg);
+  color: var(--accent-text);
+}
+.reasoning-selector input:focus-visible + span {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 .activity-stack > summary::-webkit-details-marker {
   display: none;

@@ -278,7 +278,7 @@ try {
     'REASONING_ONE_8123',
     'REASONING_TWO_8123',
   ])
-    await expect(page.getByText(marker, { exact: true })).toBeVisible();
+    await expect(firstActivity.locator('.activity-content').getByText(marker, { exact: true })).toBeVisible();
   await expect(firstActivity.locator('.tool-status.error')).toHaveText('Erreur');
   await expect.poll(visibleAgentHeadings).toBe(3);
   await mkdir(resolve('test-results'), { recursive: true });

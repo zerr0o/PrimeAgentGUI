@@ -7,12 +7,25 @@ export function createConversationRenderer({
   makeDetails,
   dateLabel,
   copyText,
-  showReasoning,
+  reasoningMode,
   renderMessage,
 }) {
   const turns = new Map();
-  let reasoningPreference = showReasoning();
+  let reasoningPreference = reasoningMode();
   let resetReasoning = false;
+  let previewFrame;
+  const followReasoningTail = () => {
+    cancelAnimationFrame(previewFrame);
+    previewFrame = requestAnimationFrame(() => {
+      for (const turn of turns.values())
+        for (const part of turn.parts.values()) {
+          if (part.preview && !part.preview.hidden && !part.node.open)
+            part.preview.scrollTop = part.preview.scrollHeight;
+        }
+    });
+  };
+  const resizeObserver = new ResizeObserver(followReasoningTail);
+  let observedRoot;
   const idOf = (message, index) => message.id || `history-${index}`;
   function reconcile(parent, nodes) {
     nodes.forEach((node, index) => {
@@ -24,8 +37,8 @@ export function createConversationRenderer({
     const key = `activity:${messages[0].id}`;
     let part = turn.parts.get(key);
     if (!part) {
-      const node = makeDetails('activity-stack', `${turn.key}:${key}`, showReasoning());
-      if (resetReasoning) node.open = reasoningPreference;
+      const node = makeDetails('activity-stack', `${turn.key}:${key}`, reasoningPreference === 'expanded');
+      if (resetReasoning) node.open = reasoningPreference === 'expanded';
       const summary = el('summary');
       const titles = el('span', 'activity-titles');
       const label = el('span', 'activity-label', 'Activité de l’agent');
@@ -33,10 +46,13 @@ export function createConversationRenderer({
       const status = el('span', 'activity-state');
       const symbol = el('span', 'activity-symbol');
       titles.append(label, count);
-      summary.append(symbol, titles, status, icon('chevron', 'activity-chevron'));
+      const preview = el('div', 'activity-reasoning-preview reasoning-markdown');
+      preview.setAttribute('aria-hidden', 'true');
+      preview.hidden = true;
+      summary.append(symbol, titles, status, icon('chevron', 'activity-chevron'), preview);
       const content = el('div', 'activity-content');
       node.append(summary, content);
-      part = { node, label, count, status, symbol, content, steps: new Map() };
+      part = { node, label, count, status, symbol, content, preview, steps: new Map() };
       turn.parts.set(key, part);
     }
     const tools = messages.flatMap((m) => m.tools || []);
@@ -44,6 +60,17 @@ export function createConversationRenderer({
     const running =
       messages.some((m) => m.streaming) || tools.some((t) => ['running', 'pending'].includes(t.status));
     const reasoning = messages.filter((m) => m.thinking).length;
+    const latest = messages.findLast((m) => m.thinking?.trim())?.thinking || '';
+    part.preview.hidden = reasoningPreference !== 'preview' || !latest;
+    if (!part.preview.hidden && part.latest !== latest) {
+      part.preview.replaceChildren(markdown(latest));
+      // The summary stays one accessible toggle; preview links are available in the full reflection.
+      part.preview.querySelectorAll('a, button, input, video, audio').forEach((n) => {
+        n.replaceWith(...n.childNodes);
+      });
+      part.preview.querySelectorAll('img').forEach((n) => n.remove());
+      part.latest = latest;
+    }
     part.count.textContent =
       [
         tools.length ? `${tools.length} appel${tools.length > 1 ? 's' : ''} d’outil` : '',
@@ -71,12 +98,18 @@ export function createConversationRenderer({
         const node = el('div', 'activity-step');
         node.dataset.messageId = m.id;
         node.append(el('div', 'activity-step-label', `Étape ${index + 1}`));
-        if (m.thinking) {
-          const thinking = makeDetails('thinking-block', `thinking:${m.id}`, showReasoning());
-          if (resetReasoning) thinking.open = reasoningPreference;
+        if (m.thinking && reasoningPreference !== 'hidden') {
+          const thinking = makeDetails(
+            'thinking-block',
+            `thinking:${m.id}`,
+            reasoningPreference === 'expanded',
+          );
+          if (resetReasoning) thinking.open = reasoningPreference === 'expanded';
           const summary = el('summary');
           summary.append(icon('brain'), el('span', '', 'Raisonnement'), icon('chevron', 'chevron'));
-          thinking.append(summary, el('div', 'thinking-content', m.thinking));
+          const content = el('div', 'thinking-content reasoning-markdown');
+          content.append(markdown(m.thinking));
+          thinking.append(summary, content);
           node.append(thinking);
         }
         for (const tool of m.tools || []) node.append(renderTool(tool, m.id));
@@ -188,8 +221,13 @@ export function createConversationRenderer({
   }
   return {
     render(root, messages) {
-      if (reasoningPreference !== showReasoning()) {
-        reasoningPreference = showReasoning();
+      if (observedRoot !== root) {
+        resizeObserver.disconnect();
+        resizeObserver.observe(root);
+        observedRoot = root;
+      }
+      if (reasoningPreference !== reasoningMode()) {
+        reasoningPreference = reasoningMode();
         resetReasoning = true;
         turns.clear();
       }
@@ -214,6 +252,7 @@ export function createConversationRenderer({
       reconcile(root, nodes);
       for (const key of turns.keys()) if (!activeTurns.has(key)) turns.delete(key);
       resetReasoning = false;
+      followReasoningTail();
     },
   };
 }

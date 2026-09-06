@@ -171,6 +171,20 @@ test('model metadata follows the active branch and the latest assistant model', 
   );
 });
 
+test('actual thinking follows the selected branch, preserves off and never invents an unknown level', async (t) => {
+  const { store, native } = await fixture(t);
+  await native('thinking-branch', [
+    { type: 'thinking_level_change', id: 'initial', parentId: null, thinkingLevel: 'off' },
+    message('root', 'initial', 'user', 'Task'),
+    { type: 'thinking_level_change', id: 'abandoned', parentId: 'root', thinkingLevel: 'max' },
+    message('discarded', 'abandoned', 'assistant', 'Discarded answer'),
+    message('current', 'root', 'assistant', 'Current answer'),
+  ]);
+  assert.equal((await store.history('thinking-branch')).thinking, 'off');
+  await native('thinking-unknown', [message('root', null, 'user', 'Old task')]);
+  assert.equal((await store.history('thinking-unknown')).thinking, null);
+});
+
 test('standalone tool results, failed shell commands and visible native notes survive history projection', async (t) => {
   const { store, native } = await fixture(t);
   await native('tool-session', [

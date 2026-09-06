@@ -430,7 +430,7 @@
                   conversation.
                 </p>
                 <div class="context-footer">
-                  <span>PRIME AGENT STUDIO</span><span id="studio-version">2.2</span>
+                  <span>PRIME AGENT STUDIO</span><span id="studio-version">2.3</span>
                 </div>
               </div>
             </div>
@@ -441,6 +441,12 @@
               aria-labelledby="inspector-tab-agents"
               hidden
             >
+              <section
+                id="project-subagent-settings"
+                class="project-subagent-settings"
+                aria-label="Réglages des sous-agents du projet"
+                hidden
+              ></section>
               <div class="inspector-toolbar">
                 <span id="inspector-agent-summary">Délégations de la session</span
                 ><button id="refresh-agents" type="button" class="inspector-refresh">Actualiser</button>
@@ -632,12 +638,16 @@
         </div>
         <input id="enter-to-send" class="switch" type="checkbox" role="switch" checked />
       </div>
-      <div class="settings-row">
+      <div class="settings-row reasoning-settings">
         <div>
-          <label for="show-reasoning">Afficher le raisonnement</label>
-          <p>Ouvrir les étapes de réflexion de l’agent.</p>
+          <label id="reasoning-label">Raisonnement de l’agent</label>
+          <p>Un aperçu de la dernière réflexion, même lorsque l’activité est repliée.</p>
         </div>
-        <input id="show-reasoning" class="switch" type="checkbox" role="switch" />
+        <div class="reasoning-selector" role="radiogroup" aria-labelledby="reasoning-label">
+          <label><input type="radio" name="reasoning-mode" value="hidden" /><span>Masqué</span></label>
+          <label><input type="radio" name="reasoning-mode" value="preview" /><span>Aperçu</span></label>
+          <label><input type="radio" name="reasoning-mode" value="expanded" /><span>Détaillé</span></label>
+        </div>
       </div>
       <div id="model-config-settings" class="settings-row">
         <div>
@@ -664,6 +674,13 @@
         </div>
         <button id="open-mcp-settings" type="button" class="secondary-button">Gérer les MCP</button>
       </div>
+      <div id="remote-access-settings" class="settings-row" hidden>
+        <div>
+          <label for="open-remote-access">Accès mobile</label>
+          <p>Modifiez le code PIN de connexion à distance.</p>
+        </div>
+        <button id="open-remote-access" type="button" class="secondary-button">Changer le code</button>
+      </div>
       <div class="settings-about">
         <span class="status-dot"></span>
         <div>
@@ -675,6 +692,60 @@
         <button id="logout-button" class="danger-text" type="button" hidden>Se déconnecter</button
         ><button class="primary-button" data-close-dialog>Terminé</button>
       </div>
+    </dialog>
+    <dialog id="remote-access-dialog" class="modal" aria-labelledby="remote-access-title">
+      <div class="modal-heading">
+        <h2 id="remote-access-title">Code d’accès mobile</h2>
+        <button
+          class="icon-button"
+          type="button"
+          data-close-dialog
+          aria-label="Fermer"
+          data-icon="x"
+        ></button>
+      </div>
+      <p id="remote-access-status" role="status"></p>
+      <form id="remote-code-form">
+        <fieldset id="remote-code-fields" class="remote-code-fields" disabled>
+          <label for="remote-code"
+            >Nouveau code · 8 chiffres
+            <input
+              id="remote-code"
+              type="password"
+              inputmode="numeric"
+              pattern="[0-9]{8}"
+              maxlength="8"
+              minlength="8"
+              autocomplete="new-password"
+              required
+            />
+          </label>
+          <label for="remote-code-confirmation"
+            >Confirmer le nouveau code
+            <input
+              id="remote-code-confirmation"
+              type="password"
+              inputmode="numeric"
+              pattern="[0-9]{8}"
+              maxlength="8"
+              minlength="8"
+              autocomplete="new-password"
+              required
+            />
+          </label>
+          <label class="remote-code-reveal"
+            ><input id="show-remote-code" type="checkbox" />Afficher les codes</label
+          >
+        </fieldset>
+        <p class="remote-code-note">
+          Les appareils connectés devront saisir le nouveau code. Vos agents continuent de travailler.
+        </p>
+        <p id="remote-code-error" class="form-error" role="alert" hidden></p>
+        <div class="modal-actions">
+          <button type="button" class="secondary-button" data-close-dialog>Annuler</button>
+          <button id="save-remote-code" type="submit" class="primary-button" disabled>Changer le code</button>
+        </div>
+      </form>
     </dialog>
     <dialog id="model-config-dialog" class="modal model-config-modal">
       <div class="modal-heading model-config-heading">
@@ -706,27 +777,32 @@
                 <span data-icon="check"></span>Enregistrer
               </button>
             </div>
-            <div class="model-defaults-grid">
-              <label for="default-main-model">
-                Agent principal
-                <select id="default-main-model">
-                  <option value="">Choix automatique de Prime Agent</option>
-                </select>
-              </label>
-              <label for="default-subagent-model">
-                Sous-agents
-                <select id="default-subagent-model" disabled>
-                  <option>Hériter du modèle de l’agent parent</option>
-                </select>
-              </label>
+            <div class="model-defaults-grid subagent-controls">
+              <div class="subagent-model-field">
+                <label for="default-main-model">Agent principal</label>
+                <button
+                  id="default-main-model"
+                  class="model-picker-button"
+                  type="button"
+                  aria-haspopup="dialog"
+                  aria-controls="model-dialog"
+                  aria-expanded="false"
+                >
+                  <span class="subagent-model-icon" data-icon="model"></span>
+                  <span class="model-picker-selection"
+                    ><span class="model-picker-name">Choix automatique</span
+                    ><span class="model-picker-provider">Configuration Prime Agent</span></span
+                  >
+                  <span class="model-picker-chevron" data-icon="chevron"></span>
+                </button>
+              </div>
             </div>
             <p class="model-defaults-note">
-              Le choix principal utilise les réglages globaux <code>defaultProvider</code> et
-              <code>defaultModel</code>. Prime Agent 0.9.1 ne définit pas de modèle global distinct pour les
-              sous-agents. Ils héritent du modèle de leur parent, sauf si l’agent demande explicitement un
-              autre modèle lors d’un appel <code>rlm(…, model=…)</code>.
+              Le modèle principal s’applique aux nouvelles sessions. Les sessions en cours conservent leur
+              modèle.
             </p>
           </article>
+          <article id="subagent-settings" class="model-defaults-card subagent-settings"></article>
           <div class="model-config-section-heading">
             <div>
               <h3>Vos modèles personnalisés</h3>

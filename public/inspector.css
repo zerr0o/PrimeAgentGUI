@@ -84,6 +84,61 @@
   font-size: 11px;
   color: var(--muted);
 }
+.project-subagent-settings {
+  padding: 12px;
+  margin-bottom: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.project-subagent-settings .subagent-heading {
+  gap: 6px;
+}
+.project-subagent-settings h3 {
+  font-size: 11px;
+}
+.project-subagent-settings select {
+  appearance: auto;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  font: inherit;
+  font-size: 11px;
+  padding: 5px;
+}
+.project-subagent-settings .subagent-scope {
+  max-width: 90px;
+  min-height: 32px;
+  font-size: 10px;
+}
+.project-subagent-settings fieldset {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  margin: 8px 0 0;
+}
+.project-subagent-settings .subagent-controls {
+  grid-template-columns: minmax(0, 1fr) 104px;
+  gap: 7px;
+}
+.project-subagent-settings .subagent-controls label {
+  font-size: 10px;
+}
+.project-subagent-settings .model-picker-button {
+  gap: 5px;
+  padding: 6px;
+  font-size: 11px;
+}
+.project-subagent-settings .subagent-model-icon {
+  display: none;
+}
+.project-subagent-settings .subagent-status {
+  font-size: 9px;
+}
+.project-subagent-settings :disabled {
+  opacity: 0.6;
+}
 .inspector-refresh {
   min-height: 36px;
   padding: 6px 8px;
@@ -138,7 +193,8 @@
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
-.inspector-agent-model {
+.inspector-agent-model,
+.inspector-agent-thinking {
   color: var(--muted);
   font-size: 10px;
   overflow-wrap: anywhere;

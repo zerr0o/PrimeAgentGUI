@@ -1,6 +1,9 @@
 import { marked } from '/vendor/marked.js';
 import DOMPurify from '/vendor/purify.js';
 import { createConversationRenderer } from './conversation.js';
+import { reasoningMode } from './reasoning.js';
+import { createSubagentSettings } from './subagent-settings.js';
+import { createRemoteAccessSettings } from './remote-access.js';
 import { createLiveMessages } from './live-messages.js';
 import { createImageComposer, renderImages } from './images.js';
 import { createMcpSettings } from './mcp.js';
@@ -13,6 +16,7 @@ let imageComposer;
 let liveMessagesUI;
 let commandsUI;
 let inspectorUI;
+let modelPickerTarget = null;
 const $ = (id) => document.getElementById(id);
 const icons = {
   plus: 'M12 5v14M5 12h14',
@@ -92,7 +96,7 @@ function savePreferences(patch) {
 const prefs = {
   theme: 'dark',
   enterToSend: true,
-  showReasoning: false,
+  reasoningMode: reasoningMode(storedPreferences()),
   details: true,
   modelFavorites: [],
   ...readStorage('preferences', {}),
@@ -207,7 +211,7 @@ function modelRow(model, favorite = false) {
   const id = model.id || '',
     defaultChoice = !id,
     name = model.name || modelDisplayName(id),
-    selected = $('model-select').value === id,
+    selected = (modelPickerTarget?.value ?? $('model-select').value) === id,
     accessibleName = defaultChoice ? name : `${name}, ${model.id}`,
     row = el('div', `model-row${selected ? ' selected' : ''}`),
     choice = el('button', 'model-choice'),
@@ -221,7 +225,11 @@ function modelRow(model, favorite = false) {
   if (selected) choice.setAttribute('aria-current', 'true');
   copy.append(
     el('span', 'model-choice-name', name),
-    el('span', 'model-choice-detail', defaultChoice ? 'Configuration de Prime Agent' : model.id),
+    el(
+      'span',
+      'model-choice-detail',
+      defaultChoice ? modelPickerTarget?.defaultDetail || 'Configuration de Prime Agent' : model.id,
+    ),
   );
   choice.append(copy);
   if (selected) choice.append(icon('check', 'model-choice-check'));
@@ -260,7 +268,9 @@ function renderModelList({ focusFavorite } = {}) {
     ),
     favoriteModels = matching.filter((model) => favorites.has(model.id)),
     otherModels = state.modelFavoritesOnly ? [] : matching.filter((model) => !favorites.has(model.id)),
-    defaultMatches = normalizeModelSearch('Modèle par défaut configuration Prime Agent').includes(query),
+    defaultMatches = normalizeModelSearch(
+      modelPickerTarget?.defaultLabel || 'Modèle par défaut configuration Prime Agent',
+    ).includes(query),
     showDefault = !state.modelFavoritesOnly && defaultMatches,
     visibleCount = favoriteModels.length + otherModels.length + Number(showDefault),
     availableFavoriteCount = state.models.filter((model) => favorites.has(model.id)).length;
@@ -275,7 +285,11 @@ function renderModelList({ focusFavorite } = {}) {
       : `${visibleCount} choix disponible${visibleCount === 1 ? '' : 's'}`;
   appendModelGroup('Favoris', favoriteModels, favorites);
   if (showDefault)
-    appendModelGroup('Configuration', [{ id: '', name: 'Modèle par défaut', provider: '' }], favorites);
+    appendModelGroup(
+      'Configuration',
+      [{ id: '', name: modelPickerTarget?.defaultLabel || 'Modèle par défaut', provider: '' }],
+      favorites,
+    );
   if (!state.modelFavoritesOnly) {
     const providers = new Map();
     for (const model of otherModels) {
@@ -319,12 +333,21 @@ function toggleModelFavorite(id) {
   if (state.modelFavoritesOnly && removing) requestAnimationFrame(() => $('model-favorites-filter').focus());
 }
 function openModelDialog() {
-  if ($('model-picker-button').disabled) return;
+  openModelPicker({
+    button: $('model-picker-button'),
+    value: $('model-select').value,
+    onSelect: (id) => setSelectedModel(id, true),
+  });
+}
+function openModelPicker(target) {
+  if (target.button.disabled || target.button.matches(':disabled')) return;
+  modelPickerTarget = target;
+  $('model-dialog-title').textContent = target.title || 'Choisir un modèle';
   state.modelFavoritesOnly = false;
   $('model-search').value = '';
   renderModelList();
   $('model-dialog').showModal();
-  $('model-picker-button').setAttribute('aria-expanded', 'true');
+  target.button.setAttribute('aria-expanded', 'true');
   requestAnimationFrame(() => {
     $('model-search').focus();
     $('model-list').querySelector('.model-row.selected')?.scrollIntoView({ block: 'center' });
@@ -382,7 +405,9 @@ function applyPreferences() {
         : 'dark'
       : prefs.theme;
   $('enter-to-send').checked = prefs.enterToSend;
-  $('show-reasoning').checked = prefs.showReasoning;
+  document.querySelectorAll('[name="reasoning-mode"]').forEach((input) => {
+    input.checked = input.value === reasoningMode(prefs);
+  });
   document
     .querySelectorAll('[data-theme-choice]')
     .forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themeChoice === prefs.theme)));
@@ -414,6 +439,7 @@ function applyAccessMode() {
   $('composer').disabled = state.readOnly;
   $('enter-to-send').closest('.settings-row').hidden = state.readOnly;
   $('model-config-settings').hidden = state.remote;
+  $('remote-access-settings').hidden = state.remote;
   $('provider-settings').hidden = state.remote || !state.providersAvailable;
   $('logout-button').hidden = !state.remote;
   $('mcp-settings').hidden = state.readOnly;
@@ -905,13 +931,12 @@ function stringify(v) {
     return String(v);
   }
 }
-const openDetails = new Set();
+const openDetails = new Map();
 function makeDetails(className, key, defaultOpen = false) {
   const d = el('details', className);
-  d.open = openDetails.has(key) || defaultOpen;
+  d.open = openDetails.get(key) ?? defaultOpen;
   d.addEventListener('toggle', () => {
-    if (d.open) openDetails.add(key);
-    else openDetails.delete(key);
+    if (d.isConnected) openDetails.set(key, d.open);
   });
   return d;
 }
@@ -970,14 +995,17 @@ function renderMessage(m, index) {
   if (m.role === 'user') body.textContent = m.text || '';
   else {
     if (m.thinking) {
-      const d = makeDetails('thinking-block', `thinking:${id}`, prefs.showReasoning),
+      const d = makeDetails('thinking-block', `thinking:${id}`, reasoningMode(prefs) === 'expanded'),
         s = el('summary');
       s.append(
         icon('brain'),
         el('span', '', m.streaming ? 'Réflexion en cours' : 'Raisonnement'),
         icon('chevron', 'chevron'),
       );
-      d.append(s, el('div', 'thinking-content', m.thinking));
+      const content = el('div', 'thinking-content reasoning-markdown');
+      content.append(markdown(m.thinking));
+      d.hidden = reasoningMode(prefs) === 'hidden';
+      d.append(s, content);
       body.append(d);
     }
     if (m.text) body.append(markdown(m.text));
@@ -1010,7 +1038,7 @@ const conversationRenderer = createConversationRenderer({
   makeDetails,
   dateLabel,
   copyText,
-  showReasoning: () => prefs.showReasoning,
+  reasoningMode: () => reasoningMode(prefs),
   renderMessage,
 });
 function nearBottom() {
@@ -1073,6 +1101,7 @@ function newSession() {
   if (state.readOnly) return;
   saveDraft();
   resetView();
+  selectNewConversationModel();
   state.archived = false;
   saveSelection();
   restoreDraft();
@@ -1533,32 +1562,19 @@ function updateModelsAfterConfiguration(data, removedId = '') {
   renderModelDefaults();
 }
 function renderModelDefaults() {
-  const select = $('default-main-model'),
-    configured = state.modelDefaults?.mainModel || '';
-  select.replaceChildren();
-  const automatic = el('option', '', 'Choix automatique de Prime Agent');
-  automatic.value = '';
-  select.append(automatic);
-  const groups = new Map();
-  for (const model of state.models) {
-    if (!groups.has(model.provider)) {
-      const group = el('optgroup');
-      group.label = model.provider;
-      groups.set(model.provider, group);
-      select.append(group);
-    }
-    const option = el('option', '', model.name || model.id);
-    option.value = model.id;
-    groups.get(model.provider).append(option);
-  }
-  if (configured && !state.models.some((model) => model.id === configured)) {
-    const unavailable = el('option', '', `Indisponible · ${configured}`);
-    unavailable.value = configured;
-    unavailable.disabled = true;
-    select.prepend(unavailable);
-  }
-  select.value = configured;
-  $('save-default-model').disabled = true;
+  selectDefaultModel(state.modelDefaults?.mainModel || '');
+}
+function selectDefaultModel(id) {
+  const button = $('default-main-model'),
+    model = state.models.find((item) => item.id === id),
+    name = model?.name || (id ? `Indisponible · ${id}` : 'Choix automatique');
+  button.value = id;
+  button.querySelector('.model-picker-name').textContent = name;
+  button.querySelector('.model-picker-provider').textContent =
+    model?.provider || (id ? 'Modèle indisponible' : 'Configuration Prime Agent');
+  button.title = id || 'Choix automatique de Prime Agent';
+  button.setAttribute('aria-label', `Modèle principal par défaut. ${name}${model ? ', ' + model.id : ''}`);
+  $('save-default-model').disabled = id === (state.modelDefaults?.mainModel || '');
 }
 function renderModelConfig() {
   const configuration = state.modelConfig || { models: [] },
@@ -1648,6 +1664,7 @@ async function openModelConfig() {
     ]);
     renderModelConfig();
     renderModelDefaults();
+    void subagentSettings.open();
     showModelConfigList();
     $('model-config-loading').hidden = true;
     $('model-config-content').hidden = false;
@@ -1665,6 +1682,7 @@ async function saveDefaultModel() {
   const button = $('save-default-model'),
     model = $('default-main-model').value;
   button.disabled = true;
+  $('default-main-model').disabled = true;
   try {
     const data = await api('/api/model-defaults', { method: 'POST', body: { model } });
     state.modelDefaults = {
@@ -1682,6 +1700,8 @@ async function saveDefaultModel() {
   } catch (error) {
     button.disabled = false;
     toast(`Impossible d’enregistrer le modèle par défaut. ${error.message}`, true);
+  } finally {
+    $('default-main-model').disabled = false;
   }
 }
 
@@ -1755,12 +1775,12 @@ function populateModels(catalog) {
     item.value = model.id;
     groups.get(model.provider).append(item);
   }
-  const saved = typeof prefs.model === 'string' ? prefs.model : '',
-    configuredDefault = typeof catalog?.default?.model === 'string' ? catalog.default.model : '',
-    preferred = saved || configuredDefault,
-    chosen = state.models.some((model) => model.id === preferred) ? preferred : '';
-  setSelectedModel(chosen);
+  selectNewConversationModel();
   $('thinking-select').value = prefs.thinking ?? catalog?.default?.thinking ?? '';
+}
+function selectNewConversationModel() {
+  const model = state.modelCatalogDefault;
+  setSelectedModel(state.models.some((item) => item.id === model) ? model : '');
 }
 async function bootstrap() {
   try {
@@ -1909,6 +1929,7 @@ async function removeProject(event) {
       saveDraft();
       resetView();
       state.projectCwd = state.projects[0]?.cwd || null;
+      selectNewConversationModel();
       saveSelection();
       restoreDraft();
       renderNavigation();
@@ -2059,6 +2080,10 @@ hydrateIcons();
 inspectorUI = createInspector({
   api,
   markdown,
+  getModels: () => state.models,
+  openModelPicker,
+  icon,
+  toast,
   getContext: () => ({
     cwd: state.projectCwd,
     sessionId: state.sessionId || activeRun()?.sessionId,
@@ -2236,15 +2261,31 @@ $('session-menu').onclick = (e) => {
 $('export-session').onclick = () => exportSession();
 $('copy-project-path').onclick = () => copyText(state.projectCwd, 'Chemin du projet copié.');
 $('open-settings').onclick = () => $('settings-dialog').showModal();
+createRemoteAccessSettings({ api, isRemote: () => state.remote, toast });
 $('project-menu').onclick = (e) => {
   const button = e.target.closest('[data-project-action]');
   if (button) void projectMenuAction(button.dataset.projectAction);
 };
 $('remove-project-form').onsubmit = removeProject;
 $('logout-button').onclick = logout;
+const subagentSettings = createSubagentSettings({
+  api,
+  root: $('subagent-settings'),
+  getModels: () => state.models,
+  openModelPicker,
+  icon,
+  toast,
+});
 $('open-model-config').onclick = () => void openModelConfig();
-$('default-main-model').onchange = () => {
-  $('save-default-model').disabled = $('default-main-model').value === (state.modelDefaults?.mainModel || '');
+$('default-main-model').onclick = () => {
+  openModelPicker({
+    button: $('default-main-model'),
+    value: $('default-main-model').value,
+    title: 'Modèle principal par défaut',
+    defaultLabel: 'Choix automatique de Prime Agent',
+    defaultDetail: 'Laisser Prime Agent choisir le modèle principal',
+    onSelect: selectDefaultModel,
+  });
 };
 $('save-default-model').onclick = () => void saveDefaultModel();
 $('add-custom-model').onclick = () => showModelConfigForm();
@@ -2298,8 +2339,9 @@ $('model-list').onclick = (event) => {
   }
   const choice = event.target.closest('.model-choice');
   if (!choice) return;
-  setSelectedModel(choice.dataset.modelId, true);
+  const target = modelPickerTarget;
   $('model-dialog').close();
+  target?.onSelect(choice.dataset.modelId);
 };
 $('model-search').onkeydown = (event) => {
   if (event.key !== 'ArrowDown') return;
@@ -2324,7 +2366,14 @@ $('model-list').onkeydown = (event) => {
   choices[index]?.focus();
 };
 $('model-dialog').addEventListener('close', () => {
-  $('model-picker-button').setAttribute('aria-expanded', 'false');
+  modelPickerTarget?.button.setAttribute('aria-expanded', 'false');
+  modelPickerTarget = null;
+});
+$('model-dialog').addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape') return;
+  event.preventDefault();
+  event.stopPropagation();
+  $('model-dialog').close();
 });
 $('thinking-select').onchange = () => {
   savePreferences({ thinking: $('thinking-select').value });
@@ -2333,11 +2382,13 @@ $('enter-to-send').onchange = (e) => {
   savePreferences({ enterToSend: e.target.checked });
   applyPreferences();
 };
-$('show-reasoning').onchange = (e) => {
-  savePreferences({ showReasoning: e.target.checked });
-  messageNodes.clear();
-  renderMessages();
-};
+document.querySelectorAll('[name="reasoning-mode"]').forEach((input) => {
+  input.onchange = () => {
+    savePreferences({ reasoningMode: input.value });
+    messageNodes.clear();
+    renderMessages();
+  };
+});
 document.querySelectorAll('[data-theme-choice]').forEach(
   (b) =>
     (b.onclick = () => {

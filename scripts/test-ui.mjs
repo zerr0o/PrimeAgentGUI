@@ -406,6 +406,10 @@ try {
   await expect(page.locator('#model-picker-button')).toContainText('Claude Sonnet 4.6');
   await expect(page.locator('#model-picker-provider')).toHaveText('anthropic');
   report.push('Recherche, sélection et favoris des modèles');
+  await page.keyboard.press('Control+n');
+  await expect(page.locator('#model-picker-button')).toContainText('GPT-5.6 Luna');
+  await expect(page.locator('#detail-session-id')).toBeHidden();
+  expect(serial).toBe(0);
   await page.locator('#session-list').getByText('Conversation de démonstration', { exact: true }).click();
   await expect(page.locator('#messages')).toContainText('Un projet prêt à évoluer');
   await expect(page.locator('#messages pre').filter({ hasText: 'const studio' })).toHaveCount(1);
@@ -522,21 +526,56 @@ try {
   await page.locator('#open-model-config').click();
   await expect(page.locator('#model-config-dialog')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Ajouter Muse 1.3' })).toHaveCount(0);
-  await expect(page.locator('#default-subagent-model')).toHaveValue('Hériter du modèle de l’agent parent');
-  await expect(page.locator('.model-defaults-note')).toContainText('Prime Agent 0.9.1 ne définit pas');
+  await expect(page.locator('#default-subagent-model')).toHaveAttribute('value', '');
+  await expect(page.locator('#subagent-settings')).toContainText('Les choix explicites restent prioritaires');
   await expect(page.locator('#custom-model-list')).toContainText('muse-spark-1.3-contributor-free');
   await expect(page.locator('#custom-model-list')).toContainText('1 048 576 jetons');
   expect(
     await page.evaluate(() => document.body.innerText + JSON.stringify({ ...localStorage })),
   ).not.toContain('"public"');
 
-  await page.locator('#default-main-model').selectOption('opencode/muse-spark-1.3-contributor-free');
+  const previousConversationModel = await page.locator('#model-select').inputValue();
+  await page.locator('#default-main-model').click();
+  await expect(page.locator('#model-search')).toBeFocused();
+  await expect(page.locator('#model-dialog-title')).toHaveText('Modèle principal par défaut');
+  expect(
+    await page.locator('#model-list .model-choice').evaluateAll((nodes) =>
+      nodes
+        .map((n) => n.dataset.modelId)
+        .filter(Boolean)
+        .sort(),
+    ),
+  ).toEqual(
+    await page.locator('#model-select option').evaluateAll((nodes) =>
+      nodes
+        .map((n) => n.value)
+        .filter(Boolean)
+        .sort(),
+    ),
+  );
+  await expect(page.locator('[data-model-id="anthropic/claude-sonnet-4-6"] .model-favorite')).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await page.locator('#model-search').fill('muse spark 1 3');
+  await page.locator('[data-model-id="opencode/muse-spark-1.3-contributor-free"] .model-choice').click();
+  await expect(page.locator('#default-main-model')).toContainText('Muse Spark 1.3 Free');
+  await expect(page.locator('#model-select')).toHaveValue(previousConversationModel);
   await expect(page.locator('#save-default-model')).toBeEnabled();
   await page.locator('#save-default-model').click();
   await expect(page.locator('#save-default-model')).toBeDisabled();
   const nativeSettings = JSON.parse(await readFile(join(agentHome, 'settings.json'), 'utf8'));
   expect(nativeSettings.defaultProvider).toBe('opencode');
   expect(nativeSettings.defaultModel).toBe('muse-spark-1.3-contributor-free');
+  await page.screenshot({
+    path: resolve('test-results', 'default-model-picker-desktop.png'),
+    animations: 'disabled',
+  });
+  await page.locator('#default-main-model').click();
+  await page.locator('#model-search').fill('automatique');
+  await page.locator('#model-list .model-choice').click();
+  await expect(page.locator('#default-main-model')).toHaveAttribute('value', '');
+  await expect(page.locator('#save-default-model')).toBeEnabled();
   await page.locator('#model-config-dialog [data-close-dialog]').click();
   await expect(page.locator('#model-picker-button')).toContainText('Muse Spark 1.3 Free');
   await page.locator('#model-picker-button').click();
@@ -557,6 +596,32 @@ try {
   await page.locator('#model-config-dialog [data-close-dialog]').click();
   await expect(page.locator('#model-picker-button')).toContainText('Muse Spark 1.3 Free configuré');
   report.push('Configurateur générique, modèle principal natif et héritage fidèle des sous-agents');
+
+  // History keeps its own model; every entry point for a new conversation restores the configured default.
+  await page.locator('#project-list').getByText('Atelier', { exact: true }).click();
+  await page
+    .locator('#project-session-list')
+    .getByText('Conversation de démonstration', { exact: true })
+    .click();
+  await expect(page.locator('#model-picker-button')).toContainText('GPT-5.6 Luna');
+  await page.keyboard.press('Control+n');
+  await expect(page.locator('#model-picker-button')).toContainText('Muse Spark 1.3 Free configuré');
+  const chooseGemini = async () => {
+    await page.locator('#model-picker-button').click();
+    await page.locator('#model-search').fill('gemini');
+    await page.locator('[data-model-id="google/gemini-3-flash"] .model-choice').click();
+    await expect(page.locator('#model-picker-button')).toContainText('Gemini 3 Flash');
+  };
+  await chooseGemini();
+  await page.locator('#new-session').click();
+  await expect(page.locator('#model-picker-button')).toContainText('Muse Spark 1.3 Free configuré');
+  await chooseGemini();
+  await page.reload();
+  await expect(page.locator('#welcome')).toBeVisible();
+  await expect(page.locator('#model-picker-button')).toContainText('Muse Spark 1.3 Free configuré');
+  report.push(
+    'Nouvelles conversations et Ctrl+N utilisent le modèle configuré, sans modifier celui des historiques',
+  );
 
   await page.locator('#open-settings').click();
   await page.locator('[data-theme-choice="light"]').click();

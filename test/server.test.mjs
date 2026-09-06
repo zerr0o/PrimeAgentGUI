@@ -32,7 +32,14 @@ function fakeRuntime() {
     async getModels() {
       runtime.modelCalls++;
       return {
-        models: [{ id: 'openai/gpt-5.6-luna', name: 'Luna', provider: 'openai' }],
+        models: [
+          {
+            id: 'openai/gpt-5.6-luna',
+            name: 'Luna',
+            provider: 'openai',
+            thinkingLevels: ['off', 'low', 'high'],
+          },
+        ],
         default: { model: 'openai/gpt-5.6-luna', thinking: 'medium' },
       };
     },
@@ -445,6 +452,32 @@ test('model configuration and native main-agent default stay local, hide credent
     },
   });
   assert.equal(unsafe.status, 400);
+});
+
+test('subagent settings validate catalog, thinking and project scope without changing native settings or stopping runs', async (t) => {
+  const f = await fixture(t);
+  const original = await readFile(join(f.agentHome, 'settings.json')).catch(() => null);
+  let data = (await f.api('/api/subagent-defaults')).json;
+  const request = (policy, extra = {}) =>
+    f.api('/api/subagent-defaults', { method: 'POST', body: { revision: data.revision, policy, ...extra } });
+  const policy = { model: 'openai/gpt-5.6-luna', thinking: 'high' };
+  const changed = await request(policy);
+  assert.equal(changed.status, 200);
+  data = changed.json;
+  assert.deepEqual(data.global, policy);
+  assert.equal((await request({ ...policy, thinking: 'xhigh' })).status, 400);
+  assert.equal((await request({ ...policy, model: 'unavailable/model' })).status, 400);
+  assert.equal((await request(policy, { cwd: 12 })).status, 400);
+  assert.equal((await request(policy, { cwd: join(f.cwd, 'unknown') })).status, 404);
+  const custom = await request({ model: '', thinking: 'low' }, { cwd: f.cwd });
+  assert.equal(custom.status, 200);
+  data = custom.json;
+  assert.deepEqual(data.effective, { model: '', thinking: 'low' });
+  const clear = await request(null, { cwd: f.cwd });
+  assert.deepEqual(clear.json.effective, policy);
+  assert.equal(clear.json.project, null);
+  assert.deepEqual(await readFile(join(f.agentHome, 'settings.json')).catch(() => null), original);
+  assert.equal(f.runtime.controls.length, 0);
 });
 
 test('local API rejects hostile Host, Origin and cross-site requests while allowing its own origin', async (t) => {

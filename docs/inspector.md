@@ -12,7 +12,11 @@ La consommation additionne les données enregistrées par Prime Agent sur la bra
 
 ## Agents
 
-L’agent principal et ses sous-agents apparaissent dans leur hiérarchie, avec leur modèle, leur état et le dernier résumé disponible. Cliquez sur une carte pour lire ses échanges, puis utilisez **Actualiser** pour en récupérer les derniers messages.
+Les réglages des sous-agents sont accessibles dès l’ouverture d’une nouvelle conversation, avant le premier message. Ils dépendent du projet choisi ; aucune session Prime Agent ni aucun agent ne sont créés pour les modifier.
+
+En haut de l’onglet, **Sous-agents du projet** utilise les valeurs communes définies dans les préférences du PC lorsque **Globaux** est sélectionné ; les sélecteurs de modèle et de réflexion sont alors masqués. Choisissez **Ce projet** pour les afficher et personnaliser les prochaines délégations. Le sélecteur de modèle reprend le catalogue, la recherche et les favoris des conversations. Un choix s’enregistre automatiquement pour toutes les sessions du projet ; revenir à **Globaux** supprime l’exception. Les agents déjà créés conservent leurs réglages. Ce bloc est utilisable sur PC et sur mobile avec le contrôle complet.
+
+L’agent principal et ses sous-agents apparaissent dans leur hiérarchie, avec leur modèle, leur **niveau de réflexion**, leur état et le dernier résumé disponible. Le niveau provient de la session active ou des changements enregistrés sur sa branche actuelle, jamais du réglage par défaut du Studio. **Non renseignée** indique une donnée absente d’une ancienne session. Cliquez sur une carte pour lire ses échanges, puis utilisez **Actualiser** pour en récupérer les derniers messages.
 
 Pendant une exécution lancée par le Studio, la liste se rafraîchit toutes les quelques secondes tant que le panneau est visible. Un agent ayant terminé une première tâche peut travailler à nouveau : son activité actuelle est prioritaire sur son ancien statut « terminé ».
 

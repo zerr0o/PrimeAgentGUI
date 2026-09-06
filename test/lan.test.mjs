@@ -577,6 +577,73 @@ test('LAN control can manage project and session metadata and check a project fo
   assert.equal(project.sessions[0].archived, true);
 });
 
+test('mobile subagent defaults are limited to a known project and preserve global settings and running agents', async (t) => {
+  for (const readOnly of [false, true]) {
+    const f = await fixture(t, { readOnly });
+    await f.local('/api/runs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cwd: f.cwd, message: 'Keep working during settings changes' }),
+    });
+    await until(() => f.runtime.controls.length === 1);
+    const cookie = await f.authenticate();
+    const headers = { Cookie: cookie, 'Content-Type': 'application/json' };
+    const path = `/api/project-subagent-defaults?cwd=${encodeURIComponent(f.cwd)}`;
+    assert.equal((await f.api(path)).status, 401);
+    assert.equal((await f.api('/api/project-subagent-defaults', { headers })).status, 400);
+    assert.equal(
+      (
+        await f.api(`/api/project-subagent-defaults?cwd=${encodeURIComponent(join(f.cwd, 'unknown'))}`, {
+          headers,
+        })
+      ).status,
+      404,
+    );
+    const initial = (await f.api(path, { headers })).json;
+    const saved = await f.api(path, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ revision: initial.revision, policy: { model: '', thinking: 'low' } }),
+    });
+    assert.equal(saved.status, readOnly ? 405 : 200);
+    if (!readOnly) {
+      assert.deepEqual(saved.json.project, { model: '', thinking: 'low' });
+      assert.deepEqual(saved.json.global, initial.global);
+      assert.equal(
+        (
+          await f.api('/api/project-subagent-defaults', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ revision: saved.json.revision, policy: { model: '', thinking: 'high' } }),
+          })
+        ).status,
+        400,
+      );
+      assert.equal(
+        (
+          await f.api(path, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ revision: initial.revision, policy: null }),
+          })
+        ).status,
+        409,
+      );
+      const reset = await f.api(path, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ revision: saved.json.revision, policy: null }),
+      });
+      assert.equal(reset.status, 200);
+      assert.equal(reset.json.project, null);
+      assert.deepEqual(reset.json.effective, initial.global);
+    }
+    assert.equal((await f.api('/api/subagent-defaults', { headers })).status, 404);
+    assert.equal(f.runtime.controls[0].cancelCalls, 0);
+    assert.equal((await f.local('/api/runs')).json.runs.length, 1);
+  }
+});
+
 test('LAN control authenticates and validates writes before reaching the agent', async (t) => {
   const { api, authenticate, runtime, cwd } = await fixture(t, { readOnly: false });
   const cookie = await authenticate();
@@ -611,6 +678,8 @@ test('LAN control authenticates and validates writes before reaching the agent',
     ['POST', '/api/model-config'],
     ['DELETE', '/api/model-config'],
     ['GET', '/api/model-defaults'],
+    ['GET', '/api/subagent-defaults'],
+    ['POST', '/api/subagent-defaults'],
     ['POST', '/api/model-defaults'],
   ]) {
     assert.equal(

@@ -60,7 +60,8 @@ function fixture(options = {}) {
               isRunningTools: true,
               messageCount: 4,
               privateCredentials: 'secret-must-not-escape',
-              model: { apiKey: 'secret-must-not-escape' },
+              model: { provider: 'fixture', id: 'parent', apiKey: 'secret-must-not-escape' },
+              thinkingLevel: 'max',
             },
           };
         case 'get_session_header':
@@ -79,6 +80,8 @@ function fixture(options = {}) {
                   id: 'child-one',
                   parentId: sessionId,
                   sessionName: 'Audit',
+                  model: 'fixture/child',
+                  thinkingLevel: 'off',
                   status: 'done',
                   activity: { kind: 'executing', toolName: 'ipython', privateCredentials: 'secret' },
                   sessionDir: 'private-secret',
@@ -164,6 +167,9 @@ test('snapshot observes the exact native header without lifecycle commands or pr
 test('inspector observes sub-agents without attaching or exposing private metadata', async () => {
   const f = fixture();
   const snapshot = await f.client.getInspector(sessionId, cwd);
+  assert.equal(snapshot.state.model, 'fixture/parent');
+  assert.equal(snapshot.state.thinkingLevel, 'max');
+  assert.equal(snapshot.children[0].thinkingLevel, 'off');
   assert.equal(snapshot.state.isRunningTools, true);
   assert.equal(snapshot.children[0].activity.kind, 'executing');
   assert.ok(!JSON.stringify(snapshot).includes('secret'));

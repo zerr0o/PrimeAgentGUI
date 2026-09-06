@@ -7,8 +7,11 @@ import { randomUUID } from 'node:crypto';
 import { createStore, HttpError, validateDirectory, cwdKey, validId } from './lib/store.mjs';
 import { createAgentRuntime } from './lib/agent.mjs';
 import { createLanGateway } from './lib/lan.mjs';
+import { createRemoteAccess } from './lib/remote-access.mjs';
 import { createModelConfigStore } from './lib/model-config.mjs';
 import { createModelDefaultsStore } from './lib/model-defaults.mjs';
+import { createSubagentDefaultsStore } from './lib/subagent-defaults.mjs';
+import { validPolicy } from './runtime/subagent-policy.mjs';
 import { openDirectory } from './lib/open-directory.mjs';
 import { createMcpService } from './lib/mcp-service.mjs';
 import { createProviderService } from './lib/provider-service.mjs';
@@ -22,7 +25,7 @@ import { openFile as openLocalFile, fileLaunchMode } from './lib/open-file.mjs';
 import { createSessionInspector } from './lib/session-inspector.mjs';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
-const VERSION = '2.2.0';
+const VERSION = '2.3.0';
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -81,8 +84,16 @@ export function createApp(options = {}) {
   const dataDir = options.dataDir || process.env.PRIME_AGENT_GUI_DATA_DIR || join(ROOT, '.local');
   const store = options.store || createStore({ sessionDir, dataDir, initialCwd: options.initialCwd || ROOT });
   const fileStore = createFileStore(join(dataDir, 'attachments'));
+  const remoteAccess = createRemoteAccess({ dataDir });
+  const subagentDefaults = createSubagentDefaultsStore({ dataDir });
   const runtime =
-    options.runtime || createAgentRuntime({ agentHome, sessionDir, cliPath: process.env.PRIME_AGENT_CLI });
+    options.runtime ||
+    createAgentRuntime({
+      agentHome,
+      sessionDir,
+      cliPath: process.env.PRIME_AGENT_CLI,
+      subagentPolicyFile: subagentDefaults.file,
+    });
   const modelConfig = options.modelConfig || createModelConfigStore({ agentHome });
   const modelDefaults = options.modelDefaults || createModelDefaultsStore({ agentHome });
   const mcp = options.mcp || createMcpService({ agentHome });
@@ -395,6 +406,9 @@ export function createApp(options = {}) {
         });
       }
       if (method === 'GET' && path === '/api/version') return json(res, 200, await status());
+      if (path === '/api/remote-access' && method === 'GET') return json(res, 200, await remoteAccess.get());
+      if (path === '/api/remote-access/code' && method === 'POST')
+        return json(res, 200, await remoteAccess.changeCode(await readBody(req)));
       if (method === 'GET' && path === '/api/models') return json(res, 200, await models());
       if (method === 'GET' && path === '/api/inspector')
         return json(
@@ -505,6 +519,31 @@ export function createApp(options = {}) {
       if (mcpJob && method === 'DELETE') return json(res, 200, mcp.cancel(mcpJob[1]));
       if (method === 'GET' && path === '/api/model-defaults')
         return json(res, 200, await modelDefaults.get());
+      if (
+        ['/api/subagent-defaults', '/api/project-subagent-defaults'].includes(path) &&
+        ['GET', 'POST'].includes(method)
+      ) {
+        const body = method === 'POST' ? await readBody(req) : {};
+        if (Object.keys(body).some((key) => !['cwd', 'policy', 'revision'].includes(key)))
+          throw new HttpError(400, 'Réglages des sous-agents invalides.');
+        if (body.cwd !== undefined && (typeof body.cwd !== 'string' || !body.cwd.trim()))
+          throw new HttpError(400, 'Projet invalide.');
+        const cwd = body.cwd || url.searchParams.get('cwd') || undefined;
+        if (path === '/api/project-subagent-defaults' && !cwd)
+          throw new HttpError(400, 'Choisissez un projet pour modifier ses sous-agents.');
+        if (cwd) await store.findProject(cwd);
+        if (method === 'GET') return json(res, 200, await subagentDefaults.get(cwd));
+        if (body.policy !== null) {
+          if (!validPolicy(body.policy)) throw new HttpError(400, 'Réglages des sous-agents invalides.');
+          if (body.policy.model) {
+            const model = (await models()).models?.find((m) => m.id === body.policy.model);
+            if (!model) throw new HttpError(400, 'Ce modèle n’est pas disponible dans Prime Agent.');
+            if (body.policy.thinking && !model.thinkingLevels?.includes(body.policy.thinking))
+              throw new HttpError(400, 'Ce niveau de réflexion n’est pas compatible avec le modèle choisi.');
+          }
+        }
+        return json(res, 200, await subagentDefaults.set({ ...body, cwd }));
+      }
       if (method === 'POST' && path === '/api/model-defaults')
         return json(res, 200, await setDefaultModel(await readBody(req)));
       if (method === 'POST' && path === '/api/model-config')
@@ -625,7 +664,7 @@ export function createApp(options = {}) {
     server.closeAllConnections();
     if (server.listening) await new Promise((resolve) => server.close(resolve));
   }
-  return { server, store, runtime, modelConfig, modelDefaults, runs, close };
+  return { server, store, runtime, modelConfig, modelDefaults, remoteAccess, runs, close };
 }
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
@@ -637,7 +676,9 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.m
   let shuttingDown = false;
   async function startLan() {
     try {
-      const config = JSON.parse(await readFile(join(ROOT, '.local', 'lan-access.json'), 'utf8'));
+      const access = await app.remoteAccess.readConfig();
+      if (!access) return;
+      const { config } = access;
       if (shuttingDown) return;
       if (!Number.isInteger(config.port) || config.port < 1024 || config.port > 65535 || config.port === port)
         throw new Error('Port mobile invalide.');
@@ -668,6 +709,11 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.m
           )
             throw new Error('Port de passerelle invalide.');
           const gateway = createLanGateway({ host, upstreamPort: port, config, publicOrigin });
+          await app.remoteAccess.registerGateway(gateway);
+          if (shuttingDown) {
+            gateway.close();
+            return;
+          }
           remoteServers.push(gateway);
           gateway.on('error', (error) => console.error(`Accès ${name} indisponible : ${error.message}`));
           gateway.listen(listenPort, host, () =>

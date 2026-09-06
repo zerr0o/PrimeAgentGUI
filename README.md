@@ -29,7 +29,16 @@
 
 Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une application accessible depuis le navigateur. Suivez les réponses en direct, retrouvez vos projets et continuez une conversation sans ouvrir de terminal. Sous Windows, les agents et leurs outils démarrent en arrière-plan, sans fenêtres PowerShell intempestives.
 
-**Version 2.2.0** — [Télécharger le code source et consulter les notes de version](https://github.com/zerr0o/PrimeAgentGUI/releases/latest). Cette version ajoute la gestion graphique des fournisseurs sur PC : connexions par compte, clés API et déconnexion avec confirmation.
+**Version 2.3.0** — [Télécharger le code source et consulter les notes de version](https://github.com/zerr0o/PrimeAgentGUI/releases/latest). Choisissez le modèle et la réflexion des sous-agents, suivez le raisonnement en direct et modifiez le code d’accès mobile depuis le PC.
+
+## Nouveautés de la version 2.3
+
+- **Sous-agents maîtrisés** : modèle et niveau de réflexion par défaut, réglages globaux sur PC ou propres à un projet dans l’onglet **Agents**, accessibles avant le premier message.
+- **Un même sélecteur de modèles** : catalogue, recherche intégrée et favoris partagés entre conversations, modèle principal par défaut et sous-agents. **Nouvelle session** et **Ctrl+N** reprennent le modèle par défaut.
+- **Raisonnement à suivre en direct** : modes **Masqué**, **Aperçu** et **Détaillé** ; l’aperçu suit les deux dernières lignes avec leur formatage Markdown. Les cartes des agents indiquent la réflexion réellement utilisée.
+- **Code mobile modifiable sur PC** : un PIN commun au Wi-Fi, à Tailscale et à la PWA, appliqué immédiatement. Les appareils se reconnectent ; les agents continuent leur travail.
+
+![Modèle principal et sous-agents : mêmes sélecteurs avec recherche et favoris dans les préférences du PC.](docs/screenshots/desktop-model-defaults.png)
 
 ## Ce que vous pouvez faire
 
@@ -42,6 +51,7 @@ Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une 
 | **Intervenir en direct**           | Réorienter l’agent ou préparer un message à la suite, sans arrêter son travail.                                                   |
 | **Joindre des images et fichiers** | Choisir une photo ou un document, les déposer dans la conversation ou les coller depuis le presse-papiers.                        |
 | **Retrouver vos modèles**          | Rechercher par nom ou fournisseur, gérer vos favoris et choisir le niveau de réflexion.                                           |
+| **Régler les sous-agents**         | Définir le modèle et la réflexion des prochaines délégations, globalement ou par projet, avant le premier message.                |
 | **Connecter des outils MCP**       | Gérer les serveurs HTTP et stdio, OAuth, les variables, les outils autorisés et les tests de connexion.                           |
 | **Gérer les fournisseurs**         | Sur le PC, connecter un compte, enregistrer une clé API et retirer des identifiants avec confirmation.                            |
 | **Travailler en parallèle**        | Lancer des exécutions dans plusieurs sessions et passer de l’une à l’autre.                                                       |
@@ -53,6 +63,8 @@ Les exécutions continuent lorsque vous changez de session, rechargez la page ou
 Le menu **⋯** de chaque projet fonctionne aussi sur mobile ; le clic droit est disponible sur PC. Retirer un projet masque son entrée dans le Studio et conserve son dossier et ses sessions. Vous pouvez retrouver ceux-ci en ajoutant à nouveau le dossier. Un projet avec une exécution active ne peut pas être retiré.
 
 Dans le Studio distant, **Préférences → Se déconnecter** ferme l’accès de ce navigateur et revient au code d’accès. Les agents et les autres appareils connectés continuent de fonctionner.
+
+Sur le PC, **Préférences → Accès mobile → Changer le code** modifie le PIN à huit chiffres du Wi-Fi, de Tailscale et de la PWA. Les appareils doivent se reconnecter avec le nouveau code ; les agents continuent, sans redémarrage du Studio.
 
 ## Commandes et skills à portée de main
 
@@ -80,7 +92,7 @@ Les tests découvrent les outils sans en exécuter. Les nouveaux réglages s’a
 
 ## Démarrage rapide
 
-**Prérequis :** Windows, **Node.js 22.8 ou ultérieur** et Prime Agent installé. Un fournisseur doit être configuré avant le premier message, depuis le CLI ou le panneau **Fournisseurs** du Studio sur le PC. L’intégration a été vérifiée avec **Prime Agent 0.9.1 et 0.9.2**, y compris les adaptations Windows ; le nouveau panneau de connexion a été vérifié avec **0.9.2**.
+**Prérequis :** Windows, **Node.js 22.8 ou ultérieur** et **Prime Agent 0.9.2** installé. Un fournisseur doit être configuré avant le premier message, depuis le CLI ou le panneau **Fournisseurs** du Studio sur le PC. L’intégration de cette version, notamment les réglages des sous-agents, a été vérifiée avec **0.9.2**.
 
 Téléchargez **Source code (zip)** depuis la [dernière release](https://github.com/zerr0o/PrimeAgentGUI/releases/latest) et extrayez l’archive, ou clonez ce dépôt. Ouvrez ensuite un terminal dans le dossier extrait :
 
@@ -163,9 +175,13 @@ Recherchez un modèle par son **nom, son fournisseur ou son identifiant**. Les f
   <img src="docs/screenshots/desktop-models.png" width="560" alt="Sélecteur de modèles sur PC avec recherche, deux favoris et choix automatique de Prime Agent.">
 </p>
 
-Sur le PC, **Préférences → Modèles et valeurs par défaut → Configurer** permet de choisir le modèle principal par défaut et de gérer les définitions de modèles personnalisés.
+Sur le PC, **Préférences → Modèles et valeurs par défaut → Configurer** permet de choisir le modèle principal par défaut avec le même sélecteur, la recherche et les favoris que les conversations, puis de l’enregistrer. Ce panneau permet aussi de gérer les définitions de modèles personnalisés. **Nouvelle session** et **Ctrl+N** reprennent ce modèle par défaut, indépendamment du dernier modèle choisi dans une conversation.
 
-Avec Prime Agent 0.9.1, les sous-agents héritent du modèle parent ; il n’existe pas de réglage global distinct pour eux. Une délégation peut demander un autre modèle via les capacités natives de Prime Agent.
+Avec Prime Agent **0.9.2**, la zone **Sous-agents** des préférences définit les valeurs globales. Pour un projet précis, choisissez **Ce projet** en haut de l’onglet **Agents** d’une conversation, même avant le premier message, pour afficher ses sélecteurs : les choix sont enregistrés immédiatement. **Globaux** masque les sélecteurs et rétablit les valeurs communes. Le modèle se choisit avec le même catalogue, la recherche intégrée et les favoris que dans les conversations. Chaque valeur peut hériter du parent. Le Studio ajoute ces choix aux instructions et les applique aux arguments omis lors des prochaines délégations ; les choix explicites et les sous-agents déjà créés sont conservés.
+
+Dans **Préférences → Raisonnement de l’agent**, choisissez **Masqué**, **Aperçu** ou **Détaillé**. L’aperçu affiche les **deux dernières lignes** de la dernière réflexion du bloc d’activité, avec le formatage Markdown et un suivi automatique pendant la génération. L’onglet **Agents** indique aussi le niveau de réflexion réellement utilisé.
+
+![Nouvelle conversation sur PC : modèle principal par défaut et réglages des sous-agents accessibles dans l’onglet Agents avant le premier message.](docs/screenshots/desktop-new-conversation-agents.png)
 
 [Consulter le guide des modèles et de la configuration →](docs/configuration.md)
 

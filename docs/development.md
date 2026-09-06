@@ -4,7 +4,7 @@
 
 ## Installation et développement
 
-Prérequis : **Node.js 22.8 ou ultérieur** et Prime Agent installé. Configurez un fournisseur avant le premier message, dans Prime Agent ou dans le panneau local **Fournisseurs**. La version locale validée est **0.9.2** ; l’intégration a aussi été vérifiée avec **0.9.1**. Le GUI réutilise les comptes existants sans redemander leurs clés.
+Prérequis : **Node.js 22.8 ou ultérieur** et **Prime Agent 0.9.2** installé. Configurez un fournisseur avant le premier message, dans Prime Agent ou dans le panneau local **Fournisseurs**. Cette version du Studio et son adaptateur de sous-agents sont validés avec **0.9.2**. Le GUI réutilise les comptes existants sans redemander leurs clés.
 
 ```powershell
 npm ci
@@ -44,10 +44,19 @@ npm run test:mobile
 npm run test:layout
 npm run test:attachments
 npm run test:inspector
+npm run test:reasoning
+npm run test:remote-access
+npm run test:subagents:native
 npm run test:pwa
 ```
 
 Les tests automatiques utilisent des données temporaires et un faux moteur, sans consommation de modèle. Les tests Windows vérifient également les paramètres natifs de création des processus, le lancement VBS, la réutilisation du serveur et l’arrêt des descendants. Les tests de navigateur utilisent Microsoft Edge installé localement et produisent des captures dans `test-results/`.
+
+`test:subagents:native` utilise le vrai moteur et Python avec un fournisseur HTTP local simulé, sans compte ni appel payant. Il vérifie les arguments par défaut et explicites, le prompt existant, les niveaux en direct et dans l’historique, puis un changement par projet pendant que les premiers sous-agents travaillent encore.
+
+Le chargeur `runtime/subagent-loader.mjs` est ajouté uniquement à l’environnement des processus du Studio. Son hook reconnaît les méthodes du moteur 0.9.2, dans les modules ou le bundle, et refuse une structure inconnue. Les arguments omis sont complétés avant la validation native ; l’instruction est ajoutée à la liste des compléments système et reconstruite avant les nouveaux tours. Les instantanés des enfants incluent leur `thinkingLevel` effectif. Aucun fichier de l’installation Prime Agent n’est modifié. Après une mise à jour de ce chargeur, il faut un redémarrage du Studio ; attendre la fin des sessions actives.
+
+`test:reasoning` vérifie les trois modes d’affichage, le Markdown nettoyé, le suivi des deux dernières lignes à chaque delta et à la rotation, les valeurs du panneau Agents et la configuration globale/par projet. L’ancien booléen de préférence migre vers Masqué ou Détaillé ; une nouvelle installation utilise Aperçu.
 
 Test réel facultatif avec le compte Luna déjà configuré (**consomme des appels au modèle**) :
 
@@ -146,4 +155,4 @@ Le script ouvre la véritable interface dans Microsoft Edge sans fenêtre visibl
 
 `npm run test:workspace -- --capture-docs` régénère la capture du gestionnaire MCP avec une configuration de démonstration isolée. Les comptes utilisateur sont conservés.
 
-Les captures sont enregistrées dans `docs/screenshots/`. Quatre vues du bureau sont capturées en 1600 × 1000, dont une conversation avec images, documents et aperçus de pièces jointes. Le sélecteur de modèles est cadré sur sa fenêtre pour rester lisible dans le README. Les fichiers de démonstration restent dans le dossier temporaire du scénario. Le rapport se trouve dans `test-results/readme-captures.json`. `PRIME_STUDIO_BROWSER` permet de choisir un autre canal Playwright installé, par exemple `chrome`.
+Les captures sont enregistrées dans `docs/screenshots/`. Cinq vues du bureau sont capturées en 1600 × 1000, dont une conversation avec pièces jointes et une nouvelle conversation avec les réglages des sous-agents. Trois captures sont cadrées sur leur fenêtre : sélecteur de modèles, modèles par défaut et code mobile. Les fichiers de démonstration restent dans le dossier temporaire du scénario. Le rapport se trouve dans `test-results/readme-captures.json`. `PRIME_STUDIO_BROWSER` permet de choisir un autre canal Playwright installé, par exemple `chrome`.

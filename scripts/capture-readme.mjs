@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url';
 import { chromium, expect } from '@playwright/test';
 import { createApp } from '../server.mjs';
 import { createFileStore } from '../lib/files.mjs';
+import { hashAccessCode } from '../lib/lan.mjs';
+import { projectKey } from '../runtime/subagent-policy.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const output = join(root, 'docs', 'screenshots');
@@ -127,24 +129,56 @@ const store = {
     assert.ok(session, 'Only demonstration sessions may be opened');
     return session;
   },
+  async findProject(path) {
+    const project = projects.find((project) => project.cwd === path);
+    assert.ok(project, 'Only demonstration projects may be opened');
+    return project;
+  },
 };
 const models = [
   { id: model, name: 'GPT-5.6 Luna', provider: 'openai-codex', reasoning: true },
   { id: 'openai-codex/gpt-5.6-sol', name: 'GPT-5.6 Sol', provider: 'openai-codex', reasoning: true },
   { id: 'openai-codex/gpt-5.5', name: 'GPT-5.5', provider: 'openai-codex', reasoning: true },
 ];
+for (const model of models) model.thinkingLevels = ['off', 'low', 'medium', 'high', 'xhigh'];
 const runtime = {
   async getStatus() {
-    return { available: true, version: '0.9.1' };
+    return { available: true, version: '0.9.2' };
   },
   async getModels() {
-    return { models, default: { model, thinking: 'high' } };
+    return { models, default: { model: 'openai-codex/gpt-5.6-sol', thinking: 'high' } };
   },
   async start() {
     throw new Error('Screenshot fixtures cannot start an agent.');
   },
   async close() {},
 };
+await Promise.all(['agent', 'data', 'sessions'].map((name) => mkdir(join(temp, name), { recursive: true })));
+await writeFile(
+  join(temp, 'agent', 'settings.json'),
+  JSON.stringify({ defaultProvider: 'openai-codex', defaultModel: 'gpt-5.6-sol' }),
+);
+await writeFile(
+  join(temp, 'data', 'subagent-defaults.json'),
+  JSON.stringify({
+    version: 1,
+    revision: 'demo',
+    global: { model, thinking: 'high' },
+    projects: { [projectKey(cwd)]: { model, thinking: 'medium' } },
+  }),
+);
+const salt = 'a'.repeat(32);
+await writeFile(
+  join(temp, 'data', 'lan-access.json'),
+  JSON.stringify({
+    enabled: true,
+    host: '192.168.1.50',
+    port: 3089,
+    readOnly: false,
+    salt,
+    codeHash: hashAccessCode('12345678', salt),
+  }),
+);
 const app = createApp({
   store,
   runtime,
@@ -210,6 +244,25 @@ try {
   await expect(page.locator('#model-search')).toBeFocused();
   await expect(page.locator('#model-favorites-label')).toContainText('2');
   await capture('desktop-models.png', page.locator('#model-dialog'));
+  await page.keyboard.press('Escape');
+
+  await page.locator('#open-settings').click();
+  await page.locator('#open-model-config').click();
+  await expect(page.locator('#default-main-model')).toContainText('GPT-5.6 Sol');
+  await expect(page.locator('#default-subagent-model')).toContainText('GPT-5.6 Luna');
+  await capture('desktop-model-defaults.png', page.locator('#model-config-dialog'));
+  await page.keyboard.press('Escape');
+  await page.locator('#new-session').click();
+  await page.locator('#inspector-tab-agents').click();
+  await expect(page.locator('#project-subagent-model')).toBeVisible();
+  await expect(page.locator('#project-subagent-thinking')).toHaveValue('medium');
+  await expect(page.locator('#detail-session-id')).toBeHidden();
+  await capture('desktop-new-conversation-agents.png');
+  await page.locator('#inspector-tab-session').click();
+  await page.locator('#open-settings').click();
+  await page.locator('#open-remote-access').click();
+  await expect(page.locator('#remote-code')).toBeEnabled();
+  await capture('desktop-remote-pin.png', page.locator('#remote-access-dialog'));
   await page.keyboard.press('Escape');
 
   await page.locator('#open-settings').click();

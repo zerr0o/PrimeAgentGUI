@@ -1,4 +1,6 @@
 import { filePresentation } from './file-presentation.js';
+import { thinkingLabel } from './reasoning.js';
+import { createSubagentSettings } from './subagent-settings.js';
 
 const $ = (id) => document.getElementById(id);
 const node = (tag, className = '', text = '') => {
@@ -31,7 +33,16 @@ const count = (number) =>
 const statusNode = (status) =>
   node('span', `inspector-status is-${status}`, labels[status] || labels.unknown);
 
-export function createInspector({ api, getContext, markdown, onClose }) {
+export function createInspector({
+  api,
+  getContext,
+  markdown,
+  onClose,
+  getModels,
+  openModelPicker,
+  icon,
+  toast,
+}) {
   let tab = 'session',
     fileMode = 'changes',
     directory = '',
@@ -45,6 +56,15 @@ export function createInspector({ api, getContext, markdown, onClose }) {
     lastAgents = '';
   const pending = new Map();
   const panel = $('details-panel');
+  const subagentSettings = createSubagentSettings({
+    api,
+    root: $('project-subagent-settings'),
+    getModels,
+    openModelPicker,
+    icon,
+    toast,
+    project: true,
+  });
   let mobileModal = false;
   const background = [...document.querySelectorAll('#sidebar, .workspace-header, .conversation-column')];
   const previousInert = new Map();
@@ -69,7 +89,7 @@ export function createInspector({ api, getContext, markdown, onClose }) {
     }
   }
   panel.addEventListener('keydown', (event) => {
-    if (!mobileModal || viewer.open) return;
+    if (!mobileModal || viewer.open || document.querySelector('#model-dialog[open]')) return;
     if (event.key === 'Escape') {
       event.preventDefault();
       event.stopPropagation();
@@ -77,8 +97,8 @@ export function createInspector({ api, getContext, markdown, onClose }) {
       return;
     }
     if (event.key !== 'Tab') return;
-    const focusable = [...panel.querySelectorAll('button:not([disabled]), a[href], [tabindex="0"]')].filter(
-      (element) => element.tabIndex >= 0 && element.getClientRects().length,
+    const focusable = [...panel.querySelectorAll('button, select, input, a[href], [tabindex="0"]')].filter(
+      (element) => !element.matches(':disabled') && element.tabIndex >= 0 && element.getClientRects().length,
     );
     const first = focusable[0],
       last = focusable.at(-1);
@@ -210,6 +230,7 @@ export function createInspector({ api, getContext, markdown, onClose }) {
         statusNode(agent.status),
       );
       if (agent.model) card.append(node('span', 'inspector-agent-model', agent.model));
+      card.append(node('span', 'inspector-agent-thinking', `Réflexion · ${thinkingLabel(agent.thinking)}`));
       if (agent.preview || agent.error)
         card.append(node('span', 'inspector-agent-preview', agent.error || agent.preview));
       if (agent.toolUseCount)
@@ -281,7 +302,10 @@ export function createInspector({ api, getContext, markdown, onClose }) {
     };
   }
   $('close-inspector').onclick = onClose;
-  $('refresh-agents').onclick = () => void loadAgents(true);
+  $('refresh-agents').onclick = () => {
+    void loadAgents(true);
+    if (current.cwd) void subagentSettings.open();
+  };
 
   function renderFiles(append = false) {
     const list = $('inspector-file-list'),
@@ -562,6 +586,7 @@ export function createInspector({ api, getContext, markdown, onClose }) {
     beginView(agent.name);
     controls.append(statusNode(agent.status));
     if (agent.model) controls.append(node('span', 'inspector-note', agent.model));
+    controls.append(node('span', 'inspector-note', `Réflexion · ${thinkingLabel(agent.thinking)}`));
     if (!agent.history) {
       empty(body, agent.preview || 'La conversation sera disponible dès son enregistrement par Prime Agent.');
       return;
@@ -637,11 +662,18 @@ export function createInspector({ api, getContext, markdown, onClose }) {
       $('inspector-agent-count').hidden = true;
       $('inspector-usage').hidden = true;
       $('inspector-agent-note').textContent = '';
+      $('inspector-agent-summary').textContent = current.sessionId
+        ? 'Délégations de la session'
+        : 'Prochaines délégations';
       $('inspector-file-note').textContent = '';
       $('inspector-file-breadcrumb').replaceChildren();
       empty(
         $('inspector-agent-list'),
-        current.sessionId ? 'Chargement des agents…' : 'Ouvrez une session pour retrouver ses agents.',
+        current.sessionId
+          ? 'Chargement des agents…'
+          : current.cwd
+            ? 'Les agents apparaîtront après le premier message.'
+            : 'Choisissez un projet pour préparer ses sous-agents.',
       );
       empty(
         $('inspector-file-list'),
@@ -651,6 +683,7 @@ export function createInspector({ api, getContext, markdown, onClose }) {
     if (agentData?.session) $('detail-status').replaceChildren(statusNode(agentData.session.status));
     $('inspector-tab-agents').disabled = !current.enabled;
     $('inspector-tab-files').disabled = !current.enabled;
+    subagentSettings.update({ ...current, active: tab === 'agents' && visible() && !document.hidden });
     if (!current.enabled) return;
     if (!visible() || document.hidden || !current.online) return;
     if (tab === 'files') {

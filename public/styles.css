@@ -2861,16 +2861,20 @@ kbd {
   gap: 1px;
 }
 #model-picker-label,
-#model-picker-provider {
+#model-picker-provider,
+.model-picker-name,
+.model-picker-provider {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-#model-picker-label {
+#model-picker-label,
+.model-picker-name {
   line-height: 1.2;
 }
-#model-picker-provider {
+#model-picker-provider,
+.model-picker-provider {
   color: var(--picker-secondary);
   font-size: 9px;
   line-height: 1.2;
@@ -3331,6 +3335,115 @@ kbd {
   grid-template-columns: 1fr 1fr;
   gap: 14px;
   margin-top: 18px;
+}
+.subagent-settings {
+  margin-top: 18px;
+}
+.remote-code-fields {
+  border: 0;
+  padding: 0;
+  margin: 22px 0 0;
+  min-width: 0;
+}
+.remote-code-fields:disabled {
+  opacity: 0.6;
+}
+.remote-code-fields > label {
+  display: block;
+  margin: 0 0 18px;
+}
+.remote-code-fields input:not([type='checkbox']) {
+  font-size: 20px;
+  letter-spacing: 5px;
+  font-variant-numeric: tabular-nums;
+}
+.remote-code-fields .remote-code-reveal {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 400;
+}
+.remote-code-reveal input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--accent);
+}
+.remote-code-note {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.subagent-settings fieldset {
+  border: 0;
+  padding: 0;
+  margin: 18px 0 0;
+  min-width: 0;
+}
+.subagent-settings fieldset:disabled {
+  opacity: 0.6;
+}
+.subagent-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.subagent-heading h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.subagent-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 12px;
+}
+.subagent-controls label {
+  display: block;
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+.subagent-controls .model-picker-button {
+  width: 100%;
+  max-width: none;
+  min-height: 43px;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+}
+.subagent-model-icon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.subagent-model-icon svg {
+  width: 17px;
+  height: 17px;
+}
+.subagent-controls select {
+  width: 100%;
+  min-width: 0;
+  margin-top: 8px;
+  min-height: 43px;
+}
+.subagent-status {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+.subagent-error {
+  overflow-wrap: anywhere;
+}
+.subagent-controls :focus-visible,
+.subagent-scope:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 .model-defaults-grid label {
   min-width: 0;
