@@ -1,5 +1,7 @@
 # Fournisseurs de modèles
 
+[English](en/providers.md) · **Français** · [← Retour au README](../README.fr.md)
+
 Sur le PC qui exécute le Studio, ouvrez **http://127.0.0.1:3088 → Préférences → Fournisseurs → Gérer les connexions**. Ce panneau est réservé à l’accès local du PC : il n’est pas disponible par le LAN, Tailscale ou la PWA distante, même en contrôle complet.
 
 ## Comptes et clés API

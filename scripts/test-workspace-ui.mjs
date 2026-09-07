@@ -6,6 +6,7 @@ import { dirname, join, resolve } from 'node:path';
 import { createApp } from '../server.mjs';
 import { createMcpService } from '../lib/mcp-service.mjs';
 import { createLanGateway, hashAccessCode } from '../lib/lan.mjs';
+import { captureEnglishDocumentation } from './documentation-capture.mjs';
 const root = await mkdtemp(join(tmpdir(), 'prime-studio-workspace-ui-'));
 const agentHome = join(root, 'agent'),
   cwd = join(root, 'Atelier'),
@@ -220,6 +221,7 @@ try {
   await boxInside('#mcp-dialog', 844, 390);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.screenshot({ path: resolve('test-results/mcp-desktop.png'), animations: 'disabled' });
+  await captureEnglishDocumentation(page, 'desktop-mcp.png', page.locator('#mcp-dialog'));
   if (process.argv.includes('--capture-docs')) {
     await mkdir(resolve('docs/screenshots'), { recursive: true });
     await page

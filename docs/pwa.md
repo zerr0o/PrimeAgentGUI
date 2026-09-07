@@ -1,6 +1,6 @@
 # Installer Prime Agent Studio
 
-[← Retour au README](../README.md)
+[English](en/pwa.md) · **Français** · [← Retour au README](../README.fr.md)
 
 La PWA ouvre le Studio avec une icône et une fenêtre dédiée. Elle utilise le même moteur sur le PC, les mêmes sessions et le même code d’accès que le site distant.
 

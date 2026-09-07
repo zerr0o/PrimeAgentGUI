@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "languages": ["fr", "en"],
+  "pages": [
+    {
+      "id": "readme",
+      "fr": "README.fr.md",
+      "en": "README.md",
+      "reviewed": {
+        "fr": "c844b8c48d08e48ff43a67e1badbc53a0791f1a59ccd65ffc13859d828388d3b",
+        "en": "9ee3a7c967f7d729119ef1e596b4a3ae41fb73713d4e1e39df81e255fe24a3cd"
+      }
+    },
+    {
+      "id": "commands",
+      "fr": "docs/commands.md",
+      "en": "docs/en/commands.md",
+      "reviewed": {
+        "fr": "3f75413b8fa8a5017cc05987128a5b6488afc34a8965ad58af4ab4c8080bb3d4",
+        "en": "547c880a46b69a880c906ca2dc5c7f0bab0c6127ef7a3cee9006cf8df8e33e28"
+      }
+    },
+    {
+      "id": "configuration",
+      "fr": "docs/configuration.md",
+      "en": "docs/en/configuration.md",
+      "reviewed": {
+        "fr": "bb2cc09233945be7b49356ee17c446276a3c5eec87aee1c8083ed4d0971cb2dd",
+        "en": "2773d2a864bf82d7e8fc096269bddfbc600f48845b1015b015025468c82defe8"
+      }
+    },
+    {
+      "id": "development",
+      "fr": "docs/development.md",
+      "en": "docs/en/development.md",
+      "reviewed": {
+        "fr": "1a4394d83b2dc6ee6ced110ec37fb15b8e0c6c585e0f5e2d55029d9011d53972",
+        "en": "618c58451f9f672bfc48b25a6ad73d52b378a99cec830bb31f828899684bdc44"
+      }
+    },
+    {
+      "id": "inspector",
+      "fr": "docs/inspector.md",
+      "en": "docs/en/inspector.md",
+      "reviewed": {
+        "fr": "d7bc6f369861c5e97337a3c0d75fed4888a8bbd820966b948037f32da801f1d5",
+        "en": "c74698be5a3f031da3f73e357f661e18b60475e97a631d8a2ad0da669483077a"
+      }
+    },
+    {
+      "id": "lan",
+      "fr": "docs/lan.md",
+      "en": "docs/en/lan.md",
+      "reviewed": {
+        "fr": "05464d588e903fb8111b14e6a1825c650303d6ef3ca4418a3fc5182d204388d8",
+        "en": "ed14f85d9a83d940f1fe9819ce281985a22281bdaecc80619ced44b916651f4d"
+      }
+    },
+    {
+      "id": "mcp",
+      "fr": "docs/mcp.md",
+      "en": "docs/en/mcp.md",
+      "reviewed": {
+        "fr": "f1affbf2b5b4a1b3cb615b207ba883a6b26c35dd7fbfce9f2d5b4491c5d8d776",
+        "en": "cacb800d38b101234ea66a7ec90056c9b30f92ebe8b53c0fe40c134c5207022b"
+      }
+    },
+    {
+      "id": "providers",
+      "fr": "docs/providers.md",
+      "en": "docs/en/providers.md",
+      "reviewed": {
+        "fr": "5431e1a91eb4a221cb62c5750e4c2b350066b7cb4eb1a73b9bef4382430b655a",
+        "en": "8d0fcf2d6beb5a71ef9d9014c390fe297c8cb71f70481de67bd38479d154617b"
+      }
+    },
+    {
+      "id": "pwa",
+      "fr": "docs/pwa.md",
+      "en": "docs/en/pwa.md",
+      "reviewed": {
+        "fr": "c366c38c64ade3159796ca521828344201e2fb4282ef611959011daca76f446b",
+        "en": "4f132bdde31b5221ea3419ee26cdcf395fd12bc6e676eb911456eaeed02f05a3"
+      }
+    },
+    {
+      "id": "translations",
+      "fr": "docs/translations.md",
+      "en": "docs/en/translations.md",
+      "reviewed": {
+        "fr": "bab8e2e18d392f97f383867c38b69e6104f8ee6c3d7729570b7944775c915349",
+        "en": "f1c7a2f84cf93aef086f2df275a54c4d9a69c65df9adf9ab25be649e7b574f40"
+      }
+    }
+  ]
+}

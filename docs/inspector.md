@@ -1,6 +1,6 @@
 # Session, agents et fichiers
 
-[← Retour au README](../README.md)
+[English](en/inspector.md) · **Français** · [← Retour au README](../README.fr.md)
 
 Le bouton de panneau en haut à droite du chat ouvre l’espace de travail. Il reste à côté de la conversation sur PC et occupe la hauteur de l’écran sur mobile. Fermer le panneau ou un aperçu conserve la session et son brouillon.
 

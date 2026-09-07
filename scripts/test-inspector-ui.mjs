@@ -8,6 +8,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createApp } from '../server.mjs';
 import { createLanGateway, hashAccessCode } from '../lib/lan.mjs';
+import { captureEnglishDocumentation } from './documentation-capture.mjs';
 
 const exec = promisify(execFile);
 const temp = await mkdtemp(join(tmpdir(), 'prime-inspector-ui-'));
@@ -437,6 +438,7 @@ try {
   await page.locator('#inspector-tab-agents').click();
   await expect(page.locator('.inspector-agent')).toHaveCount(3);
   await page.screenshot({ path: 'test-results/desktop-inspector-agents.png', animations: 'disabled' });
+  await captureEnglishDocumentation(page, 'desktop-inspector-agents.png');
   await page.locator(`[data-agent-id="${childId}"]`).click();
   await page.keyboard.press('Escape');
   await expect(page.locator('#composer')).toHaveValue('Brouillon à conserver');
@@ -448,6 +450,7 @@ try {
   assert.equal(openedFiles.at(-1), join(cwd, 'md_files', 'PLAN.md'));
   assert.equal(page.context().pages().length, pagesBefore, 'Native open must not create browser tabs');
   await page.screenshot({ path: 'test-results/inspector-document-link.png', animations: 'disabled' });
+  await captureEnglishDocumentation(page, 'desktop-document-preview.png');
   await page.locator('.inspector-document .document-link').filter({ hasText: 'Les notes' }).click();
   await expect(page.locator('.inspector-document h1')).toHaveText('Prochaine étape');
   await page.keyboard.press('Escape');

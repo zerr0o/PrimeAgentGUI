@@ -1,6 +1,6 @@
 # Configuration et données locales
 
-[← Retour au README](../README.md)
+[English](en/configuration.md) · **Français** · [← Retour au README](../README.fr.md)
 
 ## Langue de l’interface
 

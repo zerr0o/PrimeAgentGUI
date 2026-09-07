@@ -1,6 +1,6 @@
 # Langues et traductions
 
-[← Retour au README](../README.md)
+[English](en/translations.md) · **Français** · [← Retour au README](../README.fr.md)
 
 Le Studio propose le français et l’anglais sur PC, mobile et dans la PWA. Le sélecteur **Préférences → Langue** change l’interface immédiatement. Le choix est conservé par navigateur et par adresse d’accès ; les onglets de la même adresse se synchronisent. Les sessions et les saisies continuent sans rechargement.
 
@@ -76,3 +76,20 @@ Utilisez une phrase complète avec paramètres, et non une concaténation de fra
 Le serveur utilise `formatMessage` avec le français de référence, afin de conserver le contrat des historiques et diagnostics. `translateKnown` est réservé aux messages d’interface du Studio reçus par API. N’appliquez pas cette fonction aux conversations, aux fichiers, aux noms de projets, ni aux instructions provenant de ressources externes.
 
 Les commandes comme `/goal`, les identifiants des modèles, les chemins et les valeurs de protocole restent inchangés. La langue de l’interface ne modifie pas le prompt système ni la langue demandée à un agent. Les suggestions de départ proposées par l’accueil sont traduites avant leur insertion ; un brouillon déjà écrit conserve son texte.
+
+## Maintenir la documentation bilingue
+
+Le README anglais est dans `README.md`, sa version française dans `README.fr.md`. Les guides français conservent leurs adresses `docs/*.md` et les guides anglais sont dans `docs/en/*.md`. Chaque page contient un lien vers son équivalent. Les liens entre guides restent dans la langue choisie ; les commandes, noms de fichiers réels et références de code sont conservés.
+
+[`docs/documentation.json`](documentation.json) est le registre unique des paires de pages et de leurs empreintes après relecture. `npm run check:docs`, également inclus dans `npm run check`, vérifie les pages manquantes ou non déclarées, la navigation entre langues, les liens locaux, les images, les ancres et la structure des titres. Si une page change depuis la dernière relecture des deux versions, la vérification signale la paire à revoir.
+
+Après avoir modifié une page, mettez à jour ou relisez son équivalent, puis enregistrez explicitement les paires vérifiées par leur identifiant :
+
+```powershell
+npm run docs:sync -- readme configuration
+npm run check:docs
+```
+
+Cette commande enregistre la relecture ; elle ne traduit aucun texte et ne peut pas certifier la qualité d’une traduction. Elle ne doit pas servir à ignorer une version devenue obsolète. Les empreintes détectent les modifications, y compris dans une seule langue, mais une relecture humaine reste nécessaire pour vérifier le sens.
+
+Pour un nouveau guide, ajoutez les deux fichiers, leurs liens de langue et une entrée dans le registre, puis relisez les deux versions avant d’enregistrer la paire. Les changements de langue de l’application et ceux de la documentation sont indépendants : GitHub utilise les liens des pages, sans JavaScript ni traduction automatique.

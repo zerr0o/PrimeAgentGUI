@@ -1,6 +1,6 @@
 # Développement et fonctionnement
 
-[← Retour au README](../README.md)
+[English](en/development.md) · **Français** · [← Retour au README](../README.fr.md)
 
 ## Installation et développement
 
@@ -71,6 +71,8 @@ npm run test:pwa
 
 Pour ajouter un texte ou une langue, suivez [le guide de traduction](translations.md). Les textes du serveur restent dans la langue de référence dans les données natives ; le navigateur traduit uniquement les libellés et diagnostics appartenant au Studio. Aucun service de traduction externe n’est utilisé.
 
+La documentation dispose également de deux versions. `npm run check:docs`, inclus dans `npm run check`, vérifie le registre des paires, les liens, les ancres et les empreintes de relecture. Après une modification, relisez les deux langues puis utilisez `npm run docs:sync -- identifiant` ; [le guide des traductions](translations.md#maintenir-la-documentation-bilingue) décrit cette procédure. Ce contrôle n’évalue pas automatiquement la qualité linguistique.
+
 Les tests automatiques utilisent des données temporaires et un faux moteur, sans consommation de modèle. Les tests Windows vérifient également les paramètres natifs de création des processus, le lancement VBS, la réutilisation du serveur et l’arrêt des descendants. Les tests de navigateur utilisent Microsoft Edge installé localement et produisent des captures dans `test-results/`.
 
 `test:subagents:native` utilise le vrai moteur et Python avec un fournisseur HTTP local simulé, sans compte ni appel payant. Il vérifie les arguments par défaut et explicites, le prompt existant, les niveaux en direct et dans l’historique, puis un changement par projet pendant que les premiers sous-agents travaillent encore.
@@ -124,7 +126,7 @@ Le premier scénario vérifie les sélecteurs réels, le collage, le dépôt, le
 
 ## PWA et HTTPS privé
 
-`public/manifest.webmanifest` décrit l’application autonome et ses icônes. `public/pwa.js` propose le dialogue natif d’installation ou une aide adaptée au navigateur, sur la page de connexion et dans le menu. Le service worker `/service-worker.js` conserve uniquement une liste fixe d’icônes, le manifeste, une feuille de style et l’écran de reconnexion. Les API, les flux SSE, les soumissions et les fichiers utilisateur sont exclus. Les pages authentifiées ne sont jamais enregistrées dans Cache Storage.
+`public/manifest.webmanifest` décrit l’application autonome et ses icônes. `public/pwa.js` propose le dialogue natif d’installation ou une aide adaptée au navigateur, sur la page de connexion et dans le menu. Le service worker `/service-worker.js` conserve uniquement une liste fixe d’icônes, le manifeste, une feuille de style, les ressources de traduction et l’écran de reconnexion. Les API, les flux SSE, les soumissions et les fichiers utilisateur sont exclus. Les pages authentifiées ne sont jamais enregistrées dans Cache Storage.
 
 `lib/pwa.mjs` définit les seules ressources publiques nécessaires à l’installation et valide l’origine HTTPS Tailscale. `lib/lan.mjs` accepte cette origine uniquement sur la passerelle loopback dédiée, conserve les contrôles Host/Origin et émet un cookie Secure. Les en-têtes de proxy ne définissent pas l’origine de confiance. `scripts/enable-pwa.mjs` préserve la configuration existante et pointe Tailscale Serve vers cette passerelle, jamais directement vers l’API locale.
 
@@ -177,3 +179,14 @@ Le script ouvre la véritable interface dans Microsoft Edge sans fenêtre visibl
 `npm run test:workspace -- --capture-docs` régénère la capture du gestionnaire MCP avec une configuration de démonstration isolée. Les comptes utilisateur sont conservés.
 
 Les captures sont enregistrées dans `docs/screenshots/`. Cinq vues du bureau sont capturées en 1600 × 1000, dont une conversation avec pièces jointes et une nouvelle conversation avec les réglages des sous-agents. Quatre captures sont cadrées sur leur fenêtre : préférences en anglais avec sélecteur de langue, sélecteur de modèles, modèles par défaut et code mobile. La capture des préférences utilise une hauteur de fenêtre de 1200 pixels pour montrer tous les réglages. Les fichiers de démonstration restent dans le dossier temporaire du scénario. Le rapport se trouve dans `test-results/readme-captures.json`. `PRIME_STUDIO_BROWSER` permet de choisir un autre canal Playwright installé, par exemple `chrome`.
+
+Pour régénérer les captures avec l’interface anglaise dans `docs/screenshots/en/`, sans remplacer les captures françaises :
+
+```powershell
+node scripts/capture-readme.mjs --docs-en
+node scripts/test-providers-ui.mjs --docs-en
+node scripts/test-inspector-ui.mjs --docs-en
+node scripts/test-workspace-ui.mjs --docs-en
+```
+
+`scripts/documentation-capture.mjs` applique temporairement l’anglais aux fenêtres de ces scénarios isolés et rétablit leur langue après la capture. Les exemples de conversations et de documents restent dans leur langue d’origine, comme dans l’application. Aucun serveur utilisateur n’est redémarré.

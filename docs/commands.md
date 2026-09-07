@@ -1,5 +1,7 @@
 # Commandes slash, skills et prompts
 
+[English](en/commands.md) · **Français** · [← Retour au README](../README.fr.md)
+
 Tapez **`/` au début du message**, ou appuyez sur le bouton **/** à côté des pièces jointes. Le catalogue du projet propose une recherche, les skills et les prompts installés. Sur PC, utilisez les flèches puis **Entrée** ou **Tab** pour compléter ; une seconde validation envoie le message. Sur mobile, touchez une suggestion. **Échap** ferme les suggestions.
 
 La sélection prépare le message et vous laisse ajouter des arguments. Elle ne lance aucune commande à elle seule.

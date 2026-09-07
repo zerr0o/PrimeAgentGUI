@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createApp } from '../server.mjs';
 import { createLanGateway, hashAccessCode } from '../lib/lan.mjs';
+import { captureEnglishDocumentation } from './documentation-capture.mjs';
 const expect = baseExpect.configure({ timeout: 15000 });
 const root = await mkdtemp(join(tmpdir(), 'prime-studio-providers-ui-'));
 const agentHome = join(root, 'agent'),
@@ -69,6 +70,7 @@ try {
   await expect(page.locator('[data-provider="openai-codex"]')).toContainText('Connecter un compte');
   await mkdir('test-results', { recursive: true });
   await page.screenshot({ path: 'test-results/desktop-providers.png', animations: 'disabled' });
+  await captureEnglishDocumentation(page, 'desktop-providers.png');
   assert.doesNotMatch(await page.locator('#providers-dialog').textContent(), /private-fixture/);
   const search = page.getByRole('searchbox', { name: 'Rechercher un fournisseur' });
   await search.fill('deepseek');

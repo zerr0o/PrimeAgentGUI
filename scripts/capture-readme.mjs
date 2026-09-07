@@ -9,6 +9,7 @@ import { createApp } from '../server.mjs';
 import { createFileStore } from '../lib/files.mjs';
 import { hashAccessCode } from '../lib/lan.mjs';
 import { projectKey } from '../runtime/subagent-policy.mjs';
+import { captureEnglishDocumentation } from './documentation-capture.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const output = join(root, 'docs', 'screenshots');
@@ -231,7 +232,8 @@ try {
   async function capture(name, target = page) {
     await page.evaluate(() => document.fonts.ready);
     await page.mouse.move(1590, 990);
-    await target.screenshot({ path: join(output, name), animations: 'disabled' });
+    if (!(await captureEnglishDocumentation(page, name, target)))
+      await target.screenshot({ path: join(output, name), animations: 'disabled' });
     captures.push(name);
   }
   await page.goto(url);

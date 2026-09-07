@@ -1,6 +1,6 @@
 # Accès depuis un téléphone
 
-[← Retour au README](../README.md)
+[English](en/lan.md) · **Français** · [← Retour au README](../README.fr.md)
 
 ## Utiliser le studio depuis un téléphone
 
@@ -30,7 +30,7 @@ Ce panneau et ses routes sont réservés à l’adresse locale du PC. Il permet 
 
 Dans le menu, choisissez un projet pour afficher ses sessions dans la page, puis touchez une session pour l’ouvrir. **Nouvelle session** prépare une conversation dans ce projet. Les sessions archivées restent accessibles avec le filtre **Archivées**.
 
-Les boutons **Photo** et **Pièce jointe** sélectionnent respectivement les images et tous types de fichiers du téléphone. Les pièces sont transférées au PC lors de l’envoi, y compris en **Réorienter** ou **À la suite**. Touchez une image reçue pour l’agrandir, ou un fichier pour le télécharger. Les limites sont les mêmes que sur PC : [images et pièces jointes](../README.md#images-et-pièces-jointes).
+Les boutons **Photo** et **Pièce jointe** sélectionnent respectivement les images et tous types de fichiers du téléphone. Les pièces sont transférées au PC lors de l’envoi, y compris en **Réorienter** ou **À la suite**. Touchez une image reçue pour l’agrandir, ou un fichier pour le télécharger. Les limites sont les mêmes que sur PC : [images et pièces jointes](../README.fr.md#images-et-pièces-jointes).
 
 La configuration `readOnly: false` active les commandes à distance. Pour limiter volontairement cet accès à la consultation, passez `readOnly` à `true`, puis redémarrez. Une ancienne configuration sans ce champ reste en lecture seule jusqu’à sa mise à jour explicite. Le changement de mode conserve le code existant ; un redémarrage demande de se reconnecter.
 
