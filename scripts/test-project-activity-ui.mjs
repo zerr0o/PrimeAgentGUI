@@ -108,7 +108,7 @@ async function openSession(id, target = page) {
 }
 try {
   browser = await chromium.launch({ channel: 'msedge', headless: true });
-  const context = await browser.newContext({ viewport: { width: 1440, height: 960 } });
+  const context = await browser.newContext({ locale: 'fr-FR', viewport: { width: 1440, height: 960 } });
   page = await context.newPage();
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(url);

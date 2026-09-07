@@ -1,3 +1,11 @@
+import {
+  t as tr,
+  bindText,
+  bindAttribute,
+  translatedOption,
+  onLanguageChange,
+  translateKnown,
+} from './i18n.js';
 import { thinkingLabels } from './reasoning.js';
 
 export function createSubagentSettings({
@@ -20,41 +28,41 @@ export function createSubagentSettings({
   root.innerHTML = `
     <form class="subagent-form">
       <div class="subagent-heading">
-        <h3>${project ? 'Sous-agents du projet' : 'Sous-agents'}</h3>
+        <h3>${project ? tr('ui.sous_agents_du_projet') : tr('agents.subagents')}</h3>
         ${
           project
-            ? '<select class="subagent-scope" aria-label="Réglages des sous-agents du projet"><option value="global">Globaux</option><option value="project">Ce projet</option></select>'
-            : '<button id="save-subagent-defaults" class="primary-button" type="submit">Enregistrer</button>'
+            ? '<select class="subagent-scope" aria-label="Réglages des sous-agents du projet" data-i18n-aria-label="ui.reglages_des_sous_agents_du_projet"><option value="global" data-i18n="agents.global">Globaux</option><option value="project" data-i18n="ui.ce_projet">Ce projet</option></select>'
+            : '<button id="save-subagent-defaults" class="primary-button" type="submit" data-i18n="ui.enregistrer">Enregistrer</button>'
         }
       </div>
       <fieldset class="subagent-fields">
         <div class="subagent-controls">
-          <div class="subagent-model-field"><label id="${prefix}-model-label">Modèle</label>
+          <div class="subagent-model-field"><label id="${prefix}-model-label" data-i18n="ui.modele">Modèle</label>
             <button id="${prefix}-model" class="model-picker-button" type="button" aria-haspopup="dialog" aria-controls="model-dialog" aria-expanded="false">
               <span class="subagent-model-icon"></span>
               <span class="model-picker-selection"><span class="model-picker-name"></span><span class="model-picker-provider"></span></span>
               <span class="model-picker-chevron"></span>
             </button>
           </div>
-          <label class="subagent-thinking-field" for="${prefix}-thinking">Réflexion<select id="${prefix}-thinking"></select></label>
+          <label class="subagent-thinking-field" for="${prefix}-thinking"><span data-i18n="ui.reflexion_3">Réflexion</span><select id="${prefix}-thinking"></select></label>
         </div>
       </fieldset>
       <p class="subagent-status" role="status"></p>
-      ${project ? '' : '<p class="model-defaults-note">Valeurs par défaut pour tous les projets. Les réglages propres à un projet se trouvent dans l’onglet Agents d’une session. Les choix explicites restent prioritaires ; les sous-agents déjà créés conservent leurs réglages.</p>'}
+      ${project ? '' : '<p class="model-defaults-note" data-i18n="ui.valeurs_par_defaut_pour_tous_les_projets_les_reglages_propres_a_u">Valeurs par défaut pour tous les projets. Les réglages propres à un projet se trouvent dans l’onglet Agents d’une session. Les choix explicites restent prioritaires ; les sous-agents déjà créés conservent leurs réglages.</p>'}
       <p class="subagent-error form-error" role="alert" hidden></p>
-      <button class="subagent-reload inspector-refresh" type="button" hidden>Recharger les réglages</button>
+      <button class="subagent-reload inspector-refresh" type="button" hidden data-i18n="ui.recharger_les_reglages">Recharger les réglages</button>
     </form>`;
   const $ = (selector) => root.querySelector(selector);
+  bindText($('.subagent-heading h3'), () => tr(project ? 'ui.sous_agents_du_projet' : 'agents.subagents'));
   const modelButton = $(`#${prefix}-model`),
     thinkingSelect = $(`#${prefix}-thinking`);
   $('.subagent-model-icon').append(icon('model'));
   $('.model-picker-chevron').append(icon('chevron'));
   $(`#${prefix}-model-label`).setAttribute('for', modelButton.id);
-  const option = (value, label) =>
-    Object.assign(document.createElement('option'), { value, textContent: label });
+  const option = (value, label) => translatedOption(label, value);
 
   function error(message = '') {
-    $('.subagent-error').textContent = message;
+    bindText($('.subagent-error'), () => translateKnown(message));
     $('.subagent-error').hidden = !message;
   }
   function controls() {
@@ -66,23 +74,28 @@ export function createSubagentSettings({
   }
   function render(preserve = true) {
     const model = getModels().find((m) => m.id === draft.model);
-    const name = model?.name || (draft.model ? `Indisponible · ${draft.model}` : 'Modèle parent');
+    const name =
+      model?.name ||
+      (draft.model ? tr('common.unavailable', { value1: draft.model }) : tr('ui.modele_parent'));
     modelButton.value = draft.model;
-    $('.model-picker-name').textContent = name;
-    $('.model-picker-provider').textContent =
-      model?.provider || (draft.model ? 'Modèle indisponible' : 'Hériter du parent');
-    modelButton.title = draft.model || 'Utiliser le modèle de l’agent parent';
-    modelButton.setAttribute('aria-label', `Modèle des sous-agents. ${name}${model ? ', ' + model.id : ''}`);
+    bindText($('.model-picker-name'), () => name);
+    bindText(
+      $('.model-picker-provider'),
+      () => model?.provider || (draft.model ? tr('ui.modele_indisponible') : tr('ui.heriter_du_parent')),
+    );
+    bindAttribute(modelButton, 'title', () => draft.model || tr('ui.utiliser_le_modele_de_l_agent_parent'));
+    bindAttribute(modelButton, 'aria-label', () =>
+      tr('ui.modele_des_sous_agents', { value1: name, value2: model ? ', ' + model.id : '' }),
+    );
     const levels = model
       ? model.thinkingLevels || (model.reasoning ? Object.keys(thinkingLabels) : ['off'])
       : Object.keys(thinkingLabels);
-    thinkingSelect.replaceChildren(option('', 'Niveau parent'));
+    thinkingSelect.replaceChildren(option('', () => tr('ui.niveau_parent')));
     for (const level of levels) thinkingSelect.append(option(level, thinkingLabels[level] || level));
     if (draft.thinking && !levels.includes(draft.thinking)) {
       if (preserve) {
-        const missing = option(
-          draft.thinking,
-          `Indisponible · ${thinkingLabels[draft.thinking] || draft.thinking}`,
+        const missing = option(draft.thinking, () =>
+          tr('common.unavailable', { value1: thinkingLabels[draft.thinking] || draft.thinking }),
         );
         missing.disabled = true;
         thinkingSelect.append(missing);
@@ -93,13 +106,15 @@ export function createSubagentSettings({
     controls();
   }
   function status(message) {
-    $('.subagent-status').textContent = message;
+    bindText($('.subagent-status'), () => message);
   }
   function savedStatus() {
-    status(
+    status(() =>
       project
-        ? `${data.project === null ? 'Réglages globaux' : 'Réglages du projet'} · prochaines délégations`
-        : 'Appliqué aux prochaines délégations dans tous les projets.',
+        ? tr('ui.prochaines_delegations_2', {
+            value1: data.project === null ? tr('ui.reglages_globaux') : tr('ui.reglages_du_projet'),
+          })
+        : tr('ui.applique_aux_prochaines_delegations_dans_tous_les_projets'),
     );
   }
   const endpoint = () =>
@@ -109,7 +124,7 @@ export function createSubagentSettings({
     busy = true;
     needsLoad = false;
     error();
-    status('Chargement des réglages…');
+    status(() => tr('ui.chargement_des_reglages'));
     controls();
     try {
       const response = await api(endpoint());
@@ -122,11 +137,11 @@ export function createSubagentSettings({
     } catch (e) {
       if (turn !== generation) return;
       data = null;
-      status('Réglages indisponibles.');
-      error(
+      status(() => tr('ui.reglages_indisponibles'));
+      error(() =>
         e.status === 404
-          ? 'Rechargez le Studio après sa mise à jour pour accéder à ces réglages.'
-          : e.message,
+          ? tr('ui.rechargez_le_studio_apres_sa_mise_a_jour_pour_acceder_a_ces_regla')
+          : translateKnown(e.message),
       );
       $('.subagent-reload').hidden = false;
     } finally {
@@ -143,7 +158,7 @@ export function createSubagentSettings({
     busy = true;
     controls();
     error();
-    status('Enregistrement…');
+    status(() => tr('common.saving'));
     try {
       const saved = await api(endpoint(), { method: 'POST', body });
       if (turn !== generation) return;
@@ -155,12 +170,12 @@ export function createSubagentSettings({
       document.dispatchEvent(
         new CustomEvent('subagent-defaults-changed', { detail: { source: root, cwd: project ? cwd : null } }),
       );
-      if (!project) toast('Réglages des sous-agents enregistrés.');
+      if (!project) toast(() => tr('ui.reglages_des_sous_agents_enregistres'));
     } catch (e) {
       if (turn !== generation) return;
-      status('Modification non enregistrée.');
+      status(() => tr('ui.modification_non_enregistree'));
       if (project) $('.subagent-scope').value = data.project === null ? 'global' : 'project';
-      error(e.message);
+      error(translateKnown(e.message));
       $('.subagent-reload').hidden = false;
     } finally {
       if (turn === generation) {
@@ -175,9 +190,15 @@ export function createSubagentSettings({
     openModelPicker({
       button: modelButton,
       value: draft.model,
-      title: 'Modèle des sous-agents',
-      defaultLabel: 'Hériter du modèle parent',
-      defaultDetail: 'Utiliser le modèle de l’agent qui délègue',
+      get title() {
+        return tr('ui.modele_des_sous_agents_2');
+      },
+      get defaultLabel() {
+        return tr('ui.heriter_du_modele_parent');
+      },
+      get defaultDetail() {
+        return tr('ui.utiliser_le_modele_de_l_agent_qui_delegue');
+      },
       onSelect(model) {
         if (turn !== generation || busy || !data) return;
         draft.model = model;
@@ -221,6 +242,10 @@ export function createSubagentSettings({
     if (!project || event.detail.source === root || (event.detail.cwd && event.detail.cwd !== cwd)) return;
     needsLoad = true;
     update();
+  });
+  onLanguageChange(() => {
+    render();
+    if (data && !busy) savedStatus();
   });
   render();
   return { open: load, update };

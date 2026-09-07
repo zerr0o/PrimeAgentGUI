@@ -87,6 +87,7 @@ try {
   browser = await chromium.launch({ channel: 'msedge', headless: true });
   for (const mobile of [false, true]) {
     const context = await browser.newContext({
+      locale: 'fr-FR',
       viewport: mobile ? { width: 390, height: 844 } : { width: 1440, height: 960 },
       isMobile: mobile,
       hasTouch: mobile,

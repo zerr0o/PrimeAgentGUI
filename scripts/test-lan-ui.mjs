@@ -10,6 +10,7 @@ const url = `http://${config.host}:${config.port}`;
 const browser = await chromium.launch({ channel: 'msedge', headless: true });
 try {
   const page = await browser.newPage({
+    locale: 'fr-FR',
     viewport: { width: 390, height: 844 },
     isMobile: true,
     hasTouch: true,

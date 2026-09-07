@@ -1,62 +1,75 @@
+import { t as tr, bindText, translateKnown } from './i18n.js';
 const node = (tag, className, text) => {
   const item = document.createElement(tag);
   if (className) item.className = className;
-  if (text !== undefined) item.textContent = text;
+  if (text !== undefined) bindText(item, () => text);
   return item;
 };
 const statusLabel = {
-  invalid: 'Configuration à corriger',
-  configured: 'Configuré',
-  disabled: 'Désactivé',
-  'missing-env': 'Variable manquante',
-  'login-required': 'Connexion requise',
-  reserved: 'Nom natif réservé',
+  get invalid() {
+    return tr('ui.configuration_a_corriger');
+  },
+  get configured() {
+    return tr('ui.configure');
+  },
+  get disabled() {
+    return tr('ui.desactive');
+  },
+  get 'missing-env'() {
+    return tr('ui.variable_manquante');
+  },
+  get 'login-required'() {
+    return tr('ui.connexion_requise');
+  },
+  get reserved() {
+    return tr('ui.nom_natif_reserve');
+  },
 };
 export function createMcpSettings({ api, toast }) {
   const dialog = node('dialog', 'modal mcp-modal');
   dialog.id = 'mcp-dialog';
   dialog.setAttribute('aria-labelledby', 'mcp-title');
   dialog.innerHTML = `
-    <header class="mcp-heading"><div><span class="mcp-eyebrow">OUTILS ET SERVICES</span><h2 id="mcp-title">Connexions MCP</h2></div><button id="mcp-close" class="icon-button" aria-label="Fermer les connexions MCP">×</button></header>
+    <header class="mcp-heading"><div><span class="mcp-eyebrow" data-i18n="ui.outils_et_services">OUTILS ET SERVICES</span><h2 id="mcp-title" data-i18n="ui.connexions_mcp">Connexions MCP</h2></div><button id="mcp-close" class="icon-button" aria-label="Fermer les connexions MCP" data-i18n-aria-label="ui.fermer_les_connexions_mcp">×</button></header>
     <div class="mcp-content">
-      <p class="mcp-intro">Reliez Prime Agent à vos services et à vos outils locaux. La configuration est partagée par les projets sur ce PC.</p>
+      <p class="mcp-intro" data-i18n="ui.reliez_prime_agent_a_vos_services_et_a_vos_outils_locaux_la_confi">Reliez Prime Agent à vos services et à vos outils locaux. La configuration est partagée par les projets sur ce PC.</p>
       <div id="mcp-error" class="form-error" role="alert" hidden></div>
-      <section id="mcp-list-view"><div class="mcp-list-toolbar"><label class="sr-only" for="mcp-search">Rechercher un MCP</label><input id="mcp-search" type="search" placeholder="Rechercher une connexion…"><button id="mcp-add" class="primary-button">Ajouter un MCP</button></div><div id="mcp-list" aria-live="polite"></div></section>
+      <section id="mcp-list-view"><div class="mcp-list-toolbar"><label class="sr-only" for="mcp-search" data-i18n="ui.rechercher_un_mcp">Rechercher un MCP</label><input id="mcp-search" type="search" placeholder="Rechercher une connexion…" data-i18n-placeholder="ui.rechercher_une_connexion"><button id="mcp-add" class="primary-button" data-i18n="ui.ajouter_un_mcp">Ajouter un MCP</button></div><div id="mcp-list" aria-live="polite"></div></section>
       <form id="mcp-form" hidden>
-        <div class="mcp-form-heading"><h3 id="mcp-form-title">Ajouter un MCP</h3><button type="button" id="mcp-back" class="secondary-button">Retour</button></div>
+        <div class="mcp-form-heading"><h3 id="mcp-form-title" data-i18n="ui.ajouter_un_mcp">Ajouter un MCP</h3><button type="button" id="mcp-back" class="secondary-button" data-i18n="ui.retour">Retour</button></div>
         <div class="mcp-form-grid">
-          <label>Nom du serveur<input id="mcp-name" required maxlength="64" placeholder="mon-service" autocomplete="off"></label>
-          <label>Connexion<select id="mcp-type"><option value="http">HTTP · service distant</option><option value="stdio">stdio · processus sur le PC</option></select></label>
+          <label><span data-i18n="ui.nom_du_serveur">Nom du serveur</span><input id="mcp-name" required maxlength="64" placeholder="mon-service" data-i18n-placeholder="example.mcpName" autocomplete="off"></label>
+          <label>Connexion<select id="mcp-type"><option value="http" data-i18n="ui.http_service_distant">HTTP · service distant</option><option value="stdio" data-i18n="ui.stdio_processus_sur_le_pc">stdio · processus sur le PC</option></select></label>
           <div id="mcp-http" class="mcp-wide mcp-form-grid">
-            <label class="mcp-wide">Adresse du serveur<input id="mcp-url" type="url" placeholder="https://exemple.fr/mcp" autocomplete="off"></label>
-            <label>Authentification<select id="mcp-auth"><option value="none">Aucune</option><option value="bearer">Jeton par variable d’environnement</option><option value="oauth">Connexion OAuth</option></select></label>
-            <label id="mcp-token-row" hidden>Variable contenant le jeton<input id="mcp-token" placeholder="MON_SERVICE_TOKEN" autocomplete="off"></label>
+            <label class="mcp-wide"><span data-i18n="ui.adresse_du_serveur">Adresse du serveur</span><input id="mcp-url" type="url" placeholder="https://exemple.fr/mcp" data-i18n-placeholder="example.mcpUrl" autocomplete="off"></label>
+            <label><span data-i18n="mcp.auth">Authentification</span><select id="mcp-auth"><option value="none" data-i18n="ui.aucune">Aucune</option><option value="bearer" data-i18n="ui.jeton_par_variable_d_environnement">Jeton par variable d’environnement</option><option value="oauth" data-i18n="ui.connexion_oauth">Connexion OAuth</option></select></label>
+            <label id="mcp-token-row" hidden><span data-i18n="ui.variable_contenant_le_jeton">Variable contenant le jeton</span><input id="mcp-token" placeholder="MON_SERVICE_TOKEN" data-i18n-placeholder="example.tokenVariable" autocomplete="off"></label>
           </div>
           <div id="mcp-stdio" class="mcp-wide mcp-form-grid" hidden>
-            <label class="mcp-wide">Exécutable sur le PC<input id="mcp-command" placeholder="node" autocomplete="off"></label>
-            <label class="mcp-wide">Arguments · un argument par ligne<textarea id="mcp-args" rows="3" placeholder="C:\\outils\\serveur.js&#10;--stdio" spellcheck="false"></textarea></label>
-            <label class="mcp-wide">Dossier de travail · facultatif<input id="mcp-cwd" placeholder="C:\\mes-outils" autocomplete="off"></label>
-            <label class="mcp-wide">Variables · NOM_ENFANT=NOM_VARIABLE_DU_PC<textarea id="mcp-env" rows="2" placeholder="TOKEN=MON_SERVICE_TOKEN" spellcheck="false"></textarea></label>
+            <label class="mcp-wide"><span data-i18n="ui.executable_sur_le_pc">Exécutable sur le PC</span><input id="mcp-command" placeholder="node" autocomplete="off"></label>
+            <label class="mcp-wide"><span data-i18n="ui.arguments_un_argument_par_ligne">Arguments · un argument par ligne</span><textarea id="mcp-args" rows="3" placeholder="C:\\outils\\serveur.js&#10;--stdio" spellcheck="false"></textarea></label>
+            <label class="mcp-wide"><span data-i18n="ui.dossier_de_travail_facultatif">Dossier de travail · facultatif</span><input id="mcp-cwd" placeholder="C:\\mes-outils" autocomplete="off"></label>
+            <label class="mcp-wide"><span data-i18n="mcp.envMapping">Variables · NOM_ENFANT=NOM_VARIABLE_DU_PC</span><textarea id="mcp-env" rows="2" placeholder="TOKEN=MON_SERVICE_TOKEN" spellcheck="false"></textarea></label>
           </div>
         </div>
-        <details class="mcp-advanced"><summary>Options avancées</summary>
+        <details class="mcp-advanced"><summary data-i18n="ui.options_avancees">Options avancées</summary>
           <div class="mcp-form-grid">
-            <label>Délai de démarrage · ms<input id="mcp-startup" type="number" min="1000" max="300000" step="1000" value="20000"></label>
-            <label>Délai par appel · ms<input id="mcp-timeout" type="number" min="1000" max="300000" step="1000" value="60000"></label>
-            <label>Accès aux outils<select id="mcp-tools-mode"><option value="all">Tous sauf les outils interdits</option><option value="selected">Seulement la liste autorisée</option></select><textarea id="mcp-enabled-tools" aria-label="Outils autorisés, un par ligne" rows="3" placeholder="Un outil par ligne" spellcheck="false" hidden></textarea><small id="mcp-tools-note" hidden>Une liste vide n’autorise aucun outil.</small></label>
-            <label>Outils interdits · un par ligne<textarea id="mcp-disabled-tools" rows="3" spellcheck="false"></textarea></label>
-            <label id="mcp-headers-row" class="mcp-wide">En-têtes HTTP · objet JSON<textarea id="mcp-headers" rows="3" spellcheck="false" placeholder='{"X-Service": "valeur"}'></textarea><small>Une valeur null conserve l’en-tête privé existant. Les valeurs enregistrées ne sont pas renvoyées au navigateur.</small></label>
+            <label><span data-i18n="ui.delai_de_demarrage_ms">Délai de démarrage · ms</span><input id="mcp-startup" type="number" min="1000" max="300000" step="1000" value="20000"></label>
+            <label><span data-i18n="ui.delai_par_appel_ms">Délai par appel · ms</span><input id="mcp-timeout" type="number" min="1000" max="300000" step="1000" value="60000"></label>
+            <label><span data-i18n="ui.acces_aux_outils">Accès aux outils</span><select id="mcp-tools-mode"><option value="all" data-i18n="ui.tous_sauf_les_outils_interdits">Tous sauf les outils interdits</option><option value="selected" data-i18n="ui.seulement_la_liste_autorisee">Seulement la liste autorisée</option></select><textarea id="mcp-enabled-tools" aria-label="Outils autorisés, un par ligne" data-i18n-aria-label="ui.outils_autorises_un_par_ligne" rows="3" placeholder="Un outil par ligne" data-i18n-placeholder="ui.un_outil_par_ligne" spellcheck="false" hidden></textarea><small id="mcp-tools-note" hidden data-i18n="ui.une_liste_vide_n_autorise_aucun_outil">Une liste vide n’autorise aucun outil.</small></label>
+            <label><span data-i18n="ui.outils_interdits_un_par_ligne">Outils interdits · un par ligne</span><textarea id="mcp-disabled-tools" rows="3" spellcheck="false"></textarea></label>
+            <label id="mcp-headers-row" class="mcp-wide"><span data-i18n="ui.en_tetes_http_objet_json">En-têtes HTTP · objet JSON</span><textarea id="mcp-headers" rows="3" spellcheck="false" placeholder='{"X-Service": "valeur"}' data-i18n-placeholder="example.mcpHeaders"></textarea><small data-i18n="ui.une_valeur_null_conserve_l_en_tete_prive_existant_les_valeurs_enr">Une valeur null conserve l’en-tête privé existant. Les valeurs enregistrées ne sont pas renvoyées au navigateur.</small></label>
           </div>
         </details>
-        <p id="mcp-private-url-note" class="mcp-note" hidden>Les paramètres privés de l’adresse sont conservés tant que vous ne changez pas celle-ci.</p>
-        <p class="mcp-note">Enregistrer prépare la connexion. « Tester » démarre une connexion séparée pour découvrir ses outils ; aucun outil métier n’est exécuté.</p>
+        <p id="mcp-private-url-note" class="mcp-note" hidden data-i18n="ui.les_parametres_prives_de_l_adresse_sont_conserves_tant_que_vous_n">Les paramètres privés de l’adresse sont conservés tant que vous ne changez pas celle-ci.</p>
+        <p class="mcp-note" data-i18n="ui.enregistrer_prepare_la_connexion_tester_demarre_une_connexion_sep">Enregistrer prépare la connexion. « Tester » démarre une connexion séparée pour découvrir ses outils ; aucun outil métier n’est exécuté.</p>
         <div id="mcp-form-error" class="form-error" role="alert" hidden></div>
-        <div class="modal-actions"><button id="mcp-save" class="primary-button" type="submit">Enregistrer</button></div>
+        <div class="modal-actions"><button id="mcp-save" class="primary-button" type="submit" data-i18n="ui.enregistrer">Enregistrer</button></div>
       </form>
-      <section id="mcp-test-view" hidden><div class="mcp-form-heading"><h3 id="mcp-test-title">Test de connexion</h3><button id="mcp-test-back" class="secondary-button">Retour</button></div><p id="mcp-test-status" role="status"></p><div id="mcp-tools"></div></section>
-      <section id="mcp-oauth-view" hidden><h3 id="mcp-oauth-title">Connexion OAuth</h3><p id="mcp-oauth-status" role="status"></p><a id="mcp-oauth-link" class="primary-button" target="_blank" rel="noopener noreferrer" hidden>Autoriser dans le navigateur</a><p class="mcp-note">Sur mobile, après autorisation, le navigateur peut afficher une adresse localhost inaccessible. Copiez cette adresse complète et collez-la ici. Sur le PC, le retour est automatique.</p><form id="mcp-oauth-form"><label for="mcp-oauth-return">Adresse complète de retour</label><input id="mcp-oauth-return" type="url" autocomplete="off" spellcheck="false" placeholder="http://localhost:53700/callback?…" required><div class="modal-actions"><button id="mcp-oauth-cancel" type="button" class="secondary-button">Annuler</button><button type="submit" class="primary-button">Valider le retour</button></div></form></section>
-      <section id="mcp-remove-view" hidden><h3 id="mcp-remove-title">Supprimer cette connexion ?</h3><p>La configuration de ce serveur et ses identifiants MCP enregistrés seront retirés. Les autres connexions et les comptes de modèles sont conservés.</p><div class="modal-actions"><button id="mcp-remove-cancel" class="secondary-button">Annuler</button><button id="mcp-remove-confirm" class="primary-button danger-button">Supprimer</button></div></section>
-    </div><footer class="mcp-footer">Les nouveaux réglages s’appliquent aux nouvelles sessions. Les sessions déjà en cours continuent avec leurs connexions actuelles.</footer>`;
+      <section id="mcp-test-view" hidden><div class="mcp-form-heading"><h3 id="mcp-test-title" data-i18n="ui.test_de_connexion">Test de connexion</h3><button id="mcp-test-back" class="secondary-button" data-i18n="ui.retour">Retour</button></div><p id="mcp-test-status" role="status"></p><div id="mcp-tools"></div></section>
+      <section id="mcp-oauth-view" hidden><h3 id="mcp-oauth-title" data-i18n="ui.connexion_oauth">Connexion OAuth</h3><p id="mcp-oauth-status" role="status"></p><a id="mcp-oauth-link" class="primary-button" target="_blank" rel="noopener noreferrer" hidden data-i18n="ui.autoriser_dans_le_navigateur">Autoriser dans le navigateur</a><p class="mcp-note" data-i18n="ui.sur_mobile_apres_autorisation_le_navigateur_peut_afficher_une_adr">Sur mobile, après autorisation, le navigateur peut afficher une adresse localhost inaccessible. Copiez cette adresse complète et collez-la ici. Sur le PC, le retour est automatique.</p><form id="mcp-oauth-form"><label for="mcp-oauth-return" data-i18n="ui.adresse_complete_de_retour">Adresse complète de retour</label><input id="mcp-oauth-return" type="url" autocomplete="off" spellcheck="false" placeholder="http://localhost:53700/callback?…" required><div class="modal-actions"><button id="mcp-oauth-cancel" type="button" class="secondary-button" data-i18n="ui.annuler">Annuler</button><button type="submit" class="primary-button" data-i18n="ui.valider_le_retour">Valider le retour</button></div></form></section>
+      <section id="mcp-remove-view" hidden><h3 id="mcp-remove-title" data-i18n="ui.supprimer_cette_connexion">Supprimer cette connexion ?</h3><p data-i18n="ui.la_configuration_de_ce_serveur_et_ses_identifiants_mcp_enregistre">La configuration de ce serveur et ses identifiants MCP enregistrés seront retirés. Les autres connexions et les comptes de modèles sont conservés.</p><div class="modal-actions"><button id="mcp-remove-cancel" class="secondary-button" data-i18n="ui.annuler">Annuler</button><button id="mcp-remove-confirm" class="primary-button danger-button" data-i18n="ui.supprimer">Supprimer</button></div></section>
+    </div><footer class="mcp-footer" data-i18n="ui.les_nouveaux_reglages_s_appliquent_aux_nouvelles_sessions_les_ses">Les nouveaux réglages s’appliquent aux nouvelles sessions. Les sessions déjà en cours continuent avec leurs connexions actuelles.</footer>`;
   document.body.append(dialog);
   const $ = (id) => dialog.querySelector('#' + id);
   let servers = [],
@@ -66,7 +79,7 @@ export function createMcpSettings({ api, toast }) {
     pollTimer,
     generation = 0;
   function error(message, id = 'mcp-error') {
-    $(id).textContent = message || '';
+    bindText($(id), () => translateKnown(message || ''));
     $(id).hidden = !message;
   }
   function view(name) {
@@ -81,14 +94,14 @@ export function createMcpSettings({ api, toast }) {
     render();
   }
   function action(label, handler, className = 'secondary-button') {
-    const button = node('button', className, label);
+    const button = node('button', className, () => translateKnown(label));
     button.type = 'button';
     button.onclick = async () => {
       button.disabled = true;
       try {
         await handler();
       } catch (e) {
-        error(e.message);
+        error(translateKnown(e.message));
       } finally {
         button.disabled = false;
       }
@@ -105,67 +118,88 @@ export function createMcpSettings({ api, toast }) {
       const heading = node('div', 'mcp-card-heading'),
         title = node('div');
       title.append(
-        node('h3', '', server.label),
-        node(
-          'p',
-          'mcp-transport',
+        node('h3', '', () => server.label),
+        node('p', 'mcp-transport', () =>
           server.builtin
-            ? 'Intégration native · OAuth'
+            ? tr('ui.integration_native_oauth')
             : server.config.type === 'stdio'
-              ? 'Processus local · stdio'
-              : 'Service distant · HTTP',
+              ? tr('ui.processus_local_stdio')
+              : tr('ui.service_distant_http'),
         ),
       );
       heading.append(
         title,
-        node(
-          'span',
-          `mcp-status ${server.status}`,
+        node('span', `mcp-status ${server.status}`, () =>
           server.authenticated && server.status === 'configured'
-            ? 'Authentifié'
+            ? tr('ui.authentifie')
             : statusLabel[server.status] || server.status,
         ),
       );
       card.append(
         heading,
-        node('p', 'mcp-endpoint', server.config.url || server.config.command || 'Configuration invalide'),
+        node(
+          'p',
+          'mcp-endpoint',
+          () => server.config.url || server.config.command || tr('ui.configuration_invalide'),
+        ),
       );
       if (server.missingEnv.length)
-        card.append(node('p', 'mcp-warning', 'À définir sur le PC : ' + server.missingEnv.join(', ')));
+        card.append(
+          node('p', 'mcp-warning', () => tr('ui.a_definir_sur_le_pc') + server.missingEnv.join(', ')),
+        );
       const buttons = node('div', 'mcp-card-actions');
       if (!['invalid', 'reserved', 'disabled', 'login-required', 'missing-env'].includes(server.status))
-        buttons.append(action('Tester', () => test(server)));
+        buttons.append(
+          action(
+            () => tr('ui.tester'),
+            () => test(server),
+          ),
+        );
       if (server.config.oauth && !['invalid', 'reserved', 'disabled'].includes(server.status))
-        buttons.append(action(server.authenticated ? 'Reconnecter' : 'Connecter', () => login(server)));
+        buttons.append(
+          action(
+            () => (server.authenticated ? tr('ui.reconnecter') : tr('ui.connecter')),
+            () => login(server),
+          ),
+        );
       if (server.authenticated)
         buttons.append(
-          action('Déconnecter', async () => {
-            await api('/api/mcp/disconnect', {
-              method: 'POST',
-              body: { name: server.name, revision: server.revision },
-            });
-            await load();
-          }),
+          action(
+            () => tr('ui.deconnecter'),
+            async () => {
+              await api('/api/mcp/disconnect', {
+                method: 'POST',
+                body: { name: server.name, revision: server.revision },
+              });
+              await load();
+            },
+          ),
         );
       if (!server.builtin) {
         buttons.append(
-          action('Modifier', () => edit(server)),
-          action(server.config.enabled === false ? 'Activer' : 'Désactiver', async () => {
-            await api('/api/mcp', {
-              method: 'PATCH',
-              body: {
-                name: server.name,
-                revision: server.revision,
-                enabled: server.config.enabled === false,
-              },
-            });
-            await load();
-          }),
           action(
-            'Supprimer',
+            () => tr('ui.modifier'),
+            () => edit(server),
+          ),
+          action(
+            () => (server.config.enabled === false ? tr('ui.activer') : tr('ui.desactiver')),
+            async () => {
+              await api('/api/mcp', {
+                method: 'PATCH',
+                body: {
+                  name: server.name,
+                  revision: server.revision,
+                  enabled: server.config.enabled === false,
+                },
+              });
+              await load();
+            },
+          ),
+          action(
+            () => tr('ui.supprimer'),
             () => {
               removing = server;
-              $('mcp-remove-title').textContent = `Supprimer « ${server.name} » ?`;
+              bindText($('mcp-remove-title'), () => tr('mcp.removeConfirm', { value1: server.name }));
               view('remove-view');
             },
             'danger-text',
@@ -177,12 +211,10 @@ export function createMcpSettings({ api, toast }) {
     }
     if (!root.children.length)
       root.append(
-        node(
-          'p',
-          'mcp-empty',
+        node('p', 'mcp-empty', () =>
           query
-            ? 'Aucune connexion ne correspond à votre recherche.'
-            : 'Ajoutez votre première connexion MCP.',
+            ? tr('ui.aucune_connexion_ne_correspond_a_votre_recherche')
+            : tr('ui.ajoutez_votre_premiere_connexion_mcp'),
         ),
       );
   }
@@ -202,7 +234,9 @@ export function createMcpSettings({ api, toast }) {
     const c = server?.config || {};
     $('mcp-name').value = server?.name || '';
     $('mcp-name').disabled = !!server;
-    $('mcp-form-title').textContent = server ? `Modifier ${server.name}` : 'Ajouter un MCP';
+    bindText($('mcp-form-title'), () =>
+      server ? tr('common.editName', { value1: server.name }) : tr('ui.ajouter_un_mcp'),
+    );
     $('mcp-type').value = c.type === 'stdio' ? 'stdio' : 'http';
     $('mcp-url').value = c.url || '';
     $('mcp-command').value = c.command || '';
@@ -252,7 +286,7 @@ export function createMcpSettings({ api, toast }) {
           try {
             config.headers = JSON.parse($('mcp-headers').value);
           } catch {
-            throw new Error('Les en-têtes doivent être un objet JSON valide.');
+            throw new Error(tr('ui.les_en_tetes_doivent_etre_un_objet_json_valide'));
           }
         }
       } else {
@@ -262,9 +296,10 @@ export function createMcpSettings({ api, toast }) {
         config.env = Object.create(null);
         for (const line of lines('mcp-env')) {
           const index = line.indexOf('=');
-          if (index < 1) throw new Error('Chaque variable utilise NOM_ENFANT=NOM_VARIABLE_DU_PC.');
+          if (index < 1) throw new Error(tr('ui.chaque_variable_utilise_nom_enfant_nom_variable_du_pc'));
           const key = line.slice(0, index).trim();
-          if (Object.hasOwn(config.env, key)) throw new Error('Une variable est déclarée plusieurs fois.');
+          if (Object.hasOwn(config.env, key))
+            throw new Error(tr('ui.une_variable_est_declaree_plusieurs_fois'));
           config.env[key] = { env: line.slice(index + 1).trim() };
         }
       }
@@ -274,9 +309,9 @@ export function createMcpSettings({ api, toast }) {
       });
       await load();
       view('list-view');
-      toast('Configuration MCP enregistrée.');
+      toast(() => tr('ui.configuration_mcp_enregistree'));
     } catch (e) {
-      error(e.message, 'mcp-form-error');
+      error(translateKnown(e.message), 'mcp-form-error');
     } finally {
       button.disabled = false;
     }
@@ -284,8 +319,8 @@ export function createMcpSettings({ api, toast }) {
   async function test(server) {
     view('test-view');
     const current = ++generation;
-    $('mcp-test-title').textContent = `Tester ${server.name}`;
-    $('mcp-test-status').textContent = 'Connexion et découverte des outils…';
+    bindText($('mcp-test-title'), () => tr('mcp.testName', { value1: server.name }));
+    bindText($('mcp-test-status'), () => tr('ui.connexion_et_decouverte_des_outils'));
     $('mcp-tools').replaceChildren();
     try {
       const result = await api('/api/mcp/test', {
@@ -293,19 +328,19 @@ export function createMcpSettings({ api, toast }) {
         body: { name: server.name, revision: server.revision },
       });
       if (current !== generation || !dialog.open) return;
-      $('mcp-test-status').textContent =
-        `Connexion réussie · ${result.total} outil${result.total > 1 ? 's' : ''} disponible${result.total > 1 ? 's' : ''}`;
+      bindText($('mcp-test-status'), () => tr('count.toolsAvailable', { count: result.total }));
       for (const tool of result.tools || []) {
         const item = node('details', 'mcp-tool');
         item.append(
-          node('summary', '', tool.name),
-          node('p', '', tool.description || 'Aucune description'),
-          node('pre', '', JSON.stringify(tool.inputSchema, null, 2)),
+          node('summary', '', () => tool.name),
+          node('p', '', () => translateKnown(tool.description) || tr('ui.aucune_description')),
+          node('pre', '', () => JSON.stringify(tool.inputSchema, null, 2)),
         );
         $('mcp-tools').append(item);
       }
     } catch (e) {
-      if (current === generation && dialog.open) $('mcp-test-status').textContent = e.message;
+      if (current === generation && dialog.open)
+        bindText($('mcp-test-status'), () => translateKnown(e.message));
     }
   }
   async function cancelLogin() {
@@ -321,8 +356,8 @@ export function createMcpSettings({ api, toast }) {
     await cancelLogin();
     const current = generation;
     view('oauth-view');
-    $('mcp-oauth-title').textContent = `Connecter ${server.label}`;
-    $('mcp-oauth-status').textContent = 'Préparation de la connexion…';
+    bindText($('mcp-oauth-title'), () => tr('mcp.connectName', { value1: server.label }));
+    bindText($('mcp-oauth-status'), () => tr('ui.preparation_de_la_connexion'));
     $('mcp-oauth-link').hidden = true;
     $('mcp-oauth-form').reset();
     try {
@@ -337,7 +372,7 @@ export function createMcpSettings({ api, toast }) {
       oauthJob = job;
       await poll();
     } catch (e) {
-      error(e.message);
+      error(translateKnown(e.message));
     }
   }
   async function poll() {
@@ -348,7 +383,7 @@ export function createMcpSettings({ api, toast }) {
       if (oauthJob?.id !== id) return;
       oauthJob = data;
       if (data.status === 'waiting') {
-        $('mcp-oauth-status').textContent = 'Autorisez Prime Agent dans le navigateur.';
+        bindText($('mcp-oauth-status'), () => tr('ui.autorisez_prime_agent_dans_le_navigateur'));
         $('mcp-oauth-link').href = data.url;
         $('mcp-oauth-link').hidden = false;
       }
@@ -356,19 +391,19 @@ export function createMcpSettings({ api, toast }) {
         oauthJob = undefined;
         await load();
         view('list-view');
-        toast('Connexion MCP autorisée.');
+        toast(() => tr('ui.connexion_mcp_autorisee'));
         return;
       }
       if (['error', 'cancelled'].includes(data.status)) {
         oauthJob = undefined;
         $('mcp-oauth-link').hidden = true;
-        error(data.error || 'Connexion annulée.');
-        $('mcp-oauth-status').textContent = 'La connexion n’a pas abouti.';
+        error(() => translateKnown(data.error) || tr('ui.connexion_annulee'));
+        bindText($('mcp-oauth-status'), () => tr('ui.la_connexion_n_a_pas_abouti'));
         return;
       }
       pollTimer = setTimeout(poll, 1000);
     } catch (e) {
-      error(e.message);
+      error(translateKnown(e.message));
     }
   }
   $('mcp-oauth-form').onsubmit = async (event) => {
@@ -382,7 +417,7 @@ export function createMcpSettings({ api, toast }) {
       $('mcp-oauth-return').value = '';
       error('');
     } catch (e) {
-      error(e.message);
+      error(translateKnown(e.message));
     }
   };
   $('mcp-oauth-cancel').onclick = async () => {
@@ -397,7 +432,7 @@ export function createMcpSettings({ api, toast }) {
       await load();
       view('list-view');
     } catch (e) {
-      error(e.message);
+      error(translateKnown(e.message));
     } finally {
       button.disabled = false;
     }
@@ -426,11 +461,11 @@ export function createMcpSettings({ api, toast }) {
     document.getElementById('settings-dialog').close();
     dialog.showModal();
     view('list-view');
-    $('mcp-list').textContent = 'Chargement des connexions…';
+    bindText($('mcp-list'), () => tr('ui.chargement_des_connexions'));
     try {
       await load();
     } catch (e) {
-      error(e.message);
+      error(translateKnown(e.message));
     }
   };
 }

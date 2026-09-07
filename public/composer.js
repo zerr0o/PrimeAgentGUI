@@ -1,3 +1,4 @@
+import { t as tr, bindText, bindAttribute, translateKnown } from './i18n.js';
 // The textarea edits ordinary arguments. The selected command is a separate,
 // removable token; serialization remains plain text for drafts and Prime Agent.
 let command = null;
@@ -16,9 +17,9 @@ function render() {
   if (command) {
     chip.dataset.kind =
       command.source === 'skill' ? 'skill' : command.source === 'prompt' ? 'prompt' : 'command';
-    label.textContent = `/${command.name}`;
-    chip.title = `${label.textContent} · ${command.description || ''}`;
-    remove.setAttribute('aria-label', `Retirer la commande /${command.name}`);
+    bindText(label, () => `/${command.name}`);
+    bindAttribute(chip, 'title', () => `${label.textContent} · ${translateKnown(command.description) || ''}`);
+    bindAttribute(remove, 'aria-label', () => tr('ui.retirer_la_commande', { value1: command.name }));
     input().setAttribute('aria-describedby', 'composer-command-label');
   } else input().removeAttribute('aria-describedby');
   chip.classList.toggle('is-selected', selectedAll);
@@ -54,7 +55,7 @@ export function createCommandChip() {
   remove = document.createElement('button');
   remove.id = 'remove-command';
   remove.type = 'button';
-  remove.textContent = '×';
+  bindText(remove, () => '×');
   chip.append(label, remove);
   textarea.before(chip);
   const changed = () => textarea.dispatchEvent(new Event('input', { bubbles: true }));

@@ -1,3 +1,4 @@
+import { t as tr, bindText, bindAttribute, textNode, translateKnown } from './i18n.js';
 // Presentation only: native messages and streaming events remain unchanged.
 export function createConversationRenderer({
   el,
@@ -41,7 +42,7 @@ export function createConversationRenderer({
       if (resetReasoning) node.open = reasoningPreference === 'expanded';
       const summary = el('summary');
       const titles = el('span', 'activity-titles');
-      const label = el('span', 'activity-label', 'Activité de l’agent');
+      const label = el('span', 'activity-label', () => tr('ui.activite_de_l_agent'));
       const count = el('span', 'activity-count');
       const status = el('span', 'activity-state');
       const symbol = el('span', 'activity-symbol');
@@ -56,7 +57,8 @@ export function createConversationRenderer({
       turn.parts.set(key, part);
     }
     const tools = messages.flatMap((m) => m.tools || []);
-    const errors = tools.filter((t) => t.isError).length + messages.filter((m) => m.error).length;
+    const errors =
+      tools.filter((t) => t.isError).length + messages.filter((m) => translateKnown(m.error)).length;
     const running =
       messages.some((m) => m.streaming) || tools.some((t) => ['running', 'pending'].includes(t.status));
     const reasoning = messages.filter((m) => m.thinking).length;
@@ -71,18 +73,19 @@ export function createConversationRenderer({
       part.preview.querySelectorAll('img').forEach((n) => n.remove());
       part.latest = latest;
     }
-    part.count.textContent =
-      [
-        tools.length ? `${tools.length} appel${tools.length > 1 ? 's' : ''} d’outil` : '',
-        reasoning ? `${reasoning} réflexion${reasoning > 1 ? 's' : ''}` : '',
-      ]
-        .filter(Boolean)
-        .join(' · ') || 'Préparation…';
-    part.status.textContent = errors
-      ? `${errors} erreur${errors > 1 ? 's' : ''}`
-      : running
-        ? 'En cours'
-        : 'Terminé';
+    bindText(
+      part.count,
+      () =>
+        [
+          tools.length ? tr('count.tools', { count: tools.length }) : '',
+          reasoning ? tr('count.reflections', { count: reasoning }) : '',
+        ]
+          .filter(Boolean)
+          .join(' · ') || tr('ui.preparation_2'),
+    );
+    bindText(part.status, () =>
+      errors ? tr('count.errors', { count: errors }) : running ? tr('ui.en_cours') : tr('ui.termine'),
+    );
     part.node.classList.toggle('has-errors', errors > 0);
     part.node.classList.toggle('is-running', running);
     const symbolState = running ? 'running' : errors ? 'error' : 'done';
@@ -97,7 +100,7 @@ export function createConversationRenderer({
       if (!step || step.signature !== signature) {
         const node = el('div', 'activity-step');
         node.dataset.messageId = m.id;
-        node.append(el('div', 'activity-step-label', `Étape ${index + 1}`));
+        node.append(el('div', 'activity-step-label', () => tr('ui.etape', { value1: index + 1 })));
         if (m.thinking && reasoningPreference !== 'hidden') {
           const thinking = makeDetails(
             'thinking-block',
@@ -106,24 +109,24 @@ export function createConversationRenderer({
           );
           if (resetReasoning) thinking.open = reasoningPreference === 'expanded';
           const summary = el('summary');
-          summary.append(icon('brain'), el('span', '', 'Raisonnement'), icon('chevron', 'chevron'));
+          summary.append(
+            icon('brain'),
+            el('span', '', () => tr('ui.raisonnement')),
+            icon('chevron', 'chevron'),
+          );
           const content = el('div', 'thinking-content reasoning-markdown');
           content.append(markdown(m.thinking));
           thinking.append(summary, content);
           node.append(thinking);
         }
         for (const tool of m.tools || []) node.append(renderTool(tool, m.id));
-        if (m.error) node.append(el('div', 'message-error', m.error));
+        if (translateKnown(m.error)) node.append(el('div', 'message-error', () => translateKnown(m.error)));
         if (!m.text && m.attachments?.length)
           node.append(
-            el(
-              'div',
-              'attachment-note',
-              `${m.attachments.length} pièce(s) jointe(s) dans la session native.`,
-            ),
+            el('div', 'attachment-note', () => tr('count.attachments', { count: m.attachments.length })),
           );
         if (!m.thinking && !m.tools?.length && m.streaming)
-          node.append(el('span', 'activity-waiting', 'L’agent prépare la prochaine étape…'));
+          node.append(el('span', 'activity-waiting', () => tr('ui.l_agent_prepare_la_prochaine_etape')));
         step = { node, signature };
         part.steps.set(m.id, step);
       }
@@ -136,30 +139,41 @@ export function createConversationRenderer({
   }
   function textPart(turn, m) {
     const key = `text:${m.id}`;
-    const signature = JSON.stringify([m.text, m.error, m.attachments, m.streaming, m.stopReason]);
+    const signature = JSON.stringify([
+      m.text,
+      translateKnown(m.error),
+      m.attachments,
+      m.streaming,
+      m.stopReason,
+    ]);
     let part = turn.parts.get(key);
     if (!part || part.signature !== signature) {
       const node = el('div', 'assistant-text');
       node.dataset.messageId = m.id;
       if (m.text) node.append(markdown(m.text));
-      if (m.error) node.append(el('div', 'message-error', m.error));
+      if (translateKnown(m.error)) node.append(el('div', 'message-error', () => translateKnown(m.error)));
       if (m.attachments?.length)
         node.append(
-          el('div', 'attachment-note', `${m.attachments.length} pièce(s) jointe(s) dans la session native.`),
+          el('div', 'attachment-note', () => tr('count.attachments', { count: m.attachments.length })),
         );
       if (m.streaming) node.append(el('span', 'stream-caret'));
       if (m.text) {
         const actions = el('div', 'message-actions');
         const copy = el('button', '');
         copy.type = 'button';
-        copy.append(icon('copy'), document.createTextNode('Copier'));
-        copy.onclick = () => copyText(m.text, 'Message copié');
+        copy.append(
+          icon('copy'),
+          textNode(() => tr('ui.copier')),
+        );
+        copy.onclick = () => copyText(m.text, () => tr('ui.message_copie'));
         actions.append(copy);
         node.append(actions);
       }
       if (!node.childNodes.length)
         node.append(
-          el('span', '', m.stopReason === 'aborted' ? 'Réponse interrompue.' : 'Aucun contenu textuel.'),
+          el('span', '', () =>
+            m.stopReason === 'aborted' ? tr('ui.reponse_interrompue') : tr('ui.aucun_contenu_textuel'),
+          ),
         );
       part = { node, signature };
       turn.parts.set(key, part);
@@ -177,7 +191,12 @@ export function createConversationRenderer({
       avatar.append(icon('model'));
       const model = el('span', 'message-model');
       const time = el('span', 'message-time');
-      heading.append(avatar, el('span', 'message-author', 'Prime Agent'), model, time);
+      heading.append(
+        avatar,
+        el('span', 'message-author', () => 'Prime Agent'),
+        model,
+        time,
+      );
       const body = el('div', 'message-body assistant-turn-body');
       node.append(heading, body);
       turn = { key, node, model, time, body, parts: new Map() };
@@ -185,9 +204,9 @@ export function createConversationRenderer({
     }
     const model = messages.find((m) => m.model)?.model;
     turn.model.hidden = !model;
-    turn.model.textContent = model ? String(model).split('/').pop() : '';
-    turn.model.title = model || '';
-    turn.time.textContent = dateLabel(messages[0].timestamp);
+    bindText(turn.model, () => (model ? String(model).split('/').pop() : ''));
+    bindAttribute(turn.model, 'title', () => model || '');
+    bindText(turn.time, () => dateLabel(messages[0].timestamp));
     const parts = [];
     let activity = [];
     const flush = () => {

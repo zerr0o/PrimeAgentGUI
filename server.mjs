@@ -1,3 +1,4 @@
+import { formatMessage as tr, requestLanguage } from './public/i18n-core.js';
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { dirname, join, resolve, extname, sep } from 'node:path';
@@ -25,7 +26,7 @@ import { openFile as openLocalFile, fileLaunchMode } from './lib/open-file.mjs';
 import { createSessionInspector } from './lib/session-inspector.mjs';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
-const VERSION = '2.4.0';
+const VERSION = '2.5.0';
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -52,24 +53,24 @@ const publicRun = ({ id, sessionId, cwd, status, startedAt, endedAt, error, mode
 
 async function readBody(req) {
   if (!/^application\/json(?:\s*;|$)/i.test(req.headers['content-type'] || ''))
-    throw new HttpError(415, 'Un corps JSON est requis.');
+    throw new HttpError(415, tr('server.un_corps_json_est_requis'));
   let length = 0;
   const chunks = [];
   for await (const chunk of req) {
     length += chunk.length;
     if (length > imageBodyLimit(req.url.split('?')[0]))
-      throw new HttpError(413, 'La demande dépasse la taille autorisée.');
+      throw new HttpError(413, tr('server.la_demande_depasse_la_taille_autorisee'));
     chunks.push(chunk);
   }
   try {
     const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
     if (!body || Array.isArray(body) || typeof body !== 'object') throw new Error();
     if (length > 512 * 1024 && !body.images?.length && !body.files?.length)
-      throw new HttpError(413, 'La demande dépasse 512 Ko.');
+      throw new HttpError(413, tr('server.la_demande_depasse_512_ko'));
     return body;
   } catch (error) {
     if (error.status) throw error;
-    throw new HttpError(400, 'La demande JSON est invalide.');
+    throw new HttpError(400, tr('server.la_demande_json_est_invalide'));
   }
 }
 function json(res, status, value) {
@@ -186,14 +187,14 @@ export function createApp(options = {}) {
       typeof body.model !== 'string' ||
       body.model.length > 500
     )
-      throw new HttpError(400, 'Sélection de modèle invalide.');
+      throw new HttpError(400, tr('server.selection_de_modele_invalide'));
     let selection = null;
     if (body.model) {
       const catalog = await models(),
         selected = catalog.models?.find((model) => model.id === body.model),
         prefix = selected ? `${selected.provider}/` : '';
       if (!selected || !selected.id.startsWith(prefix) || selected.id.length === prefix.length)
-        throw new HttpError(400, 'Ce modèle n’est pas disponible dans Prime Agent.');
+        throw new HttpError(400, tr('server.ce_modele_n_est_pas_disponible_dans_prime_agent'));
       selection = { provider: selected.provider, id: selected.id.slice(prefix.length) };
     }
     return configuredModels(modelDefaults.set(selection));
@@ -235,16 +236,18 @@ export function createApp(options = {}) {
     }
   }
   async function startRun(body) {
-    if (closing) throw new HttpError(503, 'Le serveur est en cours d’arrêt.');
+    if (closing) throw new HttpError(503, tr('server.le_serveur_est_en_cours_d_arret'));
     if (activeRuns().length >= 8)
-      throw new HttpError(429, 'Huit sessions tournent déjà. Arrêtez-en une avant de continuer.');
+      throw new HttpError(429, tr('server.huit_sessions_tournent_deja_arretez_en_une_avant_de_continuer'));
     const cwd = await validateDirectory(body.cwd);
     const images = validateImages(body.images);
     const files = validateFiles(body.files);
-    if (images.length + files.length > 8) throw new HttpError(400, 'Ajoutez au maximum 8 pièces jointes.');
+    if (images.length + files.length > 8)
+      throw new HttpError(400, tr('server.ajoutez_au_maximum_8_pieces_jointes'));
     if (typeof body.message !== 'string' || (!body.message.trim() && !images.length && !files.length))
-      throw new HttpError(400, 'Écrivez un message avant de l’envoyer.');
-    if (body.message.length > 200000) throw new HttpError(400, 'Le message dépasse 200 000 caractères.');
+      throw new HttpError(400, tr('server.ecrivez_un_message_avant_de_l_envoyer'));
+    if (body.message.length > 200000)
+      throw new HttpError(400, tr('server.le_message_depasse_200_000_caracteres'));
     if (parseCommand(body.message))
       validateCommand(body.message, await commands.list({ cwd }), {
         attachments: images.length + files.length > 0,
@@ -253,34 +256,32 @@ export function createApp(options = {}) {
       const catalog = await models();
       const selected = catalog.models?.find((model) => model.id === (body.model || catalog.default?.model));
       if (selected?.input && !selected.input.includes('image'))
-        throw new HttpError(
-          400,
-          'Ce modèle ne prend pas en charge les images. Choisissez un modèle compatible.',
-        );
+        throw new HttpError(400, tr('ui.ce_modele_ne_prend_pas_en_charge_les_images_choisissez_un_modele'));
     }
     if (
       body.model !== undefined &&
       (typeof body.model !== 'string' || body.model.length > 300 || /[\r\n\0]/.test(body.model))
     )
-      throw new HttpError(400, 'Modèle invalide.');
+      throw new HttpError(400, tr('server.modele_invalide'));
     if (
       body.thinking != null &&
       body.thinking !== '' &&
       !['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'].includes(body.thinking)
     )
-      throw new HttpError(400, 'Niveau de réflexion invalide.');
+      throw new HttpError(400, tr('server.niveau_de_reflexion_invalide'));
     if (body.sessionId != null && body.sessionId !== '' && !validId(body.sessionId))
-      throw new HttpError(400, 'Identifiant de session invalide.');
+      throw new HttpError(400, tr('server.identifiant_de_session_invalide'));
     let existing;
     if (body.sessionId) {
       existing = await store.history(body.sessionId);
       if (!existing.cwd || cwdKey(cwd) !== cwdKey(existing.cwd))
-        throw new HttpError(409, 'Cette session appartient à un autre dossier.');
+        throw new HttpError(409, tr('server.cette_session_appartient_a_un_autre_dossier'));
     }
     // Check after awaited validation so simultaneous HTTP requests cannot race the lock.
     if (activeRuns().length >= 8)
-      throw new HttpError(429, 'Huit sessions tournent déjà. Arrêtez-en une avant de continuer.');
-    if (existing && sessionLocks.has(existing.id)) throw new HttpError(409, 'Cette session travaille déjà.');
+      throw new HttpError(429, tr('server.huit_sessions_tournent_deja_arretez_en_une_avant_de_continuer'));
+    if (existing && sessionLocks.has(existing.id))
+      throw new HttpError(409, tr('server.cette_session_travaille_deja'));
     if (existing) sessionLocks.add(existing.id);
     const run = {
       id: randomUUID(),
@@ -290,7 +291,7 @@ export function createApp(options = {}) {
       startedAt: new Date().toISOString(),
       model: body.model || null,
       thinking: body.thinking || null,
-      prompt: body.message.trim() || 'Analyse les pièces jointes.',
+      prompt: body.message.trim() || tr('ui.analyse_les_pieces_jointes'),
       seq: 0,
       events: [],
       bytes: 0,
@@ -379,11 +380,11 @@ export function createApp(options = {}) {
     try {
       const host = req.headers.host || '';
       if (!/^(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/.test(host))
-        throw new HttpError(403, 'Hôte non autorisé.');
+        throw new HttpError(403, tr('server.hote_non_autorise'));
       if (req.headers.origin && req.headers.origin !== `http://${host}`)
-        throw new HttpError(403, 'Origine non autorisée.');
+        throw new HttpError(403, tr('server.origine_non_autorisee'));
       if (req.headers['sec-fetch-site'] === 'cross-site')
-        throw new HttpError(403, 'Requête externe non autorisée.');
+        throw new HttpError(403, tr('server.requete_externe_non_autorisee'));
       const url = new URL(req.url, `http://${host}`),
         path = url.pathname,
         method = req.method;
@@ -525,21 +526,26 @@ export function createApp(options = {}) {
       ) {
         const body = method === 'POST' ? await readBody(req) : {};
         if (Object.keys(body).some((key) => !['cwd', 'policy', 'revision'].includes(key)))
-          throw new HttpError(400, 'Réglages des sous-agents invalides.');
+          throw new HttpError(400, tr('server.reglages_des_sous_agents_invalides'));
         if (body.cwd !== undefined && (typeof body.cwd !== 'string' || !body.cwd.trim()))
-          throw new HttpError(400, 'Projet invalide.');
+          throw new HttpError(400, tr('server.projet_invalide'));
         const cwd = body.cwd || url.searchParams.get('cwd') || undefined;
         if (path === '/api/project-subagent-defaults' && !cwd)
-          throw new HttpError(400, 'Choisissez un projet pour modifier ses sous-agents.');
+          throw new HttpError(400, tr('server.choisissez_un_projet_pour_modifier_ses_sous_agents'));
         if (cwd) await store.findProject(cwd);
         if (method === 'GET') return json(res, 200, await subagentDefaults.get(cwd));
         if (body.policy !== null) {
-          if (!validPolicy(body.policy)) throw new HttpError(400, 'Réglages des sous-agents invalides.');
+          if (!validPolicy(body.policy))
+            throw new HttpError(400, tr('server.reglages_des_sous_agents_invalides'));
           if (body.policy.model) {
             const model = (await models()).models?.find((m) => m.id === body.policy.model);
-            if (!model) throw new HttpError(400, 'Ce modèle n’est pas disponible dans Prime Agent.');
+            if (!model)
+              throw new HttpError(400, tr('server.ce_modele_n_est_pas_disponible_dans_prime_agent'));
             if (body.policy.thinking && !model.thinkingLevels?.includes(body.policy.thinking))
-              throw new HttpError(400, 'Ce niveau de réflexion n’est pas compatible avec le modèle choisi.');
+              throw new HttpError(
+                400,
+                tr('server.ce_niveau_de_reflexion_n_est_pas_compatible_avec_le_modele_chois'),
+              );
           }
         }
         return json(res, 200, await subagentDefaults.set({ ...body, cwd }));
@@ -587,7 +593,10 @@ export function createApp(options = {}) {
       if (method === 'DELETE' && path === '/api/projects') {
         const project = await store.findProject((await readBody(req)).cwd);
         if (activeRuns().some((run) => cwdKey(run.cwd) === cwdKey(project.cwd)))
-          throw new HttpError(409, 'Un agent travaille dans ce projet. Attendez sa fin avant de le retirer.');
+          throw new HttpError(
+            409,
+            tr('server.un_agent_travaille_dans_ce_projet_attendez_sa_fin_avant_de_le_re'),
+          );
         return json(res, 200, await store.removeProject(project.cwd));
       }
       if (method === 'PATCH' && path === '/api/sessions')
@@ -598,7 +607,7 @@ export function createApp(options = {}) {
       const runRoute = path.match(/^\/api\/runs\/([a-f0-9-]+)\/(events|stop)$/);
       if (runRoute) {
         const run = runs.get(runRoute[1]);
-        if (!run) throw new HttpError(404, 'Exécution introuvable. Rechargez son historique.');
+        if (!run) throw new HttpError(404, tr('server.execution_introuvable_rechargez_son_historique'));
         if (method === 'GET' && runRoute[2] === 'events') return subscribe(req, res, run, url);
         if (method === 'POST' && runRoute[2] === 'stop') {
           if (!run.finished) {
@@ -616,20 +625,31 @@ export function createApp(options = {}) {
         else if (path === '/vendor/purify.js')
           file = join(ROOT, 'node_modules', 'dompurify', 'dist', 'purify.es.mjs');
         else if (path === '/favicon.ico') file = join(ROOT, 'assets', 'prime-agent.ico');
-        else if (path === '/manifest.webmanifest') file = join(ROOT, 'public', 'manifest.webmanifest');
-        else if (path === '/service-worker.js') file = join(ROOT, 'public', 'service-worker.js');
+        else if (path === '/manifest.webmanifest') {
+          const locale = requestLanguage(req.headers, url.searchParams.get('lang'));
+          const manifest = JSON.parse(await readFile(join(ROOT, 'public', 'manifest.webmanifest'), 'utf8'));
+          manifest.lang = locale;
+          manifest.description = tr('pwa.description', {}, locale);
+          res.writeHead(200, {
+            'Content-Type': 'application/manifest+json',
+            'Cache-Control': 'no-cache',
+            Vary: 'Accept-Language, Cookie',
+          });
+          res.end(method === 'HEAD' ? undefined : JSON.stringify(manifest));
+          return;
+        } else if (path === '/service-worker.js') file = join(ROOT, 'public', 'service-worker.js');
         else if (path.startsWith('/public/')) {
           const base = resolve(ROOT, 'public');
           file = resolve(ROOT, '.' + decodeURIComponent(path));
-          if (!file.startsWith(base + sep)) throw new HttpError(404, 'Fichier introuvable.');
+          if (!file.startsWith(base + sep)) throw new HttpError(404, tr('server.fichier_introuvable'));
         } else if (path.startsWith('/assets/')) {
           const base = resolve(ROOT, 'assets');
           file = resolve(ROOT, '.' + decodeURIComponent(path));
-          if (!file.startsWith(base + sep)) throw new HttpError(404, 'Fichier introuvable.');
+          if (!file.startsWith(base + sep)) throw new HttpError(404, tr('server.fichier_introuvable'));
         }
         if (file) {
           if (!(await stat(file).catch(() => null))?.isFile())
-            throw new HttpError(404, 'Fichier introuvable.');
+            throw new HttpError(404, tr('server.fichier_introuvable'));
           res.writeHead(200, {
             'Content-Type':
               MIME[extname(file)] ||
@@ -640,14 +660,14 @@ export function createApp(options = {}) {
           return;
         }
       }
-      throw new HttpError(404, 'Route introuvable.');
+      throw new HttpError(404, tr('server.route_introuvable'));
     } catch (error) {
       if (res.headersSent) {
         res.end();
         return;
       }
       json(res, error.status || 500, {
-        error: error.status ? error.message : 'Une erreur interne est survenue. ' + error.message,
+        error: error.status ? error.message : tr('server.une_erreur_interne_est_survenue') + error.message,
       });
     }
   });
@@ -670,7 +690,7 @@ export function createApp(options = {}) {
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
   const port = Number(process.env.PORT || 3088);
   if (!Number.isInteger(port) || port < 1 || port > 65535)
-    throw new Error('PORT doit être compris entre 1 et 65535.');
+    throw new Error(tr('server.port_doit_etre_compris_entre_1_et_65535'));
   const app = createApp();
   const remoteServers = [];
   let shuttingDown = false;
@@ -681,7 +701,7 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.m
       const { config } = access;
       if (shuttingDown) return;
       if (!Number.isInteger(config.port) || config.port < 1024 || config.port > 65535 || config.port === port)
-        throw new Error('Port mobile invalide.');
+        throw new Error(tr('server.port_mobile_invalide'));
       const endpoints = [
         ...(config.enabled === true ? [{ host: config.host, name: 'LAN', listenPort: config.port }] : []),
         ...(config.tailscale?.enabled === true
@@ -707,7 +727,7 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.m
             listenPort === port ||
             (publicOrigin && listenPort === config.port)
           )
-            throw new Error('Port de passerelle invalide.');
+            throw new Error(tr('server.port_de_passerelle_invalide'));
           const gateway = createLanGateway({ host, upstreamPort: port, config, publicOrigin });
           await app.remoteAccess.registerGateway(gateway);
           if (shuttingDown) {
@@ -715,22 +735,30 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.m
             return;
           }
           remoteServers.push(gateway);
-          gateway.on('error', (error) => console.error(`Accès ${name} indisponible : ${error.message}`));
+          gateway.on('error', (error) =>
+            console.error(tr('server.acces_indisponible', { value1: name, value2: error.message })),
+          );
           gateway.listen(listenPort, host, () =>
-            console.log(`Accès ${name} — ${publicOrigin || `http://${host}:${listenPort}`}`),
+            console.log(
+              tr('server.acces', { value1: name, value2: publicOrigin || `http://${host}:${listenPort}` }),
+            ),
           );
         } catch (error) {
-          console.error(`Accès ${name} indisponible : ${error.message}`);
+          console.error(tr('server.acces_indisponible', { value1: name, value2: error.message }));
         }
       }
     } catch (error) {
-      if (error.code !== 'ENOENT') console.error(`Accès mobile indisponible : ${error.message}`);
+      if (error.code !== 'ENOENT')
+        console.error(tr('server.acces_mobile_indisponible', { value1: error.message }));
     }
   }
   app.server.on('error', (error) => {
     console.error(
       error.code === 'EADDRINUSE'
-        ? `Le port ${port} est déjà utilisé. Ouvrez http://127.0.0.1:${port} ou définissez PORT.`
+        ? tr('server.le_port_est_deja_utilise_ouvrez_http_127_0_0_1_ou_definissez_por', {
+            value1: port,
+            value2: port,
+          })
         : error.message,
     );
     process.exitCode = 1;

@@ -1,3 +1,4 @@
+import { t as tr, bindText, translateKnown } from './i18n.js';
 export function createRemoteAccessSettings({ api, isRemote, toast }) {
   const $ = (id) => document.getElementById(id);
   const dialog = $('remote-access-dialog'),
@@ -8,14 +9,14 @@ export function createRemoteAccessSettings({ api, isRemote, toast }) {
     busy = false,
     generation = 0;
   const showError = (message = '') => {
-    $('remote-code-error').textContent = message;
+    bindText($('remote-code-error'), () => message);
     $('remote-code-error').hidden = !message;
   };
   function refresh() {
     $('remote-code-fields').disabled = busy || !configured;
     $('save-remote-code').disabled =
       busy || !configured || !/^[0-9]{8}$/.test($(fields[0]).value) || !/^[0-9]{8}$/.test($(fields[1]).value);
-    $('save-remote-code').textContent = busy ? 'Enregistrement…' : 'Changer le code';
+    bindText($('save-remote-code'), () => (busy ? tr('common.saving') : tr('ui.changer_le_code')));
   }
   function clear() {
     form.reset();
@@ -43,25 +44,27 @@ export function createRemoteAccessSettings({ api, isRemote, toast }) {
     const turn = ++generation;
     busy = false;
     refresh();
-    $('remote-access-status').textContent = 'Chargement de l’accès mobile…';
+    bindText($('remote-access-status'), () => tr('ui.chargement_de_l_acces_mobile'));
     dialog.showModal();
     try {
       const data = await api('/api/remote-access');
       if (turn !== generation) return;
       revision = data.revision;
       configured = data.configured;
-      $('remote-access-status').textContent = configured
-        ? 'Un même code pour le Wi-Fi, Tailscale et la PWA.'
-        : 'L’accès mobile n’est pas encore configuré sur ce PC.';
+      bindText($('remote-access-status'), () =>
+        configured
+          ? tr('ui.un_meme_code_pour_le_wi_fi_tailscale_et_la_pwa')
+          : tr('ui.l_acces_mobile_n_est_pas_encore_configure_sur_ce_pc'),
+      );
       refresh();
       if (configured) $(fields[0]).focus();
     } catch (error) {
       if (turn !== generation) return;
-      $('remote-access-status').textContent = 'Code d’accès indisponible.';
+      bindText($('remote-access-status'), () => tr('ui.code_d_acces_indisponible'));
       showError(
         error.status === 404
-          ? 'Cette option nécessite un redémarrage du Studio, après la fin des sessions actives.'
-          : error.message,
+          ? tr('ui.cette_option_necessite_un_redemarrage_du_studio_apres_la_fin_des')
+          : translateKnown(error.message),
       );
     }
   };
@@ -70,7 +73,7 @@ export function createRemoteAccessSettings({ api, isRemote, toast }) {
     if (isRemote() || busy || !configured) return;
     if (!form.reportValidity()) return;
     if ($(fields[0]).value !== $(fields[1]).value) {
-      showError('Les deux codes ne correspondent pas.');
+      showError(tr('ui.les_deux_codes_ne_correspondent_pas'));
       $(fields[1]).focus();
       return;
     }
@@ -82,9 +85,9 @@ export function createRemoteAccessSettings({ api, isRemote, toast }) {
     try {
       await api('/api/remote-access/code', { method: 'POST', body });
       if (turn === generation) dialog.close();
-      toast('Code modifié. Reconnectez vos appareils avec le nouveau code.');
+      toast(() => tr('ui.code_modifie_reconnectez_vos_appareils_avec_le_nouveau_code'));
     } catch (error) {
-      if (turn === generation) showError(error.message);
+      if (turn === generation) showError(translateKnown(error.message));
     } finally {
       body.code = body.confirmation = '';
       if (turn === generation) {

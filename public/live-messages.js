@@ -1,3 +1,4 @@
+import { t as tr, bindText, bindAttribute, translateKnown } from './i18n.js';
 import { composerText, setComposerText } from './composer.js';
 const icons = {
   edit: 'M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L9 17l-4 1 1-4Z',
@@ -9,14 +10,14 @@ const icons = {
 const node = (tag, className = '', text) => {
   const element = document.createElement(tag);
   if (className) element.className = className;
-  if (text != null) element.textContent = text;
+  if (text != null) bindText(element, () => text);
   return element;
 };
 function action(label, icon, click) {
   const button = node('button', 'live-queue-action');
   button.type = 'button';
-  button.title = label;
-  button.setAttribute('aria-label', label);
+  bindAttribute(button, 'title', () => translateKnown(label));
+  bindAttribute(button, 'aria-label', () => translateKnown(label));
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   for (const [key, value] of Object.entries({
     viewBox: '0 0 24 24',
@@ -45,7 +46,7 @@ function requestId() {
   const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
-const laneLabel = (lane) => (lane === 'steering' ? 'Réorienter' : 'À la suite');
+const laneLabel = (lane) => (lane === 'steering' ? tr('ui.reorienter') : tr('ui.a_la_suite'));
 function queuedText(text) {
   const marker = '\n\n<prime_studio_files>\n',
     start = text.lastIndexOf(marker);
@@ -75,7 +76,7 @@ export function createLiveMessages({
   const stop = document.getElementById('stop-button');
   const toolbar = form?.querySelector('.composer-toolbar');
   if (!form || !composer || !send || !stop || !toolbar)
-    throw new Error('Le formulaire de conversation est introuvable.');
+    throw new Error(tr('ui.le_formulaire_de_conversation_est_introuvable'));
 
   const actions = node('div', 'live-message-actions');
   actions.id = 'live-message-actions';
@@ -86,22 +87,25 @@ export function createLiveMessages({
   const modeRow = node('div', 'live-mode-row');
   modeRow.id = 'live-mode-row';
   modeRow.hidden = true;
-  modeRow.append(node('span', 'live-mode-label', 'Ce message'));
+  modeRow.append(node('span', 'live-mode-label', () => tr('ui.ce_message')));
   const modes = node('div', 'live-mode-options');
   modes.setAttribute('role', 'group');
-  modes.setAttribute('aria-label', 'Envoyer pendant l’exécution');
+  bindAttribute(modes, 'aria-label', () => tr('ui.envoyer_pendant_l_execution'));
   const modeButtons = new Map();
   for (const [value, label] of [
-    ['steer', 'Réorienter'],
-    ['follow_up', 'À la suite'],
+    ['steer', tr('ui.reorienter')],
+    ['follow_up', tr('ui.a_la_suite')],
   ]) {
-    const button = node('button', 'live-mode-option', label);
+    const button = node('button', 'live-mode-option', () =>
+      laneLabel(value === 'steer' ? 'steering' : 'followUp'),
+    );
     button.type = 'button';
     button.dataset.mode = value;
-    button.title =
+    bindAttribute(button, 'title', () =>
       value === 'steer'
-        ? 'Transmettre une nouvelle consigne à l’agent en cours'
-        : 'Ajouter un message après la réponse en cours';
+        ? tr('ui.transmettre_une_nouvelle_consigne_a_l_agent_en_cours')
+        : tr('ui.ajouter_un_message_apres_la_reponse_en_cours'),
+    );
     button.addEventListener('click', () => {
       mode = value;
       try {
@@ -126,9 +130,12 @@ export function createLiveMessages({
   queue.id = 'live-queue';
   queue.hidden = true;
   const summary = node('summary', 'live-queue-summary');
-  summary.append(node('span', '', 'Messages en attente'));
-  const countLabel = node('span', 'live-queue-count', '0');
-  summary.append(countLabel, node('span', 'live-queue-chevron', '›'));
+  summary.append(node('span', '', () => tr('ui.messages_en_attente')));
+  const countLabel = node('span', 'live-queue-count', () => '0');
+  summary.append(
+    countLabel,
+    node('span', 'live-queue-chevron', () => '›'),
+  );
   queue.append(summary);
   const queueList = node('div', 'live-queue-list');
   queueList.id = 'live-queue-list';
@@ -141,7 +148,7 @@ export function createLiveMessages({
   const editor = node('form', 'live-queue-editor');
   editor.id = 'live-queue-editor';
   editor.hidden = true;
-  const editorLabel = node('label', '', 'Modifier le message en attente');
+  const editorLabel = node('label', '', () => tr('ui.modifier_le_message_en_attente'));
   editorLabel.htmlFor = 'live-queue-edit-text';
   const editorText = node('textarea');
   editorText.id = 'live-queue-edit-text';
@@ -149,15 +156,15 @@ export function createLiveMessages({
   editorText.maxLength = 200000;
   const editorFooter = node('div', 'live-queue-editor-footer');
   const editorLane = node('select');
-  editorLane.setAttribute('aria-label', 'Quand transmettre le message modifié');
+  bindAttribute(editorLane, 'aria-label', () => tr('ui.quand_transmettre_le_message_modifie'));
   for (const lane of ['steering', 'followUp']) {
-    const option = node('option', '', laneLabel(lane));
+    const option = node('option', '', () => laneLabel(lane));
     option.value = lane;
     editorLane.append(option);
   }
-  const editorCancel = node('button', 'live-queue-cancel', 'Annuler');
+  const editorCancel = node('button', 'live-queue-cancel', () => tr('ui.annuler'));
   editorCancel.type = 'button';
-  const editorSave = node('button', 'live-queue-save', 'Enregistrer');
+  const editorSave = node('button', 'live-queue-save', () => tr('ui.enregistrer'));
   editorSave.type = 'submit';
   const editorNotice = node('p', 'live-queue-edit-notice');
   editorNotice.hidden = true;
@@ -206,9 +213,9 @@ export function createLiveMessages({
     editorLane.disabled = mutating;
     editorText.disabled = mutating;
     editorNotice.hidden = matched;
-    editorNotice.textContent = matched
-      ? ''
-      : 'La file a changé. Votre modification reste ici ; ce message ne peut plus être remplacé à cette position.';
+    bindText(editorNotice, () =>
+      matched ? '' : tr('ui.la_file_a_change_votre_modification_reste_ici_ce_message_ne_peut'),
+    );
   }
   function openEditor(item) {
     if (mutating) return;
@@ -222,7 +229,7 @@ export function createLiveMessages({
   }
   function renderQueue() {
     queue.hidden = count() === 0 && !edit;
-    countLabel.textContent = String(count());
+    bindText(countLabel, () => String(count()));
     const signature = JSON.stringify([snapshot?.steering, snapshot?.followUps, editable(), mutating]);
     if (signature !== queueSignature) {
       queueSignature = signature;
@@ -232,20 +239,24 @@ export function createLiveMessages({
         if (!messages.length) continue;
         const section = node('section', 'live-queue-lane');
         section.dataset.lane = lane;
-        section.append(node('h3', '', laneLabel(lane)));
+        section.append(node('h3', '', () => laneLabel(lane)));
         const list = node('ol');
         messages.forEach((text, index) => {
           const item = { lane, index, expectedText: text };
           const row = node('li', 'live-queue-item');
           row.dataset.lane = lane;
           row.dataset.index = String(index);
-          row.append(node('p', 'live-queue-text', queuedText(text)));
+          row.append(node('p', 'live-queue-text', () => queuedText(text)));
           if (queuedText(text) !== text)
-            row.append(node('small', 'live-queue-file-note', 'Fichier(s) joint(s) conservé(s)'));
+            row.append(node('small', 'live-queue-file-note', () => tr('ui.fichier_s_joint_s_conserve_s')));
           const buttons = node('div', 'live-queue-item-actions');
-          const editButton = action('Modifier le message', 'edit', () => openEditor(item));
+          const editButton = action(
+            () => tr('ui.modifier_le_message'),
+            'edit',
+            () => openEditor(item),
+          );
           const switchButton = action(
-            lane === 'steering' ? 'Passer à la suite' : 'Réorienter avec ce message',
+            () => (lane === 'steering' ? tr('ui.passer_a_la_suite') : tr('ui.reorienter_avec_ce_message')),
             'switch',
             () =>
               void mutate(item, {
@@ -255,16 +266,20 @@ export function createLiveMessages({
               }),
           );
           const up = action(
-            'Monter le message',
+            () => tr('ui.monter_le_message'),
             'up',
             () => void mutate(item, { type: 'move', direction: -1 }),
           );
           const down = action(
-            'Descendre le message',
+            () => tr('ui.descendre_le_message'),
             'down',
             () => void mutate(item, { type: 'move', direction: 1 }),
           );
-          const remove = action('Retirer le message', 'delete', () => void mutate(item, { type: 'delete' }));
+          const remove = action(
+            () => tr('ui.retirer_le_message'),
+            'delete',
+            () => void mutate(item, { type: 'delete' }),
+          );
           for (const button of [editButton, switchButton, up, down, remove])
             button.disabled = !editable() || mutating;
           up.disabled ||= index === 0;
@@ -314,8 +329,8 @@ export function createLiveMessages({
         snapshot = { ...(snapshot || {}), available: false };
         snapshotError =
           error.status === 404
-            ? 'L’envoi pendant l’exécution n’est pas disponible pour cette session.'
-            : 'Connexion à la file de messages interrompue. Nouvelle tentative en cours…';
+            ? tr('ui.l_envoi_pendant_l_execution_n_est_pas_disponible_pour_cette_sessi')
+            : tr('ui.connexion_a_la_file_de_messages_interrompue_nouvelle_tentative_en');
         return null;
       } finally {
         if (token === generation && !destroyed) {
@@ -351,7 +366,10 @@ export function createLiveMessages({
       return true;
     } catch (error) {
       if (destroyed || token !== generation) return false;
-      queueError.textContent = error.message || 'Le message n’a pas pu être modifié.';
+      bindText(
+        queueError,
+        () => translateKnown(error.message) || tr('ui.le_message_n_a_pas_pu_etre_modifie'),
+      );
       queueError.hidden = false;
       onError(error);
       if (error.status === 409) {
@@ -374,7 +392,7 @@ export function createLiveMessages({
     const images = imageDraft?.images || [];
     const files = imageDraft?.files || [];
     const message =
-      composerText().trim() || (images.length || files.length ? 'Analyse les pièces jointes.' : '');
+      composerText().trim() || (images.length || files.length ? tr('ui.analyse_les_pieces_jointes') : '');
     if (!message || sending || !editable() || current.stopping || imageComposer?.blocked()) return true;
     const originalDraft = composerText(),
       originalRevision = draftRevision,
@@ -460,21 +478,26 @@ export function createLiveMessages({
       stop.disabled = Boolean(current.stopping || current.readOnly || !current.online);
       send.hidden = !hasDraft;
       send.disabled = !hasDraft || sending || !editable() || imageComposer?.blocked();
-      send.title = mode === 'steer' ? 'Réorienter l’agent' : 'Envoyer à la suite';
-      send.setAttribute('aria-label', send.title);
+      bindAttribute(send, 'title', () =>
+        mode === 'steer' ? tr('ui.reorienter_l_agent') : tr('ui.envoyer_a_la_suite'),
+      );
+      bindAttribute(send, 'aria-label', () => send.title);
     } else {
       stop.hidden = true;
       send.hidden = false;
-      send.title = 'Envoyer le message';
-      send.setAttribute('aria-label', send.title);
+      bindAttribute(send, 'title', () => tr('ui.envoyer_le_message'));
+      bindAttribute(send, 'aria-label', () => send.title);
     }
     actions.classList.toggle('has-two-actions', active && hasDraft);
     form.classList.toggle('has-live-draft', active && hasDraft);
     const showStatus = active && hasDraft && !sending && snapshot?.available !== true;
     status.hidden = !showStatus;
-    status.textContent = showStatus
-      ? snapshotError || (current.sessionId ? 'Connexion à la session…' : 'Préparation de la session…')
-      : '';
+    bindText(status, () =>
+      showStatus
+        ? snapshotError ||
+          (current.sessionId ? tr('ui.connexion_a_la_session') : tr('ui.preparation_de_la_session'))
+        : '',
+    );
     renderQueue();
     if (!pollTimer && !inFlight) schedulePoll();
   }

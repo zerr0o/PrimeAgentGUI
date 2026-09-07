@@ -52,6 +52,7 @@ La fermeture d’un onglet ne tue pas l’agent. Le bouton **Arrêter**, lui, fe
 npm run check
 npm test
 npm run test:ui
+npm run test:i18n
 npm run test:mobile
 npm run test:layout
 npm run test:attachments
@@ -61,6 +62,14 @@ npm run test:remote-access
 npm run test:subagents:native
 npm run test:pwa
 ```
+
+## Traductions de l’interface
+
+`public/translations.js` contient la liste des langues et une table unique : une ligne par identifiant, avec toutes ses traductions. `public/i18n-core.js` fournit les paramètres, pluriels natifs `Intl`, la sélection de langue et le repli français, utilisables aussi par le serveur. `public/i18n.js` applique le choix du navigateur et actualise uniquement les textes et attributs liés à une traduction. Les champs de formulaire et les contenus des conversations ne sont pas remplacés lors du changement.
+
+`npm run check` inclut la vérification des langues, des paramètres, des pluriels et des références du code et du HTML. `test/i18n.test.mjs` teste aussi volontairement une traduction absente pour vérifier le repli réel. `npm run test:i18n` teste le changement dans un vrai navigateur, la synchronisation entre onglets, les brouillons de connexion fournisseur et MCP, une réponse en cours sans annulation, les pièces jointes, la connexion mobile et la PWA hors ligne. Les autres tests graphiques déclarent explicitement leur langue française.
+
+Pour ajouter un texte ou une langue, suivez [le guide de traduction](translations.md). Les textes du serveur restent dans la langue de référence dans les données natives ; le navigateur traduit uniquement les libellés et diagnostics appartenant au Studio. Aucun service de traduction externe n’est utilisé.
 
 Les tests automatiques utilisent des données temporaires et un faux moteur, sans consommation de modèle. Les tests Windows vérifient également les paramètres natifs de création des processus, le lancement VBS, la réutilisation du serveur et l’arrêt des descendants. Les tests de navigateur utilisent Microsoft Edge installé localement et produisent des captures dans `test-results/`.
 
@@ -167,4 +176,4 @@ Le script ouvre la véritable interface dans Microsoft Edge sans fenêtre visibl
 
 `npm run test:workspace -- --capture-docs` régénère la capture du gestionnaire MCP avec une configuration de démonstration isolée. Les comptes utilisateur sont conservés.
 
-Les captures sont enregistrées dans `docs/screenshots/`. Cinq vues du bureau sont capturées en 1600 × 1000, dont une conversation avec pièces jointes et une nouvelle conversation avec les réglages des sous-agents. Trois captures sont cadrées sur leur fenêtre : sélecteur de modèles, modèles par défaut et code mobile. Les fichiers de démonstration restent dans le dossier temporaire du scénario. Le rapport se trouve dans `test-results/readme-captures.json`. `PRIME_STUDIO_BROWSER` permet de choisir un autre canal Playwright installé, par exemple `chrome`.
+Les captures sont enregistrées dans `docs/screenshots/`. Cinq vues du bureau sont capturées en 1600 × 1000, dont une conversation avec pièces jointes et une nouvelle conversation avec les réglages des sous-agents. Quatre captures sont cadrées sur leur fenêtre : préférences en anglais avec sélecteur de langue, sélecteur de modèles, modèles par défaut et code mobile. La capture des préférences utilise une hauteur de fenêtre de 1200 pixels pour montrer tous les réglages. Les fichiers de démonstration restent dans le dossier temporaire du scénario. Le rapport se trouve dans `test-results/readme-captures.json`. `PRIME_STUDIO_BROWSER` permet de choisir un autre canal Playwright installé, par exemple `chrome`.

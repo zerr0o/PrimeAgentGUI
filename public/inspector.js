@@ -1,3 +1,4 @@
+import { t as tr, bindText, bindAttribute, translateKnown } from './i18n.js';
 import { filePresentation } from './file-presentation.js';
 import { thinkingLabel } from './reasoning.js';
 import { createSubagentSettings } from './subagent-settings.js';
@@ -6,23 +7,47 @@ const $ = (id) => document.getElementById(id);
 const node = (tag, className = '', text = '') => {
   const el = document.createElement(tag);
   el.className = className;
-  el.textContent = text;
+  bindText(el, () => text);
   return el;
 };
 const labels = {
-  working: 'Travaille',
-  tool: 'Exécute un outil',
-  children: 'Attend ses sous-agents',
-  waiting: 'En attente',
-  queued: 'Dans la file',
-  compacting: 'Résume le contexte',
-  completed: 'Terminé',
-  idle: 'Disponible',
-  saved: 'Historique',
-  failed: 'Erreur',
-  stopped: 'Arrêté',
-  stopping: 'Arrêt en cours',
-  unknown: 'État inconnu',
+  get working() {
+    return tr('ui.travaille');
+  },
+  get tool() {
+    return tr('ui.execute_un_outil');
+  },
+  get children() {
+    return tr('ui.attend_ses_sous_agents');
+  },
+  get waiting() {
+    return tr('ui.en_attente');
+  },
+  get queued() {
+    return tr('ui.dans_la_file');
+  },
+  get compacting() {
+    return tr('ui.resume_le_contexte');
+  },
+  get completed() {
+    return tr('ui.termine');
+  },
+  get idle() {
+    return tr('ui.disponible');
+  },
+  get saved() {
+    return tr('ui.historique');
+  },
+  failed: tr('common.error'),
+  get stopped() {
+    return tr('ui.arrete');
+  },
+  get stopping() {
+    return tr('ui.arret_en_cours');
+  },
+  get unknown() {
+    return tr('ui.etat_inconnu');
+  },
 };
 const busy = new Set(['working', 'tool', 'children', 'waiting', 'queued', 'compacting']);
 const count = (number) =>
@@ -31,7 +56,7 @@ const count = (number) =>
     maximumFractionDigits: 1,
   }).format(number);
 const statusNode = (status) =>
-  node('span', `inspector-status is-${status}`, labels[status] || labels.unknown);
+  node('span', `inspector-status is-${status}`, () => labels[status] || labels.unknown);
 
 export function createInspector({
   api,
@@ -116,7 +141,7 @@ export function createInspector({
   const header = node('div', 'inspector-view-header'),
     title = node('h2');
   title.id = 'inspector-view-title';
-  const close = node('button', 'secondary-button', 'Fermer');
+  const close = node('button', 'secondary-button', () => tr('ui.fermer'));
   close.type = 'button';
   close.onclick = () => viewer.close();
   const controls = node('div', 'inspector-view-controls'),
@@ -131,7 +156,7 @@ export function createInspector({
   const query = (values) => new URLSearchParams({ cwd: current.cwd, ...values }).toString();
   const filesUrl = (action, values = {}) =>
     `/api/project-files${action ? '/' + action : ''}?${query(values)}`;
-  const empty = (element, message) => element.replaceChildren(node('p', 'inspector-empty', message));
+  const empty = (element, message) => element.replaceChildren(node('p', 'inspector-empty', () => message));
   const cancel = (key) => {
     pending.get(key)?.abort();
     pending.delete(key);
@@ -144,7 +169,7 @@ export function createInspector({
     try {
       const data = await api(url, { signal: controller.signal });
       if (token !== generation || controller.signal.aborted)
-        throw new DOMException('Vue remplacée', 'AbortError');
+        throw new DOMException(tr('ui.vue_remplacee'), 'AbortError');
       return data;
     } finally {
       if (pending.get(key) === controller) pending.delete(key);
@@ -155,24 +180,25 @@ export function createInspector({
     const section = $('inspector-usage');
     section.hidden = !usage;
     if (!usage) return;
-    section.replaceChildren(node('div', 'context-label', 'CONSOMMATION DE LA SESSION'));
+    section.replaceChildren(node('div', 'context-label', () => tr('ui.consommation_de_la_session')));
     const dl = node('dl', 'session-properties');
     for (const [name, value] of [
-      ['Tokens entrants', usage.input],
-      ['Tokens sortants', usage.output],
-      ['Tokens en cache', usage.cache],
+      [tr('ui.tokens_entrants'), usage.input],
+      [tr('ui.tokens_sortants'), usage.output],
+      [tr('ui.tokens_en_cache'), usage.cache],
     ]) {
       const row = node('div');
-      row.append(node('dt', '', name), node('dd', '', count(value)));
+      row.append(
+        node('dt', '', () => name),
+        node('dd', '', () => count(value)),
+      );
       dl.append(row);
     }
     if (usage.cost !== null) {
       const row = node('div');
       row.append(
-        node('dt', '', 'Coût estimé'),
-        node(
-          'dd',
-          '',
+        node('dt', '', () => tr('ui.cout_estime')),
+        node('dd', '', () =>
           new Intl.NumberFormat('fr-FR', {
             style: 'currency',
             currency: 'USD',
@@ -184,10 +210,8 @@ export function createInspector({
     }
     section.append(
       dl,
-      node(
-        'p',
-        'inspector-note',
-        'Données du moteur pour cet agent. Le coût indiqué ne représente pas la facturation de votre abonnement.',
+      node('p', 'inspector-note', () =>
+        tr('ui.donnees_du_moteur_pour_cet_agent_le_cout_indique_ne_represente_pa'),
       ),
     );
   }
@@ -195,18 +219,25 @@ export function createInspector({
     const data = agentData,
       list = $('inspector-agent-list');
     if (!data?.session) {
-      empty(list, 'Ouvrez une session pour retrouver son agent et ses délégations.');
+      empty(list, () => tr('ui.ouvrez_une_session_pour_retrouver_son_agent_et_ses_delegations'));
       return;
     }
     const total = data.agents.filter((agent) => !agent.root).length;
-    $('inspector-agent-count').textContent = total;
+    bindText($('inspector-agent-count'), () => total);
     $('inspector-agent-count').hidden = !total;
     const running = data.agents.filter((agent) => busy.has(agent.status)).length;
-    $('inspector-agent-summary').textContent =
-      `${total} sous-agent${total > 1 ? 's' : ''}${running ? ` · ${running} en activité` : ''}`;
-    $('inspector-agent-note').textContent =
-      (data.notes || []).join(' ') ||
-      (data.live ? 'Suivi en direct' : 'Délégations conservées par Prime Agent.');
+    bindText($('inspector-agent-summary'), () =>
+      tr('count.subagents', {
+        count: total,
+        activity: running ? tr('ui.en_activite', { value1: running }) : '',
+      }),
+    );
+    bindText(
+      $('inspector-agent-note'),
+      () =>
+        (data.notes || []).map(translateKnown).join(' ') ||
+        (data.live ? tr('ui.suivi_en_direct') : tr('ui.delegations_conservees_par_prime_agent')),
+    );
     const fingerprint = JSON.stringify(data);
     if (fingerprint === lastAgents) return;
     lastAgents = fingerprint;
@@ -221,23 +252,28 @@ export function createInspector({
       card.dataset.agentId = agent.id;
       card.style.setProperty('--agent-depth', Math.min(depth, 4));
       card.append(
-        node(
-          'span',
-          'inspector-agent-kind',
-          agent.root ? 'Agent principal' : `Sous-agent${depth > 1 ? ` · niveau ${depth}` : ''}`,
+        node('span', 'inspector-agent-kind', () =>
+          agent.root
+            ? tr('ui.agent_principal')
+            : tr('agents.child', { value1: depth > 1 ? tr('agents.level', { value1: depth }) : '' }),
         ),
-        node('strong', 'inspector-agent-name', agent.name),
+        node('strong', 'inspector-agent-name', () => agent.name),
         statusNode(agent.status),
       );
-      if (agent.model) card.append(node('span', 'inspector-agent-model', agent.model));
-      card.append(node('span', 'inspector-agent-thinking', `Réflexion · ${thinkingLabel(agent.thinking)}`));
-      if (agent.preview || agent.error)
-        card.append(node('span', 'inspector-agent-preview', agent.error || agent.preview));
+      if (agent.model) card.append(node('span', 'inspector-agent-model', () => agent.model));
+      card.append(
+        node('span', 'inspector-agent-thinking', () =>
+          tr('ui.reflexion_2', { value1: thinkingLabel(agent.thinking) }),
+        ),
+      );
+      if (agent.preview || translateKnown(agent.error))
+        card.append(
+          node('span', 'inspector-agent-preview', () => translateKnown(agent.error) || agent.preview),
+        );
       if (agent.toolUseCount)
-        card.append(node('span', 'inspector-note', `${agent.toolUseCount} appels d’outil`));
-      card.setAttribute(
-        'aria-label',
-        `${agent.name} · ${labels[agent.status] || labels.unknown} · Voir les détails`,
+        card.append(node('span', 'inspector-note', () => tr('count.tools', { count: agent.toolUseCount })));
+      bindAttribute(card, 'aria-label', () =>
+        tr('ui.voir_les_details', { value1: agent.name, value2: labels[agent.status] || labels.unknown }),
       );
       card.onclick = () => openAgent(agent);
       list.append(card);
@@ -245,9 +281,12 @@ export function createInspector({
     }
     for (const agent of data.agents.filter((agent) => agent.root)) add(agent);
     for (const agent of data.agents) if (!seen.has(agent.id)) add(agent, 1);
-    if (!total) list.append(node('p', 'inspector-empty', 'Aucun sous-agent enregistré pour cette session.'));
+    if (!total)
+      list.append(
+        node('p', 'inspector-empty', () => tr('ui.aucun_sous_agent_enregistre_pour_cette_session')),
+      );
     if (data.truncated)
-      list.append(node('p', 'inspector-note', 'Les 200 premiers sous-agents sont affichés.'));
+      list.append(node('p', 'inspector-note', () => tr('ui.les_200_premiers_sous_agents_sont_affiches')));
     if (focusedId)
       [...list.children]
         .find((element) => element.dataset.agentId === focusedId)
@@ -263,14 +302,15 @@ export function createInspector({
     )
       return;
     agentsAt = Date.now();
-    if (!agentData) $('inspector-agent-note').textContent = 'Chargement des agents…';
+    if (!agentData) bindText($('inspector-agent-note'), () => tr('ui.chargement_des_agents'));
     try {
       agentData = await request('agents', `/api/inspector?${query({ sessionId: current.sessionId })}`);
       renderAgents();
       showUsage();
       if (agentData.session) $('detail-status').replaceChildren(statusNode(agentData.session.status));
     } catch (error) {
-      if (error.name !== 'AbortError') $('inspector-agent-note').textContent = error.message;
+      if (error.name !== 'AbortError')
+        bindText($('inspector-agent-note'), () => translateKnown(error.message));
     }
   }
   function setTab(value, focus = false) {
@@ -315,9 +355,11 @@ export function createInspector({
     crumb.replaceChildren();
     const note = $('inspector-file-note');
     if (fileMode === 'changes') {
-      note.textContent = fileData.git
-        ? `${fileData.branch} · ${fileData.total} fichier${fileData.total > 1 ? 's' : ''} modifié${fileData.total > 1 ? 's' : ''}`
-        : fileData.reason;
+      bindText(note, () =>
+        fileData.git
+          ? tr('count.filesChanged', { branch: fileData.branch, count: fileData.total })
+          : translateKnown(fileData.reason),
+      );
       for (const file of fileData.entries) {
         const row = node('button', 'inspector-file');
         row.type = 'button';
@@ -327,54 +369,64 @@ export function createInspector({
           node(
             'span',
             `inspector-file-status ${file.deleted ? 'is-deleted' : file.untracked ? 'is-added' : ''}`,
-            code,
+            () => code,
           ),
-          node('span', 'inspector-file-path', file.path),
+          node('span', 'inspector-file-path', () => file.path),
         );
-        row.title = [
-          file.previousPath ? `${file.previousPath} → ${file.path}` : file.path,
-          file.staged ? 'Contient des modifications indexées' : 'Non indexé',
-        ].join(' · ');
+        bindAttribute(row, 'title', () =>
+          [
+            file.previousPath ? `${file.previousPath} → ${file.path}` : file.path,
+            file.staged ? tr('ui.contient_des_modifications_indexees') : tr('ui.non_indexe'),
+          ].join(' · '),
+        );
         row.onclick = () => openFile(file, 'diff');
         list.append(row);
       }
       if (!fileData.entries.length)
-        empty(
-          list,
+        empty(list, () =>
           fileData.git
-            ? 'Aucune modification dans ce projet.'
-            : 'Utilisez « Parcourir » pour consulter ses fichiers.',
+            ? tr('ui.aucune_modification_dans_ce_projet')
+            : tr('ui.utilisez_parcourir_pour_consulter_ses_fichiers'),
         );
       if (fileData.truncated)
-        list.append(node('p', 'inspector-note', 'Les 1 000 premières modifications sont affichées.'));
+        list.append(
+          node('p', 'inspector-note', () => tr('ui.les_1_000_premieres_modifications_sont_affichees')),
+        );
     } else {
-      note.textContent = 'Lecture seule · dossiers techniques masqués';
-      const root = node('button', '', 'Projet');
+      bindText(note, () => tr('ui.lecture_seule_dossiers_techniques_masques'));
+      const root = node('button', '', () => tr('ui.projet'));
       root.type = 'button';
       root.onclick = () => browse('');
       crumb.append(root);
       const parts = directory.split('/').filter(Boolean);
       parts.forEach((part, index) => {
-        const button = node('button', '', part);
+        const button = node('button', '', () => part);
         button.type = 'button';
         button.onclick = () => browse(parts.slice(0, index + 1).join('/'));
-        crumb.append(node('span', '', '/'), button);
+        crumb.append(
+          node('span', '', () => '/'),
+          button,
+        );
       });
       for (const file of fileData.entries) {
         const row = node('button', 'inspector-file');
         row.type = 'button';
         row.dataset.filePath = file.path;
         row.append(
-          node('span', 'inspector-file-symbol', file.directory ? '▸' : '·'),
-          node('span', 'inspector-file-path', file.name),
+          node('span', 'inspector-file-symbol', () => (file.directory ? '▸' : '·')),
+          node('span', 'inspector-file-path', () => file.name),
         );
-        row.setAttribute('aria-label', `${file.directory ? 'Ouvrir le dossier' : 'Consulter'} ${file.name}`);
+        bindAttribute(
+          row,
+          'aria-label',
+          () => `${file.directory ? tr('ui.ouvrir_le_dossier') : tr('common.view')} ${file.name}`,
+        );
         row.onclick = () => (file.directory ? browse(file.path) : openFile(file, 'preview'));
         list.append(row);
       }
-      if (!fileData.total) empty(list, 'Ce dossier est vide.');
+      if (!fileData.total) empty(list, () => tr('ui.ce_dossier_est_vide'));
       if (fileData.nextOffset !== null) {
-        const more = node('button', 'inspector-more', 'Afficher la suite');
+        const more = node('button', 'inspector-more', () => tr('ui.afficher_la_suite'));
         more.type = 'button';
         more.onclick = () => {
           more.remove();
@@ -392,7 +444,7 @@ export function createInspector({
     if (!current.enabled || !current.cwd || pending.has('files') || (!force && Date.now() - filesAt < 6000))
       return;
     filesAt = Date.now();
-    if (!fileData) $('inspector-file-note').textContent = 'Chargement des fichiers…';
+    if (!fileData) bindText($('inspector-file-note'), () => tr('ui.chargement_des_fichiers'));
     const mode = fileMode;
     try {
       fileData = await request(
@@ -402,8 +454,8 @@ export function createInspector({
       renderFiles(offset > 0);
     } catch (error) {
       if (error.name !== 'AbortError') {
-        $('inspector-file-note').textContent = error.message;
-        if (!fileData) empty($('inspector-file-list'), 'Réessayez avec le bouton Actualiser.');
+        bindText($('inspector-file-note'), () => translateKnown(error.message));
+        if (!fileData) empty($('inspector-file-list'), () => tr('ui.reessayez_avec_le_bouton_actualiser'));
       }
     }
   }
@@ -432,9 +484,9 @@ export function createInspector({
     cancel('viewer');
     viewVersion++;
     if (!viewer.open) opener = document.activeElement;
-    title.textContent = name;
+    bindText(title, () => name);
     controls.replaceChildren();
-    empty(body, 'Chargement…');
+    empty(body, () => tr('common.loading'));
     if (!viewer.open) viewer.showModal();
   }
   function renderFileText(file, text) {
@@ -442,7 +494,7 @@ export function createInspector({
     let source = false;
     const options = node('div', 'inspector-text-options');
     options.setAttribute('role', 'group');
-    options.setAttribute('aria-label', 'Présentation du fichier');
+    bindAttribute(options, 'aria-label', () => tr('ui.presentation_du_fichier'));
     const buttons = [];
     function render() {
       body.replaceChildren();
@@ -452,19 +504,23 @@ export function createInspector({
         document.classList.add('inspector-document');
         body.append(document);
       } else {
-        const pre = node('pre', 'inspector-code inspector-file-source', source ? text : presentation.text);
+        const pre = node('pre', 'inspector-code inspector-file-source', () =>
+          source ? text : presentation.text,
+        );
         pre.tabIndex = 0;
-        pre.setAttribute('aria-label', source ? 'Source du fichier' : 'Contenu du fichier');
+        bindAttribute(pre, 'aria-label', () =>
+          source ? tr('ui.source_du_fichier') : tr('ui.contenu_du_fichier'),
+        );
         body.append(pre);
       }
       body.scrollTop = 0;
     }
     if (presentation.kind !== 'text') {
       for (const [value, label] of [
-        [false, 'Aperçu'],
-        [true, 'Source'],
+        [false, tr('ui.apercu')],
+        [true, tr('ui.source')],
       ]) {
-        const button = node('button', '', label);
+        const button = node('button', '', () => translateKnown(label));
         button.type = 'button';
         button.onclick = () => {
           source = value;
@@ -482,11 +538,11 @@ export function createInspector({
     const token = viewVersion;
     if (file.status) {
       for (const [value, label] of [
-        ['diff', 'Modifications'],
-        ['preview', 'Contenu'],
+        ['diff', tr('ui.modifications')],
+        ['preview', tr('files.content')],
       ]) {
         if (value === 'preview' && file.deleted) continue;
-        const button = node('button', '', label);
+        const button = node('button', '', () => translateKnown(label));
         button.type = 'button';
         button.setAttribute('aria-pressed', String(value === mode));
         button.onclick = () => openFile(file, value);
@@ -494,9 +550,11 @@ export function createInspector({
       }
     }
     if (!file.deleted && !current.readOnly && current.nativeFileOpen) {
-      const open = node('button', 'inspector-open', current.remote ? 'Ouvrir sur le PC' : 'Ouvrir');
+      const open = node('button', 'inspector-open', () =>
+        current.remote ? tr('ui.ouvrir_sur_le_pc') : tr('ui.ouvrir'),
+      );
       open.type = 'button';
-      open.title = 'Ouvrir dans l’application du PC';
+      bindAttribute(open, 'title', () => tr('ui.ouvrir_dans_l_application_du_pc'));
       const cwd = current.cwd;
       open.onclick = async () => {
         open.disabled = true;
@@ -504,13 +562,13 @@ export function createInspector({
           controls.querySelector('.inspector-open-feedback') ||
           node('span', 'inspector-note inspector-open-feedback');
         feedback.setAttribute('role', 'status');
-        feedback.textContent = 'Ouverture sur le PC…';
+        bindText(feedback, () => tr('ui.ouverture_sur_le_pc'));
         controls.append(feedback);
         try {
           await api('/api/project-files/open', { method: 'POST', body: { cwd, path: file.path } });
-          feedback.textContent = 'Ouverture demandée sur le PC.';
+          bindText(feedback, () => tr('ui.ouverture_demandee_sur_le_pc'));
         } catch (error) {
-          feedback.textContent = error.message;
+          bindText(feedback, () => translateKnown(error.message));
         } finally {
           open.disabled = false;
         }
@@ -524,7 +582,7 @@ export function createInspector({
       if (data.image) {
         const image = node('img', 'inspector-preview-image');
         image.src = data.image;
-        image.alt = file.path;
+        bindAttribute(image, 'alt', () => file.path);
         body.append(image);
       } else if (typeof data.text === 'string' && data.text) {
         if (mode !== 'diff') {
@@ -544,21 +602,19 @@ export function createInspector({
                     : line.startsWith('-') && !line.startsWith('---')
                       ? 'diff-remove'
                       : '',
-                line || ' ',
+                () => line || ' ',
               ),
             );
           body.append(
-            node(
-              'p',
-              'inspector-note',
-              'État actuel comparé au dernier commit (HEAD), index et fichiers de travail compris.',
+            node('p', 'inspector-note', () =>
+              tr('ui.etat_actuel_compare_au_dernier_commit_head_index_et_fichiers_de_t'),
             ),
           );
-        } else pre.textContent = data.text;
+        } else bindText(pre, () => data.text);
         body.append(pre);
-      } else empty(body, data.message || 'Fichier vide.');
+      } else empty(body, () => data.message || tr('ui.fichier_vide'));
     } catch (error) {
-      if (error.name !== 'AbortError' && token === viewVersion) empty(body, error.message);
+      if (error.name !== 'AbortError' && token === viewVersion) empty(body, translateKnown(error.message));
     }
   }
   async function openDocument(reference, { cwd, basePath = '' } = {}) {
@@ -571,27 +627,32 @@ export function createInspector({
         await openFile({ path: result.path }, 'preview');
         return;
       }
-      empty(body, 'Plusieurs documents portent ce nom. Choisissez le fichier à consulter.');
+      empty(body, () => tr('ui.plusieurs_documents_portent_ce_nom_choisissez_le_fichier_a_consul'));
       for (const match of result.matches || []) {
-        const button = node('button', 'inspector-file', match.path);
+        const button = node('button', 'inspector-file', () => match.path);
         button.type = 'button';
         button.onclick = () => openFile(match, 'preview');
         body.append(button);
       }
     } catch (error) {
-      if (error.name !== 'AbortError') empty(body, error.message);
+      if (error.name !== 'AbortError') empty(body, translateKnown(error.message));
     }
   }
   async function openAgent(agent) {
     beginView(agent.name);
     controls.append(statusNode(agent.status));
-    if (agent.model) controls.append(node('span', 'inspector-note', agent.model));
-    controls.append(node('span', 'inspector-note', `Réflexion · ${thinkingLabel(agent.thinking)}`));
+    if (agent.model) controls.append(node('span', 'inspector-note', () => agent.model));
+    controls.append(
+      node('span', 'inspector-note', () => tr('ui.reflexion_2', { value1: thinkingLabel(agent.thinking) })),
+    );
     if (!agent.history) {
-      empty(body, agent.preview || 'La conversation sera disponible dès son enregistrement par Prime Agent.');
+      empty(
+        body,
+        () => agent.preview || tr('ui.la_conversation_sera_disponible_des_son_enregistrement_par_prime'),
+      );
       return;
     }
-    const refresh = node('button', '', 'Actualiser');
+    const refresh = node('button', '', () => tr('ui.actualiser'));
     refresh.type = 'button';
     refresh.onclick = () => openAgent(agentData?.agents.find((row) => row.id === agent.id) || agent);
     controls.append(refresh);
@@ -602,15 +663,17 @@ export function createInspector({
       );
       body.replaceChildren();
       if (data.truncated)
-        body.append(node('p', 'inspector-note', 'Les 150 derniers messages sont affichés.'));
+        body.append(node('p', 'inspector-note', () => tr('ui.les_150_derniers_messages_sont_affiches')));
       for (const message of data.messages) {
         if (!message.text && !message.tools?.length) continue;
         const article = node('article', 'inspector-message');
         article.append(
-          node(
-            'strong',
-            '',
-            message.role === 'user' ? 'Consigne' : message.role === 'assistant' ? 'Agent' : 'Contexte',
+          node('strong', '', () =>
+            message.role === 'user'
+              ? tr('agents.instruction')
+              : message.role === 'assistant'
+                ? tr('ui.agent')
+                : tr('ui.contexte'),
           ),
         );
         if (message.text) article.append(markdown(message.text));
@@ -620,13 +683,12 @@ export function createInspector({
             node(
               'summary',
               '',
-              `${tool.name || 'Outil'} · ${tool.status === 'done' ? 'Terminé' : tool.status === 'error' ? 'Erreur' : 'Appel enregistré'}`,
+              () =>
+                `${tool.name || tr('common.tool')} · ${tool.status === 'done' ? tr('ui.termine') : tool.status === 'error' ? tr('common.error') : tr('ui.appel_enregistre')}`,
             ),
           );
           details.append(
-            node(
-              'pre',
-              'inspector-code',
+            node('pre', 'inspector-code', () =>
               typeof tool.result === 'string' ? tool.result : JSON.stringify(tool.args || {}, null, 2),
             ),
           );
@@ -634,9 +696,9 @@ export function createInspector({
         }
         body.append(article);
       }
-      if (!body.childElementCount) empty(body, 'Aucun message enregistré pour le moment.');
+      if (!body.childElementCount) empty(body, () => tr('ui.aucun_message_enregistre_pour_le_moment'));
     } catch (error) {
-      if (error.name !== 'AbortError') empty(body, error.message);
+      if (error.name !== 'AbortError') empty(body, translateKnown(error.message));
     }
   }
   viewer.onclose = () => {
@@ -661,23 +723,23 @@ export function createInspector({
       if (viewer.open) viewer.close();
       $('inspector-agent-count').hidden = true;
       $('inspector-usage').hidden = true;
-      $('inspector-agent-note').textContent = '';
-      $('inspector-agent-summary').textContent = current.sessionId
-        ? 'Délégations de la session'
-        : 'Prochaines délégations';
-      $('inspector-file-note').textContent = '';
-      $('inspector-file-breadcrumb').replaceChildren();
-      empty(
-        $('inspector-agent-list'),
-        current.sessionId
-          ? 'Chargement des agents…'
-          : current.cwd
-            ? 'Les agents apparaîtront après le premier message.'
-            : 'Choisissez un projet pour préparer ses sous-agents.',
+      bindText($('inspector-agent-note'), () => '');
+      bindText($('inspector-agent-summary'), () =>
+        current.sessionId ? tr('ui.delegations_de_la_session') : tr('ui.prochaines_delegations'),
       );
-      empty(
-        $('inspector-file-list'),
-        current.cwd ? 'Chargement des fichiers…' : 'Choisissez un projet pour parcourir ses fichiers.',
+      bindText($('inspector-file-note'), () => '');
+      $('inspector-file-breadcrumb').replaceChildren();
+      empty($('inspector-agent-list'), () =>
+        current.sessionId
+          ? tr('ui.chargement_des_agents')
+          : current.cwd
+            ? tr('ui.les_agents_apparaitront_apres_le_premier_message')
+            : tr('ui.choisissez_un_projet_pour_preparer_ses_sous_agents'),
+      );
+      empty($('inspector-file-list'), () =>
+        current.cwd
+          ? tr('ui.chargement_des_fichiers')
+          : tr('ui.choisissez_un_projet_pour_parcourir_ses_fichiers'),
       );
     }
     if (agentData?.session) $('detail-status').replaceChildren(statusNode(agentData.session.status));

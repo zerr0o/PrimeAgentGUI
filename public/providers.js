@@ -1,26 +1,41 @@
+import { t as tr, bindText, bindAttribute, translatedOption, translateKnown } from './i18n.js';
 const node = (tag, className, text) => {
   const item = document.createElement(tag);
   if (className) item.className = className;
-  if (text !== undefined) item.textContent = text;
+  if (text !== undefined) bindText(item, () => text);
   return item;
 };
 const sources = {
-  stored: 'Enregistré sur ce PC',
-  environment: 'Variable d’environnement',
-  prime_cli: 'Configuration Prime CLI',
-  models_json_key: 'Configuration des modèles',
-  models_json_command: 'Gestionnaire de secrets',
-  fallback: 'Configuration externe',
-  stale: 'À reconnecter',
-  runtime: 'Session actuelle',
+  get stored() {
+    return tr('ui.enregistre_sur_ce_pc');
+  },
+  environment: tr('providers.environment'),
+  get prime_cli() {
+    return tr('ui.configuration_prime_cli');
+  },
+  get models_json_key() {
+    return tr('ui.configuration_des_modeles');
+  },
+  get models_json_command() {
+    return tr('ui.gestionnaire_de_secrets');
+  },
+  get fallback() {
+    return tr('ui.configuration_externe');
+  },
+  get stale() {
+    return tr('ui.a_reconnecter');
+  },
+  get runtime() {
+    return tr('ui.session_actuelle');
+  },
 };
 export function createProviderSettings({ api, toast, allowed, onChanged }) {
   const dialog = node('dialog', 'modal providers-modal');
   dialog.id = 'providers-dialog';
   dialog.setAttribute('aria-labelledby', 'providers-title');
-  dialog.innerHTML = `<header class="providers-heading"><div><span class="providers-eyebrow">COMPTES ET CLÉS API · CE PC</span><h2 id="providers-title">Fournisseurs</h2></div><button type="button" class="icon-button" id="providers-close" aria-label="Fermer les fournisseurs">×</button></header>
+  dialog.innerHTML = `<header class="providers-heading"><div><span class="providers-eyebrow" data-i18n="ui.comptes_et_cles_api_ce_pc">COMPTES ET CLÉS API · CE PC</span><h2 id="providers-title" data-i18n="ui.fournisseurs">Fournisseurs</h2></div><button type="button" class="icon-button" id="providers-close" aria-label="Fermer les fournisseurs" data-i18n-aria-label="ui.fermer_les_fournisseurs">×</button></header>
     <div class="providers-content"><div id="providers-error" class="form-error" role="alert" hidden></div><div id="providers-view"></div></div>
-    <footer class="providers-footer"><span>Connexions partagées avec Prime Agent sur ce PC.</span><button type="button" class="primary-button" id="providers-done">Terminé</button></footer>`;
+    <footer class="providers-footer"><span data-i18n="ui.connexions_partagees_avec_prime_agent_sur_ce_pc">Connexions partagées avec Prime Agent sur ce PC.</span><button type="button" class="primary-button" id="providers-done" data-i18n="ui.termine">Terminé</button></footer>`;
   document.body.append(dialog);
   const $ = (id) => dialog.querySelector(`#${id}`),
     view = $('providers-view');
@@ -32,11 +47,11 @@ export function createProviderSettings({ api, toast, allowed, onChanged }) {
     mode = 'list',
     acting = false;
   const error = (value) => {
-    $('providers-error').textContent = value || '';
+    bindText($('providers-error'), () => translateKnown(value || ''));
     $('providers-error').hidden = !value;
   };
   const button = (label, action, style = 'secondary-button') => {
-    const item = node('button', style, label);
+    const item = node('button', style, () => translateKnown(label));
     item.type = 'button';
     item.onclick = action;
     return item;
@@ -50,14 +65,14 @@ export function createProviderSettings({ api, toast, allowed, onChanged }) {
     try {
       await onChanged();
     } catch {
-      toast('Connexion enregistrée. Le catalogue sera actualisé à la prochaine ouverture.', true);
+      toast(() => tr('ui.connexion_enregistree_le_catalogue_sera_actualise_a_la_prochaine'), true);
     }
   }
   async function load() {
     const current = ++generation;
     mode = 'list';
     clearTimeout(timer);
-    show(node('p', 'providers-note', 'Chargement des fournisseurs…'));
+    show(node('p', 'providers-note', () => tr('ui.chargement_des_fournisseurs')));
     try {
       const next = await api('/api/providers');
       if (!dialog.open || current !== generation) return;
@@ -71,8 +86,8 @@ export function createProviderSettings({ api, toast, allowed, onChanged }) {
       renderList();
     } catch (e) {
       if (current === generation && dialog.open) {
-        show(button('Réessayer', load));
-        error(e.message);
+        show(button(() => tr('ui.reessayer'), load));
+        error(translateKnown(e.message));
       }
     }
   }
@@ -80,43 +95,43 @@ export function createProviderSettings({ api, toast, allowed, onChanged }) {
     mode = 'list';
     const section = node('section');
     section.append(
-      node(
-        'p',
-        'providers-intro',
-        'Connectez un compte ou ajoutez une clé API pour retrouver ses modèles dans le Studio. Les clés enregistrées ne sont jamais réaffichées.',
+      node('p', 'providers-intro', () =>
+        tr('ui.connectez_un_compte_ou_ajoutez_une_cle_api_pour_retrouver_ses_mod'),
       ),
     );
-    if (data.warning) section.append(node('p', 'provider-notice', data.warning));
+    if (translateKnown(data.warning))
+      section.append(node('p', 'provider-notice', () => translateKnown(data.warning)));
     if (data.busy)
       section.append(
-        node(
-          'p',
-          'provider-notice',
-          'Des agents travaillent. Vous pouvez ajouter un fournisseur ; le remplacement et la déconnexion seront disponibles à la fin des exécutions.',
+        node('p', 'provider-notice', () =>
+          tr('ui.des_agents_travaillent_vous_pouvez_ajouter_un_fournisseur_le_remp'),
         ),
       );
     const toolbar = node('div', 'providers-toolbar'),
       search = node('input');
     search.type = 'search';
-    search.placeholder = 'Rechercher un fournisseur…';
-    search.setAttribute('aria-label', 'Rechercher un fournisseur');
+    bindAttribute(search, 'placeholder', () => tr('ui.rechercher_un_fournisseur'));
+    bindAttribute(search, 'aria-label', () => tr('ui.rechercher_un_fournisseur_2'));
     search.value = query;
     const count = node('p', 'providers-count'),
       list = node('div', 'providers-list');
-    list.setAttribute('aria-label', 'Fournisseurs disponibles');
+    bindAttribute(list, 'aria-label', () => tr('ui.fournisseurs_disponibles'));
     const draw = () => {
       const tokens = query.toLocaleLowerCase().split(/\s+/).filter(Boolean);
       const entries = data.providers.filter((p) =>
         tokens.every((token) => `${p.name} ${p.id}`.toLocaleLowerCase().includes(token)),
       );
-      count.textContent = `${entries.length} fournisseur${entries.length > 1 ? 's' : ''} · ${data.providers.filter((p) => p.configured).length} configuré(s)`;
+      bindText(count, () =>
+        tr('count.providers', {
+          count: entries.length,
+          configured: data.providers.filter((p) => p.configured).length,
+        }),
+      );
       list.replaceChildren(...entries.map(card));
       if (!entries.length)
         list.append(
-          node(
-            'p',
-            'providers-note',
-            'Aucun fournisseur trouvé. Les fournisseurs personnalisés se créent dans le configurateur de modèles.',
+          node('p', 'providers-note', () =>
+            tr('ui.aucun_fournisseur_trouve_les_fournisseurs_personnalises_se_creent'),
           ),
         );
     };
@@ -124,7 +139,10 @@ export function createProviderSettings({ api, toast, allowed, onChanged }) {
       query = search.value;
       draw();
     };
-    toolbar.append(search, button('Actualiser', load));
+    toolbar.append(
+      search,
+      button(() => tr('ui.actualiser'), load),
+    );
     section.append(toolbar, count, list);
     show(section);
     draw();
@@ -136,59 +154,77 @@ export function createProviderSettings({ api, toast, allowed, onChanged }) {
       identity = node('div', 'provider-identity');
     item.dataset.provider = entry.id;
     identity.append(
-      node('strong', '', entry.name),
-      node(
-        'div',
-        'provider-meta',
-        `${entry.id} · ${entry.models} modèles${entry.source ? ' · ' + (sources[entry.source] || 'Configuration externe') : ''}`,
+      node('strong', '', () => entry.name),
+      node('div', 'provider-meta', () =>
+        tr('ui.modeles', {
+          value1: entry.id,
+          value2: entry.models,
+          value3: entry.source ? ' · ' + (sources[entry.source] || tr('ui.configuration_externe')) : '',
+        }),
       ),
     );
     top.append(
-      node('span', 'provider-avatar', entry.name.slice(0, 1).toUpperCase()),
+      node('span', 'provider-avatar', () => entry.name.slice(0, 1).toUpperCase()),
       identity,
-      node(
-        'span',
-        `provider-status${entry.configured ? ' configured' : ''}`,
-        entry.configured ? 'Configuré' : entry.source === 'stale' ? 'À reconnecter' : 'Non configuré',
+      node('span', `provider-status${entry.configured ? ' configured' : ''}`, () =>
+        entry.configured
+          ? tr('ui.configure')
+          : entry.source === 'stale'
+            ? tr('ui.a_reconnecter')
+            : tr('ui.non_configure'),
       ),
     );
     item.append(top);
     const actions = node('div', 'provider-actions');
     if (entry.methods.includes('oauth'))
       actions.append(
-        button(entry.credentialType === 'oauth' ? 'Reconnecter le compte' : 'Connecter un compte', () =>
-          startLogin(entry),
+        button(
+          () =>
+            entry.credentialType === 'oauth' ? tr('ui.reconnecter_le_compte') : tr('ui.connecter_un_compte'),
+          () => startLogin(entry),
         ),
       );
     if (entry.methods.includes('api_key'))
       actions.append(
-        button(entry.credentialType === 'api_key' ? 'Remplacer la clé' : 'Ajouter une clé API', () =>
-          keyForm(entry),
+        button(
+          () =>
+            entry.credentialType === 'api_key' ? tr('ui.remplacer_la_cle') : tr('ui.ajouter_une_cle_api'),
+          () => keyForm(entry),
         ),
       );
-    if (entry.stored) actions.append(button('Déconnecter', () => removeForm(entry), 'danger-text'));
+    if (entry.stored)
+      actions.append(
+        button(
+          () => tr('ui.deconnecter'),
+          () => removeForm(entry),
+          'danger-text',
+        ),
+      );
     if (data.busy && (entry.stored || entry.configured))
       for (const action of actions.children) {
         action.disabled = true;
-        action.title = 'Disponible à la fin des exécutions.';
+        bindAttribute(action, 'title', () => tr('ui.disponible_a_la_fin_des_executions'));
       }
     if (actions.children.length) item.append(actions);
-    if (entry.guidance) item.append(node('p', 'provider-guidance', entry.guidance));
+    if (translateKnown(entry.guidance))
+      item.append(node('p', 'provider-guidance', () => translateKnown(entry.guidance)));
     if (entry.source && entry.source !== 'stored')
       item.append(
-        node('p', 'provider-guidance', 'Les réglages externes restent gérés à leur emplacement d’origine.'),
+        node('p', 'provider-guidance', () =>
+          tr('ui.les_reglages_externes_restent_geres_a_leur_emplacement_d_origine'),
+        ),
       );
     return item;
   }
   function formShell(title) {
     mode = 'form';
     const form = node('form', 'provider-form');
-    form.append(node('h3', '', title));
+    form.append(node('h3', '', () => title));
     show(form);
     return form;
   }
   function label(title, control) {
-    const item = node('label', '', title);
+    const item = node('label', '', () => title);
     item.append(control);
     return item;
   }
@@ -196,38 +232,47 @@ export function createProviderSettings({ api, toast, allowed, onChanged }) {
     const form = formShell(entry.name),
       kind = node('select'),
       value = node('input');
-    kind.append(new Option('Clé API', 'key'), new Option('Variable d’environnement', 'environment'));
+    kind.append(
+      translatedOption(() => tr('ui.cle_api'), 'key'),
+      translatedOption(() => tr('providers.environment'), 'environment'),
+    );
     value.type = 'password';
     value.autocomplete = 'off';
     value.spellcheck = false;
     value.required = true;
     value.maxLength = 8192;
-    const valueLabel = label('Clé API', value),
-      note = node(
-        'p',
-        'providers-note',
-        'La clé est conservée dans le stockage natif de Prime Agent sur ce PC. Elle n’est pas enregistrée dans le navigateur.',
+    const valueLabel = label(() => tr('ui.cle_api'), value),
+      note = node('p', 'providers-note', () =>
+        tr('ui.la_cle_est_conservee_dans_le_stockage_natif_de_prime_agent_sur_ce'),
       );
     kind.onchange = () => {
       value.value = '';
       value.type = kind.value === 'key' ? 'password' : 'text';
-      valueLabel.firstChild.textContent = kind.value === 'key' ? 'Clé API' : 'Nom de la variable';
-      value.placeholder = kind.value === 'key' ? '' : 'MON_FOURNISSEUR_API_KEY';
+      bindText(valueLabel.firstChild, () =>
+        kind.value === 'key' ? tr('ui.cle_api') : tr('ui.nom_de_la_variable'),
+      );
+      bindAttribute(value, 'placeholder', () => (kind.value === 'key' ? '' : 'MON_FOURNISSEUR_API_KEY'));
     };
-    form.append(label('Mode de connexion', kind), valueLabel, note);
+    form.append(
+      label(() => tr('ui.mode_de_connexion'), kind),
+      valueLabel,
+      note,
+    );
     if (entry.stored || entry.configured)
       form.append(
-        node(
-          'p',
-          'provider-notice',
-          'Cette action remplace la connexion actuelle de ce fournisseur. Attendez aussi la fin des agents lancés hors du Studio.',
+        node('p', 'provider-notice', () =>
+          tr('ui.cette_action_remplace_la_connexion_actuelle_de_ce_fournisseur_att'),
         ),
       );
-    if (entry.guidance) form.append(node('p', 'providers-note', entry.guidance));
+    if (translateKnown(entry.guidance))
+      form.append(node('p', 'providers-note', () => translateKnown(entry.guidance)));
     const actions = node('div', 'provider-form-actions'),
-      save = button('Enregistrer', null, 'primary-button');
+      save = button(() => tr('ui.enregistrer'), null, 'primary-button');
     save.type = 'submit';
-    actions.append(button('Retour', renderList), save);
+    actions.append(
+      button(() => tr('ui.retour'), renderList),
+      save,
+    );
     form.append(actions);
     value.focus();
     form.onsubmit = async (event) => {
@@ -241,10 +286,10 @@ export function createProviderSettings({ api, toast, allowed, onChanged }) {
         await api('/api/providers/key', { method: 'POST', body });
         value.value = '';
         await changed();
-        toast('Connexion enregistrée.');
+        toast(() => tr('ui.connexion_enregistree'));
         if (dialog.open) await load();
       } catch (e) {
-        error(e.message);
+        error(translateKnown(e.message));
       } finally {
         body.value = '';
         acting = false;
@@ -253,25 +298,24 @@ export function createProviderSettings({ api, toast, allowed, onChanged }) {
     };
   }
   function removeForm(entry) {
-    const form = formShell(`Déconnecter ${entry.name} ?`);
+    const form = formShell(() => tr('ui.deconnecter_2', { value1: entry.name }));
     form.append(
-      node(
-        'p',
-        'providers-note',
-        'Les identifiants enregistrés pour ce fournisseur seront retirés du PC. Les conversations sont conservées. Les variables d’environnement et la configuration Prime CLI ou des modèles restent en place et peuvent continuer à fournir une connexion.',
+      node('p', 'providers-note', () =>
+        tr('ui.les_identifiants_enregistres_pour_ce_fournisseur_seront_retires_d'),
       ),
     );
     form.append(
-      node(
-        'p',
-        'provider-notice',
-        'Cette connexion est partagée avec les agents lancés hors du Studio. Attendez la fin de leur travail avant de la retirer.',
+      node('p', 'provider-notice', () =>
+        tr('ui.cette_connexion_est_partagee_avec_les_agents_lances_hors_du_studi'),
       ),
     );
     const actions = node('div', 'provider-form-actions'),
-      remove = button('Confirmer la déconnexion', null, 'danger-text');
+      remove = button(() => tr('ui.confirmer_la_deconnexion'), null, 'danger-text');
     remove.type = 'submit';
-    actions.append(button('Annuler', renderList), remove);
+    actions.append(
+      button(() => tr('ui.annuler'), renderList),
+      remove,
+    );
     form.append(actions);
     actions.firstChild.focus();
     form.onsubmit = async (event) => {
@@ -285,10 +329,10 @@ export function createProviderSettings({ api, toast, allowed, onChanged }) {
           body: { provider: entry.id, revision: entry.revision },
         });
         await changed();
-        toast('Identifiants enregistrés retirés.');
+        toast(() => tr('ui.identifiants_enregistres_retires'));
         if (dialog.open) await load();
       } catch (e) {
-        error(e.message);
+        error(translateKnown(e.message));
       } finally {
         acting = false;
         remove.disabled = false;
@@ -300,7 +344,7 @@ export function createProviderSettings({ api, toast, allowed, onChanged }) {
     if (
       (entry.stored || entry.configured) &&
       !confirm(
-        `Remplacer la connexion de ${entry.name} ? Attendez aussi la fin des agents lancés hors du Studio.`,
+        tr('ui.remplacer_la_connexion_de_attendez_aussi_la_fin_des_agents_lances', { value1: entry.name }),
       )
     )
       return;
@@ -318,7 +362,7 @@ export function createProviderSettings({ api, toast, allowed, onChanged }) {
         void poll();
       }
     } catch (e) {
-      error(e.message);
+      error(translateKnown(e.message));
     } finally {
       acting = false;
     }
@@ -326,15 +370,13 @@ export function createProviderSettings({ api, toast, allowed, onChanged }) {
   function authView() {
     mode = 'auth';
     const section = node('section');
-    section.append(node('h3', '', 'Connexion au fournisseur'));
+    section.append(node('h3', '', () => tr('ui.connexion_au_fournisseur')));
     section.append(
-      node(
-        'p',
-        'providers-note',
-        'Autorisez la connexion sur le site du fournisseur. Revenez ensuite dans cette fenêtre pour terminer.',
+      node('p', 'providers-note', () =>
+        tr('ui.autorisez_la_connexion_sur_le_site_du_fournisseur_revenez_ensuite'),
       ),
     );
-    const link = node('a', 'primary-button provider-auth-link', 'Ouvrir la page de connexion');
+    const link = node('a', 'primary-button provider-auth-link', () => tr('ui.ouvrir_la_page_de_connexion'));
     link.id = 'provider-auth-link';
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
@@ -342,24 +384,27 @@ export function createProviderSettings({ api, toast, allowed, onChanged }) {
     const instructions = node('div', 'provider-instructions');
     instructions.id = 'provider-auth-instructions';
     instructions.hidden = true;
-    const status = node('p', 'provider-auth-status', 'Préparation de la connexion…');
+    const status = node('p', 'provider-auth-status', () => tr('ui.preparation_de_la_connexion'));
     status.id = 'provider-auth-status';
     status.setAttribute('role', 'status');
     const prompts = node('div', 'provider-prompts');
     prompts.id = 'provider-auth-prompts';
-    const cancel = button('Annuler la connexion', async () => {
-      cancel.disabled = true;
-      try {
-        await api(`/api/providers/login/${jobId}`, { method: 'DELETE' });
-        clearTimeout(timer);
-        jobId = null;
-        await load();
-      } catch (e) {
-        error(e.message);
-      } finally {
-        cancel.disabled = false;
-      }
-    });
+    const cancel = button(
+      () => tr('ui.annuler_la_connexion'),
+      async () => {
+        cancel.disabled = true;
+        try {
+          await api(`/api/providers/login/${jobId}`, { method: 'DELETE' });
+          clearTimeout(timer);
+          jobId = null;
+          await load();
+        } catch (e) {
+          error(translateKnown(e.message));
+        } finally {
+          cancel.disabled = false;
+        }
+      },
+    );
     cancel.id = 'provider-auth-cancel';
     section.append(status, link, instructions, prompts, cancel);
     show(section);
@@ -371,14 +416,23 @@ export function createProviderSettings({ api, toast, allowed, onChanged }) {
     link.hidden = !job.url;
     if (job.url) link.href = job.url;
     else link.removeAttribute('href');
-    $('provider-auth-instructions').textContent = job.instructions || '';
+    bindText($('provider-auth-instructions'), () => job.instructions || '');
     $('provider-auth-instructions').hidden = !job.instructions;
-    status.textContent =
-      {
-        preparing: 'Préparation de la connexion…',
-        waiting: 'En attente de votre autorisation…',
-        saving: 'Enregistrement de la connexion…',
-      }[job.status] || '';
+    bindText(
+      status,
+      () =>
+        ({
+          get preparing() {
+            return tr('ui.preparation_de_la_connexion');
+          },
+          get waiting() {
+            return tr('ui.en_attente_de_votre_autorisation');
+          },
+          get saving() {
+            return tr('ui.enregistrement_de_la_connexion');
+          },
+        })[job.status] || '',
+    );
     $('provider-auth-cancel').disabled = job.status === 'saving';
     const prompts = $('provider-auth-prompts');
     const ids = new Set(job.prompts.map((p) => p.id));
@@ -389,16 +443,16 @@ export function createProviderSettings({ api, toast, allowed, onChanged }) {
       form.dataset.prompt = prompt.id;
       const field = node(prompt.kind === 'select' ? 'select' : 'input');
       if (prompt.kind === 'select')
-        for (const option of prompt.options) field.append(new Option(option.label, option.id));
+        for (const option of prompt.options) field.append(translatedOption(() => option.label, option.id));
       else {
         field.type = prompt.kind === 'manual' ? 'password' : 'text';
-        field.placeholder = prompt.placeholder || '';
+        bindAttribute(field, 'placeholder', () => prompt.placeholder || '');
         field.autocomplete = 'off';
         field.spellcheck = false;
         field.maxLength = 16000;
       }
       field.required = !prompt.allowEmpty;
-      const send = button('Valider', null);
+      const send = button(() => tr('ui.valider'), null);
       send.type = 'submit';
       form.append(label(prompt.message, field), send);
       prompts.append(form);
@@ -414,7 +468,7 @@ export function createProviderSettings({ api, toast, allowed, onChanged }) {
           field.value = '';
           updateJob(next);
         } catch (e) {
-          error(e.message);
+          error(translateKnown(e.message));
         } finally {
           send.disabled = false;
         }
@@ -432,18 +486,18 @@ export function createProviderSettings({ api, toast, allowed, onChanged }) {
         jobId = null;
         if (job.status === 'complete') {
           await changed();
-          toast('Compte connecté à Prime Agent.');
+          toast(() => tr('ui.compte_connecte_a_prime_agent'));
           await load();
         } else {
           await load();
-          error(job.error || 'Connexion annulée.');
+          error(() => translateKnown(job.error) || tr('ui.connexion_annulee'));
         }
         return;
       }
       updateJob(job);
     } catch (e) {
       if (!dialog.open || current !== generation) return;
-      error(e.message);
+      error(translateKnown(e.message));
     }
     if (dialog.open && current === generation && mode === 'auth') timer = setTimeout(poll, 900);
   }

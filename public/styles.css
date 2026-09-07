@@ -3749,3 +3749,16 @@ kbd {
     min-height: 44px;
   }
 }
+.language-settings select {
+  flex: 0 1 170px;
+  min-width: 120px;
+  max-width: 48%;
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}

@@ -56,7 +56,7 @@ let browser;
 const errors = [];
 try {
   browser = await chromium.launch({ channel: 'msedge', headless: true });
-  const page = await browser.newPage({ viewport: { width: 1440, height: 960 } });
+  const page = await browser.newPage({ locale: 'fr-FR', viewport: { width: 1440, height: 960 } });
   page.setDefaultTimeout(15000);
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto(url);
@@ -145,7 +145,7 @@ try {
     { width: 390, height: 844 },
     { width: 1440, height: 960 },
   ]) {
-    const mobile = await browser.newPage({ viewport });
+    const mobile = await browser.newPage({ locale: 'fr-FR', viewport });
     await mobile.goto(remote);
     await mobile.locator('#code').fill(code);
     await mobile.getByRole('button', { name: 'Ouvrir le studio' }).click();

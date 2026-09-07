@@ -1,3 +1,4 @@
+import { t as tr, bindText } from './i18n.js';
 const button = document.getElementById('pwa-install');
 let invitation;
 const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
@@ -25,20 +26,22 @@ function help() {
   dialog.setAttribute('aria-labelledby', 'pwa-help-title');
   const title = document.createElement('h2');
   title.id = 'pwa-help-title';
-  title.textContent = 'Installer Prime Agent Studio';
+  bindText(title, () => tr('ui.installer_prime_agent_studio'));
   const text = document.createElement('p');
-  text.textContent = !window.isSecureContext
-    ? 'Sur le téléphone, ouvrez l’adresse HTTPS du Studio avec Tailscale connecté. L’adresse HTTP du réseau local ne permet pas l’installation complète.'
-    : ios
-      ? 'Ouvrez cette page dans Safari, puis utilisez Partager → Sur l’écran d’accueil. Activez « Ouvrir comme app web » si cette option est proposée.'
-      : 'Dans le menu de votre navigateur, choisissez « Installer l’application » ou « Ajouter à l’écran d’accueil ». Si cette option manque, utilisez Chrome ou Edge et rechargez la page.';
+  bindText(text, () =>
+    !window.isSecureContext
+      ? tr('ui.sur_le_telephone_ouvrez_l_adresse_https_du_studio_avec_tailscale')
+      : ios
+        ? tr('ui.ouvrez_cette_page_dans_safari_puis_utilisez_partager_sur_l_ecran')
+        : tr('ui.dans_le_menu_de_votre_navigateur_choisissez_installer_l_applicati'),
+  );
   const note = document.createElement('p');
   note.className = 'pwa-note';
-  note.textContent = 'Le PC doit rester allumé. Fermer l’application laisse les agents travailler.';
+  bindText(note, () => tr('ui.le_pc_doit_rester_allume_fermer_l_application_laisse_les_agents_t'));
   const close = document.createElement('button');
   close.type = 'button';
   close.className = 'pwa-primary';
-  close.textContent = 'Compris';
+  bindText(close, () => tr('ui.compris'));
   close.onclick = () => dialog.close();
   dialog.append(title, text, note, close);
   document.body.append(dialog);

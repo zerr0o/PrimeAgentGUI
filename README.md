@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Vos projets. Vos agents. Un seul espace de travail.</strong><br>
-  Une interface locale en français pour Prime Agent, pensée pour Windows.
+  Une interface locale en français et en anglais pour Prime Agent, pensée pour Windows.
 </p>
 
 <p align="center">
@@ -20,6 +20,7 @@
   <a href="docs/inspector.md">Agents et fichiers</a> ·
   <a href="docs/lan.md">Accès mobile</a> ·
   <a href="docs/pwa.md">Installer l’app</a> ·
+  <a href="docs/translations.md">Langues</a> ·
   <a href="docs/development.md">Développement</a>
 </p>
 
@@ -29,18 +30,25 @@
 
 Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une application accessible depuis le navigateur. Suivez les réponses en direct, retrouvez vos projets et continuez une conversation sans ouvrir de terminal. Sous Windows, les agents et leurs outils démarrent en arrière-plan, sans fenêtres PowerShell intempestives.
 
-**Version 2.4.0** — [Télécharger le code source et consulter les notes de version](https://github.com/zerr0o/PrimeAgentGUI/releases/latest). Les skills Python sont préparées pour les parents et les sous-agents, et les projets signalent leur activité et leurs réponses non lues.
+**Version 2.5.0** — [Télécharger le code source et consulter les notes de version](https://github.com/zerr0o/PrimeAgentGUI/releases/latest). Le Studio parle français et anglais sur PC, mobile et dans la PWA, avec une table de traductions unique et un repli automatique en français.
 
-## Nouveautés de la version 2.4
+## Nouveautés de la version 2.5
 
-- **Skills Python complètes** : correction de la préparation du kernel Windows, qui installait le runtime mais omettait les skills. Les packages activés et leurs dépendances locales sont maintenant installés et leurs imports vérifiés, notamment `agent_message.send`.
-- **Messagerie entre agents vérifiée** : de vrais messages passent dans les deux sens entre parent et enfant, y compris après arrêt du moteur et reprise de la conversation. Chaque kernel utilise les skills de sa session.
-- **Réparation automatique** : les anciens environnements incomplets sont remplacés par une génération validée, sans suppression manuelle. Un Python externe reste sous votre contrôle et reçoit un diagnostic précis.
-- **Projets à suivre d’un regard** : point **vert** pendant une exécution, **bleu** pour une réponse terminée non lue ; le vert est prioritaire. Les non-lus persistent après rechargement, sur PC et mobile.
+- **Français et anglais** : choix **Automatique / Français / English** dans les préférences et sur la page de connexion mobile, avec détection de la langue du navigateur.
+- **Changement immédiat** : les conversations, brouillons, pièces jointes et formulaires restent intacts ; une réponse en cours continue. Les onglets d’une même adresse partagent le choix de langue.
+- **Une table unique** : 1 051 textes regroupent leurs traductions côte à côte. Les paramètres, pluriels et références sont contrôlés automatiquement ; une traduction absente ou vide utilise le français.
+- **Mobile et PWA** : connexion, erreurs, déconnexion, informations d’installation et écran hors connexion suivent la langue choisie.
+- **De nouvelles langues à ajouter** : [le guide de traduction](docs/translations.md) explique comment compléter la table et vérifier l’interface.
 
-![Modèle principal et sous-agents : mêmes sélecteurs avec recherche et favoris dans les préférences du PC.](docs/screenshots/desktop-model-defaults.png)
+<p align="center">
+  <img src="docs/screenshots/desktop-language.png" width="480" alt="Préférences du Studio en anglais, avec le sélecteur de langue et les réglages de l’interface.">
+</p>
 
 ## Ce que vous pouvez faire
+
+**Français ou English** : choisissez **Préférences → Langue** sur PC ou mobile. Le mode **Automatique** suit la langue du navigateur. Le changement est immédiat, conserve les formulaires, brouillons et pièces jointes, et laisse les agents continuer leur travail. La page de connexion mobile possède aussi son sélecteur ; l’écran hors connexion de la PWA utilise la langue choisie.
+
+Les traductions sont réunies dans **une table unique**, avec le français et l’anglais côte à côte pour chaque texte. Une traduction manquante utilise le français, et la vérification du projet détecte les cases absentes et les paramètres incohérents. [Ajouter une langue ou une traduction](docs/translations.md).
 
 | Fonction                           | Dans le Studio                                                                                                                    |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |

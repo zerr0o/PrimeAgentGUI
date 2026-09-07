@@ -247,6 +247,12 @@ try {
   await page.keyboard.press('Escape');
 
   await page.locator('#open-settings').click();
+  await page.setViewportSize({ width: 1600, height: 1200 });
+  await page.locator('#language-select').selectOption('en');
+  await expect(page.locator('#open-model-config')).toHaveText('Configure');
+  await capture('desktop-language.png', page.locator('#settings-dialog'));
+  await page.locator('#language-select').selectOption('fr');
+  await page.setViewportSize({ width: 1600, height: 1000 });
   await page.locator('#open-model-config').click();
   await expect(page.locator('#default-main-model')).toContainText('GPT-5.6 Sol');
   await expect(page.locator('#default-subagent-model')).toContainText('GPT-5.6 Luna');

@@ -2,6 +2,16 @@
 
 [← Retour au README](../README.md)
 
+## Langue de l’interface
+
+**Préférences → Langue** propose **Automatique**, **Français** et **English**, sur PC et mobile. Le mode automatique utilise les langues du navigateur, avec le français comme repli. Le choix est conservé dans `prime-studio.language` pour ce navigateur et cette adresse d’accès. Les onglets de la même adresse se synchronisent ; les autres appareils gardent leur propre choix.
+
+Changer de langue ne recharge pas la page, n’envoie aucun message et n’arrête aucun agent. Les formulaires ouverts, brouillons, pièces jointes, choix de modèle et de réflexion sont conservés. Les conversations, raisonnements, fichiers, noms de modèles et identifiants des commandes gardent leur contenu original. Les descriptions de ressources externes et les diagnostics provenant directement d’un fournisseur restent dans leur langue d’origine lorsqu’ils n’ont pas de traduction dans le Studio.
+
+Un cookie de préférence `prime_studio_language`, distinct du cookie d’authentification, permet au serveur de présenter la connexion mobile dans la bonne langue avant le chargement du JavaScript. La table de traduction et le moteur de traduction font partie des ressources publiques de la PWA ; aucune conversation ni pièce jointe n’est ajoutée à son cache.
+
+La [documentation des traductions](translations.md) décrit la table unique, le repli et les contrôles automatiques.
+
 ## Configurer les modèles
 
 Ouvrez **Préférences → Modèles et valeurs par défaut → Configurer** sur le PC. La première zone choisit le modèle par défaut de l’agent principal avec le sélecteur des conversations, sa recherche intégrée et ses favoris partagés. Cliquez sur **Enregistrer** pour appliquer votre choix. Cette zone écrit uniquement les champs natifs `defaultProvider` et `defaultModel` dans `~/.prime/agent/settings.json`, comme Prime Agent 0.9.1. Le choix est appliqué au sélecteur du Studio et aux prochains lancements. **Choix automatique de Prime Agent** supprime ces deux champs. **Nouvelle session**, **Ctrl+N** et l’ouverture d’une conversation vide utilisent ce modèle par défaut, même si un autre modèle a été choisi dans la conversation précédente. Les conversations existantes retrouvent le modèle de leur historique.

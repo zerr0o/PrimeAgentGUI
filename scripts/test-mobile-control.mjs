@@ -145,7 +145,12 @@ const checks = [];
 let browser, page;
 try {
   browser = await chromium.launch({ channel: 'msedge', headless: true });
-  page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  page = await browser.newPage({
+    locale: 'fr-FR',
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+  });
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   expect(

@@ -1,3 +1,4 @@
+import { t as tr, bindText, bindAttribute, textNode, translateKnown } from './i18n.js';
 import {
   composerText,
   setComposerText,
@@ -9,15 +10,21 @@ import { COMMAND_ALIASES as aliases, immediateCommands } from './command-definit
 const node = (tag, className = '', text = '') => {
   const element = document.createElement(tag);
   element.className = className;
-  element.textContent = text;
+  bindText(element, () => text);
   return element;
 };
 const labels = {
   studio: 'Studio',
   native: 'Prime Agent',
-  skill: 'Skill',
-  prompt: 'Prompt',
-  extension: 'Extension',
+  get skill() {
+    return tr('commands.skill');
+  },
+  get prompt() {
+    return tr('commands.prompt');
+  },
+  get extension() {
+    return tr('commands.extension');
+  },
 };
 const normalize = (text) =>
   String(text || '')
@@ -30,7 +37,10 @@ function commandTitle(command, tag = 'span') {
   const dot = node('span', 'command-dot');
   dot.dataset.kind = command.source;
   dot.setAttribute('aria-hidden', 'true');
-  title.append(dot, document.createTextNode(`/${command.name}`));
+  title.append(
+    dot,
+    textNode(() => `/${command.name}`),
+  );
   return title;
 }
 
@@ -42,15 +52,15 @@ export function createCommands({ api, getContext, action, onChange, onError, has
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M15 4 9 20"/></svg>';
   button.id = 'open-commands';
   button.type = 'button';
-  button.title = 'Commandes et skills';
-  button.setAttribute('aria-label', button.title);
+  bindAttribute(button, 'title', () => tr('ui.commandes_et_skills'));
+  bindAttribute(button, 'aria-label', () => button.title);
   button.setAttribute('aria-haspopup', 'dialog');
   document.querySelector('.attachment-controls').prepend(button);
   const popup = node('div', 'command-suggestions');
   popup.id = 'command-suggestions';
   popup.hidden = true;
   popup.setAttribute('role', 'listbox');
-  popup.setAttribute('aria-label', 'Commandes proposées');
+  bindAttribute(popup, 'aria-label', () => tr('ui.commandes_proposees'));
   input.setAttribute('aria-controls', popup.id);
   input.setAttribute('aria-autocomplete', 'list');
   input.setAttribute('aria-expanded', 'false');
@@ -58,39 +68,33 @@ export function createCommands({ api, getContext, action, onChange, onError, has
   dialog.id = 'commands-dialog';
   dialog.setAttribute('aria-labelledby', 'commands-title');
   const header = node('div', 'command-heading');
-  const title = node('h2', '', 'Commandes et skills');
+  const title = node('h2', '', () => tr('ui.commandes_et_skills'));
   title.id = 'commands-title';
-  const close = node('button', 'secondary-button', 'Terminé');
+  const close = node('button', 'secondary-button', () => tr('ui.termine'));
   close.type = 'button';
   close.onclick = () => dialog.close();
   header.append(title, close);
-  const intro = node(
-    'p',
-    'command-intro',
-    'Choisissez un raccourci, ajoutez vos consignes puis envoyez. Les skills et prompts sont développés par Prime Agent.',
+  const intro = node('p', 'command-intro', () =>
+    tr('ui.choisissez_un_raccourci_ajoutez_vos_consignes_puis_envoyez_les_sk'),
   );
   const search = node('input', 'command-search');
   search.type = 'search';
-  search.placeholder = 'Rechercher un nom ou une description';
-  search.setAttribute('aria-label', 'Rechercher une commande ou un skill');
+  bindAttribute(search, 'placeholder', () => tr('ui.rechercher_un_nom_ou_une_description'));
+  bindAttribute(search, 'aria-label', () => tr('ui.rechercher_une_commande_ou_un_skill'));
   const filters = node('div', 'command-filters');
   const filterButtons = new Map();
   const list = node('div', 'command-list');
-  const more = node('button', 'command-more', 'Afficher la suite');
+  const more = node('button', 'command-more', () => tr('ui.afficher_la_suite'));
   more.type = 'button';
   more.hidden = true;
-  const refresh = node('button', 'command-refresh', 'Actualiser');
+  const refresh = node('button', 'command-refresh', () => tr('ui.actualiser'));
   refresh.type = 'button';
   const note = node('p', 'command-note');
   note.setAttribute('role', 'status');
   const help = node('details', 'command-help');
   help.append(
-    node('summary', '', 'Comment utiliser les skills ?'),
-    node(
-      'p',
-      '',
-      'Un skill regroupe des instructions et parfois des scripts. /skill:nom charge ses instructions dans votre message ; ajoutez votre demande après le nom. Prime Agent découvre les skills globaux, ceux du projet et ceux des packages installés. Les changements sont pris en compte par les nouvelles sessions ; une session active conserve ses ressources chargées. Les skills Python nécessitent leurs dépendances dans le Python du moteur.',
-    ),
+    node('summary', '', () => tr('ui.comment_utiliser_les_skills')),
+    node('p', '', () => tr('ui.un_skill_regroupe_des_instructions_et_parfois_des_scripts_skill_n')),
   );
   dialog.append(header, intro, search, filters, note, list, help);
   document.body.append(popup, dialog);
@@ -153,7 +157,7 @@ export function createCommands({ api, getContext, action, onChange, onError, has
     const c = getContext(),
       token = generation,
       requestedKey = key();
-    if (!c.cwd) throw new Error('Choisissez un projet pour voir ses commandes.');
+    if (!c.cwd) throw new Error(tr('ui.choisissez_un_projet_pour_voir_ses_commandes'));
     catalogKey = requestedKey;
     controller = new AbortController();
     loadError = '';
@@ -163,7 +167,7 @@ export function createCommands({ api, getContext, action, onChange, onError, has
     )
       .then((data) => {
         if (token !== generation || requestedKey !== key())
-          throw new Error('Le projet sélectionné a changé.');
+          throw new Error(tr('ui.le_projet_selectionne_a_change'));
         catalog = data;
         loadedAt = Date.now();
         if (cache.size >= 12) cache.delete(cache.keys().next().value);
@@ -206,7 +210,9 @@ export function createCommands({ api, getContext, action, onChange, onError, has
   function filtered(items, query) {
     const q = normalize(query).replace(/^\//, '');
     return items
-      .filter((c) => normalize(`${c.name} ${c.description} ${c.sourceInfo?.scope || ''}`).includes(q))
+      .filter((c) =>
+        normalize(`${c.name} ${translateKnown(c.description)} ${c.sourceInfo?.scope || ''}`).includes(q),
+      )
       .sort(
         (a, b) => Number(b.name.startsWith(q)) - Number(a.name.startsWith(q)) || a.name.localeCompare(b.name),
       );
@@ -219,38 +225,57 @@ export function createCommands({ api, getContext, action, onChange, onError, has
     );
     const visible = filtered(commands, search.value);
     currentList = visible;
-    note.textContent =
-      loadError ||
-      (pending
-        ? 'Chargement des skills et prompts…'
-        : catalog?.live
-          ? 'Ressources chargées dans cette session.'
-          : 'Ressources du projet pour les nouvelles sessions.');
+    bindText(note, () =>
+      [
+        translateKnown(loadError) ||
+          (pending
+            ? tr('ui.chargement_des_skills_et_prompts')
+            : catalog?.live
+              ? tr('ui.ressources_chargees_dans_cette_session')
+              : tr('ui.ressources_du_projet_pour_les_nouvelles_sessions')),
+        ...(catalog?.diagnostics || []).map((diagnostic) => translateKnown(diagnostic.message)),
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    );
     note.setAttribute('aria-busy', String(!!pending));
-    if (catalog?.diagnostics?.length)
-      note.textContent += ` ${catalog.diagnostics.map((d) => d.message).join(' · ')}`;
     for (const command of visible.slice(0, pageSize)) {
       const row = node('button', 'command-item');
       row.type = 'button';
       row.disabled = !command.supported;
       const name = node('span', 'command-name');
-      name.append(commandTitle(command), node('small', '', command.argumentHint || labels[command.source]));
-      row.append(name, node('span', 'command-description', command.description || labels[command.source]));
+      name.append(
+        commandTitle(command),
+        node('small', '', () => translateKnown(command.argumentHint) || labels[command.source]),
+      );
+      row.append(
+        name,
+        node(
+          'span',
+          'command-description',
+          () => translateKnown(command.description) || labels[command.source],
+        ),
+      );
       if (command.sourceInfo?.path) {
-        const path = node('span', 'command-source', command.sourceInfo.path);
-        path.title = command.sourceInfo.path;
+        const path = node('span', 'command-source', () => command.sourceInfo.path);
+        bindAttribute(path, 'title', () => command.sourceInfo.path);
         row.append(path);
       }
-      if (command.explicitOnly) row.append(node('span', 'command-source', 'Invocation explicite uniquement'));
-      if (command.pythonPackage) row.append(node('span', 'command-source', 'Inclut un module Python'));
-      if (!command.supported) row.append(node('span', 'command-source', command.reason));
+      if (command.explicitOnly)
+        row.append(node('span', 'command-source', () => tr('ui.invocation_explicite_uniquement')));
+      if (command.pythonPackage)
+        row.append(node('span', 'command-source', () => tr('ui.inclut_un_module_python')));
+      if (!command.supported)
+        row.append(node('span', 'command-source', () => translateKnown(command.reason)));
       row.onclick = () => insert(command);
       list.append(row);
     }
     if (!visible.length && !pending)
-      list.append(node('p', 'command-empty', 'Aucun résultat pour ce filtre.'));
+      list.append(node('p', 'command-empty', () => tr('ui.aucun_resultat_pour_ce_filtre')));
     more.hidden = visible.length <= pageSize;
-    more.textContent = `Afficher la suite · ${Math.min(pageSize, visible.length)} sur ${visible.length}`;
+    bindText(more, () =>
+      tr('ui.afficher_la_suite_sur', { value1: Math.min(pageSize, visible.length), value2: visible.length }),
+    );
     list.append(more);
     for (const [value, b] of filterButtons) b.setAttribute('aria-pressed', String(value === filter));
   }
@@ -275,12 +300,12 @@ export function createCommands({ api, getContext, action, onChange, onError, has
     renderList();
   };
   for (const [value, label] of [
-    ['all', 'Tout'],
-    ['skill', 'Skills'],
-    ['prompt', 'Prompts'],
-    ['terminal', 'Terminal'],
+    ['all', tr('common.all')],
+    ['skill', tr('commands.skills')],
+    ['prompt', tr('commands.prompts')],
+    ['terminal', tr('commands.terminal')],
   ]) {
-    const b = node('button', '', label);
+    const b = node('button', '', () => (value === 'all' ? tr('common.all') : label));
     b.type = 'button';
     b.onclick = () => {
       filter = value;
@@ -348,7 +373,10 @@ export function createCommands({ api, getContext, action, onChange, onError, has
       const row = node('div', 'command-suggestion');
       row.id = `command-option-${i}`;
       row.setAttribute('role', 'option');
-      row.append(commandTitle(c, 'strong'), node('span', '', c.description || labels[c.source]));
+      row.append(
+        commandTitle(c, 'strong'),
+        node('span', '', () => translateKnown(c.description) || labels[c.source]),
+      );
       row.onpointerdown = (event) => event.preventDefault();
       row.onclick = () => insert(c);
       popup.append(row);
@@ -357,13 +385,15 @@ export function createCommands({ api, getContext, action, onChange, onError, has
       const status = node(
         'p',
         'command-loading',
-        loadError || (pending ? 'Chargement des skills et prompts…' : 'Aucune commande correspondante.'),
+        () =>
+          loadError ||
+          (pending ? tr('ui.chargement_des_skills_et_prompts') : tr('ui.aucune_commande_correspondante')),
       );
       status.setAttribute('role', 'status');
       popup.append(status);
     }
     if (loadError) {
-      const retry = node('button', 'command-more', 'Réessayer');
+      const retry = node('button', 'command-more', () => tr('ui.reessayer'));
       retry.type = 'button';
       retry.onpointerdown = (e) => e.preventDefault();
       retry.onclick = () => {
@@ -468,12 +498,14 @@ export function createCommands({ api, getContext, action, onChange, onError, has
         if (composerText() !== draft || contextKey !== key()) return true;
         const command = data.commands.find((c) => c.name === name);
         if (!command)
-          throw new Error(`Commande /${name} inconnue. Ouvrez le menu / pour voir les commandes du projet.`);
-        if (!command.supported) throw new Error(command.reason);
+          throw new Error(
+            tr('ui.commande_inconnue_ouvrez_le_menu_pour_voir_les_commandes_du_proje', { value1: name }),
+          );
+        if (!command.supported) throw new Error(translateKnown(command.reason));
         hide();
         if (command.source !== 'studio') return false;
         if (hasAttachments())
-          throw new Error('Retirez les pièces jointes avant d’utiliser ce raccourci du Studio.');
+          throw new Error(tr('ui.retirez_les_pieces_jointes_avant_d_utiliser_ce_raccourci_du_studi'));
         const token = composerCommand();
         setComposerText('');
         onChange();

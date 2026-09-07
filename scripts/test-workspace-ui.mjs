@@ -118,7 +118,12 @@ async function boxInside(selector, width, height) {
 }
 try {
   browser = await chromium.launch({ channel: 'msedge', headless: true });
-  page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  page = await browser.newPage({
+    locale: 'fr-FR',
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+  });
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(url);
   await page.locator('#code').fill(code);

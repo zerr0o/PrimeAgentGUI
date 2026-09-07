@@ -123,7 +123,7 @@ const checks = [];
 let browser, page;
 try {
   browser = await chromium.launch({ channel: 'msedge', headless: true });
-  page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  page = await browser.newPage({ locale: 'fr-FR', viewport: { width: 390, height: 844 } });
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
   await page.goto(url);

@@ -75,7 +75,12 @@ const gateway = createLanGateway({
 await new Promise((done) => gateway.listen(0, '127.0.0.1', done));
 const url = `http://127.0.0.1:${gateway.address().port}`;
 const browser = await chromium.launch({ channel: 'msedge', headless: true });
-const page = await browser.newPage({ viewport: { width: 412, height: 840 }, isMobile: true, hasTouch: true });
+const page = await browser.newPage({
+  locale: 'fr-FR',
+  viewport: { width: 412, height: 840 },
+  isMobile: true,
+  hasTouch: true,
+});
 page.setDefaultTimeout(10000);
 const errors = [],
   measurements = [];

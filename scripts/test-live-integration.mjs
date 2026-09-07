@@ -139,7 +139,7 @@ let browser;
 const checks = [];
 try {
   browser = await chromium.launch({ channel: 'msedge', headless: true });
-  const context = await browser.newContext({ viewport: { width: 1365, height: 950 } });
+  const context = await browser.newContext({ locale: 'fr-FR', viewport: { width: 1365, height: 950 } });
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', (error) => {

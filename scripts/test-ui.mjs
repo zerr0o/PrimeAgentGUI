@@ -352,7 +352,11 @@ let browser;
 const report = [];
 try {
   browser = await chromium.launch({ channel: 'msedge', headless: true });
-  const context = await browser.newContext({ viewport: { width: 1512, height: 982 }, deviceScaleFactor: 1 });
+  const context = await browser.newContext({
+    locale: 'fr-FR',
+    viewport: { width: 1512, height: 982 },
+    deviceScaleFactor: 1,
+  });
   const page = await context.newPage();
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: url });
   const errors = [];

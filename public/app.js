@@ -1,3 +1,12 @@
+import {
+  t as tr,
+  getLanguage,
+  bindText,
+  bindAttribute,
+  textNode,
+  onLanguageChange,
+  translateKnown,
+} from './i18n.js';
 import { marked } from '/vendor/marked.js';
 import DOMPurify from '/vendor/purify.js';
 import { createConversationRenderer } from './conversation.js';
@@ -71,7 +80,7 @@ function hydrateIcons(root = document) {
 function el(tag, className, text) {
   const n = document.createElement(tag);
   if (className) n.className = className;
-  if (text != null) n.textContent = text;
+  if (text != null) bindText(n, () => text);
   return n;
 }
 function readStorage(key, fallback) {
@@ -160,14 +169,14 @@ const dateLabel = (v) => {
   if (!time) return '—';
   const d = new Date(time);
   return new Date().toDateString() === d.toDateString()
-    ? d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-    : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    ? d.toLocaleTimeString(getLanguage(), { hour: '2-digit', minute: '2-digit' })
+    : d.toLocaleDateString(getLanguage(), { day: 'numeric', month: 'short' });
 };
 const normalizeModelSearch = (value) =>
   String(value || '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .toLocaleLowerCase('fr-FR')
+    .toLocaleLowerCase(getLanguage())
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim();
 function favoriteModelIds() {
@@ -182,13 +191,15 @@ function favoriteModelIds() {
   return new Set(sanitized);
 }
 function modelDisplayName(id) {
-  return state.models.find((model) => model.id === id)?.name || id?.split('/').pop() || 'Modèle par défaut';
+  return (
+    state.models.find((model) => model.id === id)?.name || id?.split('/').pop() || tr('ui.modele_par_defaut')
+  );
 }
 function setSelectedModel(value, persist = false) {
   const id = typeof value === 'string' ? value : '',
     select = $('model-select');
   if (id && ![...select.options].some((option) => option.value === id)) {
-    const option = el('option', '', id);
+    const option = el('option', '', () => id);
     option.value = id;
     select.append(option);
   }
@@ -201,14 +212,13 @@ function setSelectedModel(value, persist = false) {
       (id.includes('/')
         ? id.slice(0, id.indexOf('/'))
         : id
-          ? 'Modèle personnalisé'
-          : 'Configuration Prime Agent');
-  $('model-picker-label').textContent = name;
-  $('model-picker-provider').textContent = provider;
-  button.title = id ? `${name} · ${model?.id || id}` : name;
-  button.setAttribute(
-    'aria-label',
-    `Choisir le modèle. Sélection actuelle : ${id ? `${name}, ${model?.id || id}` : name}`,
+          ? tr('ui.modele_personnalise')
+          : tr('ui.configuration_prime_agent'));
+  bindText($('model-picker-label'), () => name);
+  bindText($('model-picker-provider'), () => provider);
+  bindAttribute(button, 'title', () => (id ? `${name} · ${model?.id || id}` : name));
+  bindAttribute(button, 'aria-label', () =>
+    tr('ui.choisir_le_modele_selection_actuelle', { value1: id ? `${name}, ${model?.id || id}` : name }),
   );
   if (persist) savePreferences({ model: id });
   if ($('model-dialog').open) renderModelList();
@@ -227,14 +237,12 @@ function modelRow(model, favorite = false) {
   row.setAttribute('role', 'listitem');
   choice.type = 'button';
   choice.dataset.modelId = id;
-  choice.setAttribute('aria-label', `Utiliser ${accessibleName}`);
+  bindAttribute(choice, 'aria-label', () => tr('model.use', { value1: accessibleName }));
   if (selected) choice.setAttribute('aria-current', 'true');
   copy.append(
-    el('span', 'model-choice-name', name),
-    el(
-      'span',
-      'model-choice-detail',
-      defaultChoice ? modelPickerTarget?.defaultDetail || 'Configuration de Prime Agent' : model.id,
+    el('span', 'model-choice-name', () => name),
+    el('span', 'model-choice-detail', () =>
+      defaultChoice ? modelPickerTarget?.defaultDetail || tr('ui.configuration_de_prime_agent') : model.id,
     ),
   );
   choice.append(copy);
@@ -244,11 +252,12 @@ function modelRow(model, favorite = false) {
     favoriteButton.type = 'button';
     favoriteButton.dataset.modelId = id;
     favoriteButton.setAttribute('aria-pressed', String(favorite));
-    favoriteButton.setAttribute(
-      'aria-label',
-      `${favorite ? 'Retirer' : 'Ajouter'} ${accessibleName} ${favorite ? 'des' : 'aux'} favoris`,
+    bindAttribute(favoriteButton, 'aria-label', () =>
+      tr(favorite ? 'model.removeFavorite' : 'model.addFavorite', { name: accessibleName }),
     );
-    favoriteButton.title = favorite ? 'Retirer des favoris' : 'Ajouter aux favoris';
+    bindAttribute(favoriteButton, 'title', () =>
+      favorite ? tr('ui.retirer_des_favoris') : tr('ui.ajouter_aux_favoris'),
+    );
     favoriteButton.append(icon('star'));
     row.append(favoriteButton);
   }
@@ -257,9 +266,9 @@ function modelRow(model, favorite = false) {
 function appendModelGroup(title, models, favorites) {
   if (!models.length) return;
   const section = el('section', 'model-group'),
-    heading = el('h3', 'model-group-title', title),
+    heading = el('h3', 'model-group-title', () => title),
     list = el('div', 'model-group-list');
-  section.setAttribute('aria-label', title);
+  bindAttribute(section, 'aria-label', () => title);
   list.setAttribute('role', 'list');
   for (const model of models) list.append(modelRow(model, favorites.has(model.id)));
   section.append(heading, list);
@@ -275,31 +284,34 @@ function renderModelList({ focusFavorite } = {}) {
     favoriteModels = matching.filter((model) => favorites.has(model.id)),
     otherModels = state.modelFavoritesOnly ? [] : matching.filter((model) => !favorites.has(model.id)),
     defaultMatches = normalizeModelSearch(
-      modelPickerTarget?.defaultLabel || 'Modèle par défaut configuration Prime Agent',
+      modelPickerTarget?.defaultLabel || tr('ui.modele_par_defaut_configuration_prime_agent'),
     ).includes(query),
     showDefault = !state.modelFavoritesOnly && defaultMatches,
     visibleCount = favoriteModels.length + otherModels.length + Number(showDefault),
     availableFavoriteCount = state.models.filter((model) => favorites.has(model.id)).length;
   root.replaceChildren();
   $('model-favorites-filter').setAttribute('aria-pressed', String(state.modelFavoritesOnly));
-  $('model-favorites-label').textContent = availableFavoriteCount
-    ? `Favoris (${availableFavoriteCount})`
-    : 'Favoris';
-  $('model-results-status').textContent =
+  bindText($('model-favorites-label'), () =>
+    availableFavoriteCount
+      ? tr('model.favoritesCount', { value1: availableFavoriteCount })
+      : tr('ui.favoris'),
+  );
+  bindText($('model-results-status'), () =>
     query || state.modelFavoritesOnly
-      ? `${visibleCount} résultat${visibleCount === 1 ? '' : 's'}`
-      : `${visibleCount} choix disponible${visibleCount === 1 ? '' : 's'}`;
-  appendModelGroup('Favoris', favoriteModels, favorites);
+      ? tr('count.results', { count: visibleCount })
+      : tr('count.choices', { count: visibleCount }),
+  );
+  appendModelGroup(() => tr('ui.favoris'), favoriteModels, favorites);
   if (showDefault)
     appendModelGroup(
-      'Configuration',
-      [{ id: '', name: modelPickerTarget?.defaultLabel || 'Modèle par défaut', provider: '' }],
+      tr('common.configuration'),
+      [{ id: '', name: modelPickerTarget?.defaultLabel || tr('ui.modele_par_defaut'), provider: '' }],
       favorites,
     );
   if (!state.modelFavoritesOnly) {
     const providers = new Map();
     for (const model of otherModels) {
-      const provider = model.provider || 'Autres';
+      const provider = model.provider || tr('common.other');
       if (!providers.has(provider)) providers.set(provider, []);
       providers.get(provider).push(model);
     }
@@ -309,13 +321,13 @@ function renderModelList({ focusFavorite } = {}) {
     const empty = el('div', 'model-list-empty');
     empty.append(
       icon(state.modelFavoritesOnly ? 'star' : 'search'),
-      el('strong', '', state.modelFavoritesOnly ? 'Aucun favori trouvé' : 'Aucun modèle trouvé'),
-      el(
-        'span',
-        '',
+      el('strong', '', () =>
+        state.modelFavoritesOnly ? tr('ui.aucun_favori_trouve') : tr('ui.aucun_modele_trouve'),
+      ),
+      el('span', '', () =>
         state.modelFavoritesOnly
-          ? 'Ajoutez un favori ou modifiez votre recherche.'
-          : 'Essayez un autre nom, fournisseur ou identifiant.',
+          ? tr('ui.ajoutez_un_favori_ou_modifiez_votre_recherche')
+          : tr('ui.essayez_un_autre_nom_fournisseur_ou_identifiant'),
       ),
     );
     root.append(empty);
@@ -348,7 +360,7 @@ function openModelDialog() {
 function openModelPicker(target) {
   if (target.button.disabled || target.button.matches(':disabled')) return;
   modelPickerTarget = target;
-  $('model-dialog-title').textContent = target.title || 'Choisir un modèle';
+  bindText($('model-dialog-title'), () => target.title || tr('ui.choisir_un_modele'));
   state.modelFavoritesOnly = false;
   $('model-search').value = '';
   renderModelList();
@@ -361,18 +373,21 @@ function openModelPicker(target) {
 }
 function toast(message, error = false) {
   const n = el('div', `toast${error ? ' error' : ''}`);
-  n.append(icon(error ? 'alert' : 'check'), el('span', '', message));
+  n.append(
+    icon(error ? 'alert' : 'check'),
+    el('span', '', () => translateKnown(message)),
+  );
   $('toasts').append(n);
   setTimeout(() => n.remove(), error ? 6500 : 3200);
 }
 function banner(message, error = false) {
-  $('global-banner').textContent = message || '';
+  bindText($('global-banner'), () => translateKnown(message || ''));
   $('global-banner').hidden = !message;
   $('global-banner').classList.toggle('error', error);
 }
 async function api(path, { method = 'GET', body, signal } = {}) {
   if (state.readOnly && method.toUpperCase() !== 'GET')
-    throw new Error('Cette connexion permet de consulter les sessions.');
+    throw new Error(tr('ui.cette_connexion_permet_de_consulter_les_sessions'));
   const r = await fetch(path, {
     method,
     signal,
@@ -383,10 +398,10 @@ async function api(path, { method = 'GET', body, signal } = {}) {
   try {
     data = await r.json();
   } catch {
-    throw new Error('Le serveur a renvoyé une réponse illisible.');
+    throw new Error(tr('ui.le_serveur_a_renvoye_une_reponse_illisible'));
   }
   if (!r.ok) {
-    const e = new Error(data.error || `Erreur ${r.status}`);
+    const e = new Error(translateKnown(data.error) || tr('common.httpError', { value1: r.status }));
     e.status = r.status;
     throw e;
   }
@@ -395,11 +410,13 @@ async function api(path, { method = 'GET', body, signal } = {}) {
 function setConnection(online) {
   state.online = online;
   $('connection-dot').className = `status-dot${online ? '' : ' offline'}`;
-  $('connection-label').textContent = online
-    ? state.version?.available === false
-      ? 'Prime Agent indisponible'
-      : 'Moteur connecté'
-    : 'Reconnexion au serveur…';
+  bindText($('connection-label'), () =>
+    online
+      ? state.version?.available === false
+        ? tr('ui.prime_agent_indisponible')
+        : tr('ui.moteur_connecte')
+      : tr('ui.reconnexion_au_serveur'),
+  );
   if (online && state.version?.available === false) $('connection-dot').className = 'status-dot waiting';
   updateComposer();
 }
@@ -417,9 +434,11 @@ function applyPreferences() {
   document
     .querySelectorAll('[data-theme-choice]')
     .forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themeChoice === prefs.theme)));
-  $('send-hint').textContent = prefs.enterToSend
-    ? 'Entrée pour envoyer · Maj Entrée pour un saut de ligne'
-    : 'Ctrl Entrée pour envoyer';
+  bindText($('send-hint'), () =>
+    prefs.enterToSend
+      ? tr('ui.entree_pour_envoyer_maj_entree_pour_un_saut_de_ligne')
+      : tr('ui.ctrl_entree_pour_envoyer'),
+  );
   if (innerWidth > 1080) {
     $('details-panel').hidden = !prefs.details;
     $('toggle-details').setAttribute('aria-pressed', String(prefs.details));
@@ -431,17 +450,25 @@ function applyPreferences() {
     );
   }
   const open = $('toggle-details').getAttribute('aria-pressed') === 'true';
-  $('toggle-details').title = open ? 'Masquer le panneau' : 'Afficher le panneau Session, Agents et Fichiers';
-  $('toggle-details').setAttribute('aria-label', $('toggle-details').title);
+  bindAttribute($('toggle-details'), 'title', () =>
+    open ? tr('ui.masquer_le_panneau') : tr('ui.afficher_le_panneau_session_agents_et_fichiers'),
+  );
+  bindAttribute($('toggle-details'), 'aria-label', () => $('toggle-details').title);
   inspectorUI?.update();
 }
 function applyAccessMode() {
   document.documentElement.dataset.readOnly = String(state.readOnly);
   document.documentElement.dataset.remote = String(state.remote);
   $('remote-view-banner').hidden = !state.remote;
-  $('remote-view-label').textContent = state.readOnly ? 'Consultation à distance' : 'Studio à distance';
-  $('remote-view-detail').textContent = state.readOnly ? '· lecture seule' : '· contrôle complet';
-  $('session-location').textContent = state.remote ? 'Sessions sur le PC connecté' : 'Sessions sur ce PC';
+  bindText($('remote-view-label'), () =>
+    state.readOnly ? tr('ui.consultation_a_distance') : tr('ui.studio_a_distance'),
+  );
+  bindText($('remote-view-detail'), () =>
+    state.readOnly ? tr('ui.lecture_seule') : tr('ui.controle_complet'),
+  );
+  bindText($('session-location'), () =>
+    state.remote ? tr('ui.sessions_sur_le_pc_connecte') : tr('ui.sessions_sur_ce_pc'),
+  );
   $('composer').disabled = state.readOnly;
   $('enter-to-send').closest('.settings-row').hidden = state.readOnly;
   $('model-config-settings').hidden = state.remote;
@@ -451,15 +478,18 @@ function applyAccessMode() {
   $('mcp-settings').hidden = state.readOnly;
   const skipLink = document.querySelector('.skip-link');
   skipLink.href = state.readOnly ? '#conversation-scroll' : '#composer';
-  skipLink.textContent = state.readOnly ? 'Aller à la conversation' : 'Aller au message';
-  document.querySelector('.local-pill').textContent = state.remote ? 'DISTANT' : 'LOCAL';
-  document.querySelector('.settings-shortcut').textContent = state.remote ? 'Cet appareil' : 'Studio local';
+  bindText(skipLink, () => (state.readOnly ? tr('ui.aller_a_la_conversation') : tr('ui.aller_au_message')));
+  bindText(document.querySelector('.local-pill'), () => (state.remote ? tr('ui.distant') : 'LOCAL'));
+  bindText(document.querySelector('.settings-shortcut'), () =>
+    state.remote ? tr('ui.cet_appareil') : tr('ui.studio_local'),
+  );
   if (state.readOnly) {
     closeSessionMenu();
-    document.querySelector('#welcome h1').textContent = 'Vos projets, à portée de main.';
-    document.querySelector('.welcome-description').textContent =
-      'Choisissez un projet pour retrouver ses sessions et suivre l’agent en direct.';
-    document.querySelector('.welcome-eyebrow').lastChild.textContent = 'VOTRE STUDIO À DISTANCE';
+    bindText(document.querySelector('#welcome h1'), () => tr('ui.vos_projets_a_portee_de_main'));
+    bindText(document.querySelector('.welcome-description'), () =>
+      tr('ui.choisissez_un_projet_pour_retrouver_ses_sessions_et_suivre_l_agen'),
+    );
+    bindText(document.querySelector('.welcome-eyebrow').lastChild, () => tr('ui.votre_studio_a_distance'));
   }
 }
 function draftKey() {
@@ -520,17 +550,20 @@ function updateComposer() {
   $('model-picker-button').disabled = state.readOnly || running || state.sending;
   $('thinking-select').disabled = state.readOnly || running || state.sending;
   $('run-status').hidden = !running;
-  $('run-status-label').textContent =
+  bindText($('run-status-label'), () =>
     activeRun()?.status === 'stopping'
-      ? 'Arrêt de l’agent…'
-      : activeRun()?.statusLabel || 'L’agent travaille…';
-  $('composer').placeholder = composerCommand()
-    ? 'Ajoutez vos consignes…'
-    : state.projectCwd
-      ? running
-        ? 'Préparez votre prochain message…'
-        : 'Que souhaitez-vous construire ?'
-      : 'Ajoutez un projet pour commencer…';
+      ? tr('ui.arret_de_l_agent')
+      : activeRun()?.statusLabel || tr('ui.l_agent_travaille'),
+  );
+  bindAttribute($('composer'), 'placeholder', () =>
+    composerCommand()
+      ? tr('ui.ajoutez_vos_consignes')
+      : state.projectCwd
+        ? running
+          ? tr('ui.preparez_votre_prochain_message')
+          : tr('ui.que_souhaitez_vous_construire')
+        : tr('ui.ajoutez_un_projet_pour_commencer'),
+  );
   liveMessagesUI?.update();
 }
 function renderProjects() {
@@ -540,7 +573,7 @@ function renderProjects() {
   for (const p of items) {
     const entry = el('div', 'project-entry');
     const b = el('button', `project-row${samePath(p.cwd, state.projectCwd) ? ' active' : ''}`);
-    b.title = p.cwd;
+    bindAttribute(b, 'title', () => p.cwd);
     b.setAttribute('aria-pressed', String(samePath(p.cwd, state.projectCwd)));
     const running = [...state.runs.values()].some((run) => samePath(run.cwd, p.cwd) && isRunning(run));
     const unread = (p.sessions || []).some((s) => sessionActivity.isUnread(s.id));
@@ -548,13 +581,15 @@ function renderProjects() {
     b.dataset.activity = status;
     b.append(
       status === 'idle' ? icon('folder') : activityDot(status, true),
-      el('span', 'project-label', p.name || p.cwd.split(/[\\/]/).pop()),
+      el('span', 'project-label', () => p.name || p.cwd.split(/[\\/]/).pop()),
     );
-    const count = el('span', 'project-count', String((p.sessions || []).filter((s) => !s.archived).length));
+    const count = el('span', 'project-count', () =>
+      String((p.sessions || []).filter((s) => !s.archived).length),
+    );
     b.append(count);
     if (p.exists === false) {
-      count.textContent = '!';
-      count.title = 'Dossier introuvable';
+      bindText(count, () => '!');
+      bindAttribute(count, 'title', () => tr('ui.dossier_introuvable'));
     }
     b.onclick = () => selectProject(p.cwd);
     b.oncontextmenu = (e) => {
@@ -567,7 +602,7 @@ function renderProjects() {
     if (!state.readOnly) {
       const more = el('button', 'project-more');
       more.type = 'button';
-      more.setAttribute('aria-label', `Options du projet ${p.name}`);
+      bindAttribute(more, 'aria-label', () => tr('ui.options_du_projet', { value1: p.name }));
       more.setAttribute('aria-haspopup', 'menu');
       more.append(icon('more'));
       more.onclick = () => openProjectMenu(p.cwd, more);
@@ -581,13 +616,13 @@ function renderProjects() {
     root.append(entry);
   }
   if (!items.length) {
-    const empty = el(
-      'div',
-      'sidebar-empty',
-      state.readOnly ? 'Aucun projet à consulter pour le moment.' : 'Vos projets, au même endroit. ',
+    const empty = el('div', 'sidebar-empty', () =>
+      state.readOnly
+        ? tr('ui.aucun_projet_a_consulter_pour_le_moment')
+        : tr('ui.vos_projets_au_meme_endroit'),
     );
     if (!state.readOnly) {
-      const b = el('button', '', 'Ajouter un dossier');
+      const b = el('button', '', () => tr('ui.ajouter_un_dossier'));
       b.onclick = openProjectDialog;
       empty.append(b);
     }
@@ -599,64 +634,74 @@ function activityDot(status, project = false) {
     'span',
     `${status === 'running' ? 'running' : 'unread'}-dot${project ? ' project-activity-dot' : ''}`,
   );
-  const label = status === 'running' ? 'Agent en cours' : 'Réponse terminée non lue';
-  dot.title = label;
+  const label = status === 'running' ? tr('ui.agent_en_cours') : tr('ui.reponse_terminee_non_lue');
+  bindAttribute(dot, 'title', () => translateKnown(label));
   dot.setAttribute('role', 'img');
-  dot.setAttribute('aria-label', label);
+  bindAttribute(dot, 'aria-label', () => translateKnown(label));
   return dot;
 }
 function groupLabel(s) {
-  if (s.pinned) return 'Épinglées';
+  if (s.pinned) return tr('ui.epinglees');
   const age = (Date.now() - toTime(s.updatedAt)) / 86400000;
-  return age < 1 ? 'Aujourd’hui' : age < 7 ? 'Cette semaine' : age < 30 ? 'Ce mois-ci' : 'Plus anciennes';
+  return age < 1
+    ? tr('ui.aujourd_hui')
+    : age < 7
+      ? tr('ui.cette_semaine')
+      : age < 30
+        ? tr('ui.ce_mois_ci')
+        : tr('ui.plus_anciennes');
 }
 function renderSessions() {
-  const query = $('session-search').value.trim().toLocaleLowerCase('fr');
+  const query = $('session-search').value.trim().toLocaleLowerCase(getLanguage());
   let items = query
     ? allSessions()
     : (project()?.sessions || []).map((s) => ({ ...s, cwd: s.cwd || state.projectCwd }));
   items = items.filter(
     (s) =>
       Boolean(s.archived) === state.archived &&
-      (!query || `${s.title} ${s.cwd}`.toLocaleLowerCase('fr').includes(query)),
+      (!query || `${s.title} ${s.cwd}`.toLocaleLowerCase(getLanguage()).includes(query)),
   );
   items.sort((a, b) => Number(b.pinned) - Number(a.pinned) || toTime(b.updatedAt) - toTime(a.updatedAt));
   const root = $('session-list'),
     scroll = root.scrollTop;
   root.replaceChildren();
-  $('session-list-label').textContent = state.archived
-    ? 'SESSIONS ARCHIVÉES'
-    : query
-      ? 'RÉSULTATS DE RECHERCHE'
-      : 'SESSIONS RÉCENTES';
+  bindText($('session-list-label'), () =>
+    state.archived
+      ? tr('ui.sessions_archivees')
+      : query
+        ? tr('ui.resultats_de_recherche')
+        : tr('ui.sessions_recentes'),
+  );
   $('show-archived').setAttribute('aria-pressed', String(state.archived));
-  $('show-archived').title = state.archived
-    ? 'Afficher les sessions récentes'
-    : 'Afficher les sessions archivées';
-  $('show-archived').setAttribute('aria-label', $('show-archived').title);
+  bindAttribute($('show-archived'), 'title', () =>
+    state.archived ? tr('ui.afficher_les_sessions_recentes') : tr('ui.afficher_les_sessions_archivees'),
+  );
+  bindAttribute($('show-archived'), 'aria-label', () => $('show-archived').title);
   let group = '';
   for (const s of items) {
     const label = groupLabel(s);
     if (label !== group && !query) {
-      root.append(el('div', 'session-group-label', label));
+      root.append(el('div', 'session-group-label', () => translateKnown(label)));
       group = label;
     }
     const row = el('div', `session-row${s.id === state.sessionId ? ' active' : ''}`),
       b = el('button', 'session-select');
-    b.title = s.title || 'Sans titre';
+    bindAttribute(b, 'title', () => s.title || tr('ui.sans_titre'));
     b.setAttribute('aria-current', s.id === state.sessionId ? 'page' : 'false');
     const running = [...state.runs.values()].some((r) => r.sessionId === s.id && isRunning(r));
     const unread = sessionActivity.isUnread(s.id);
     row.dataset.activity = running ? 'running' : unread ? 'unread' : 'idle';
     b.append(
       running || unread ? activityDot(running ? 'running' : 'unread') : icon(s.pinned ? 'pin' : 'chat'),
-      el('span', 'session-title', s.title || 'Nouvelle session'),
+      el('span', 'session-title', () => s.title || tr('ui.nouvelle_session')),
     );
     b.onclick = () => selectSession(s.id, s.cwd);
     const menu = el('button', 'icon-button session-more');
     menu.append(icon('more'));
-    menu.title = 'Options de la session';
-    menu.setAttribute('aria-label', `Options : ${s.title || 'Nouvelle session'}`);
+    bindAttribute(menu, 'title', () => tr('ui.options_de_la_session'));
+    bindAttribute(menu, 'aria-label', () =>
+      tr('common.options', { value1: s.title || tr('ui.nouvelle_session') }),
+    );
     menu.setAttribute('aria-haspopup', 'menu');
     menu.onclick = (e) => openSessionMenu(s.id, e.currentTarget);
     row.append(b, menu);
@@ -664,16 +709,14 @@ function renderSessions() {
   }
   if (!items.length)
     root.append(
-      el(
-        'div',
-        'empty-search',
+      el('div', 'empty-search', () =>
         query
-          ? 'Aucune session ne correspond à votre recherche.'
+          ? tr('ui.aucune_session_ne_correspond_a_votre_recherche')
           : state.archived
-            ? 'Aucune session archivée.'
+            ? tr('ui.aucune_session_archivee')
             : state.readOnly
-              ? 'Aucune session à consulter dans ce projet pour le moment.'
-              : 'Vos conversations apparaîtront ici. Commencez une nouvelle session.',
+              ? tr('ui.aucune_session_a_consulter_dans_ce_projet_pour_le_moment')
+              : tr('ui.vos_conversations_apparaitront_ici_commencez_une_nouvelle_session'),
       ),
     );
   root.scrollTop = scroll;
@@ -686,13 +729,15 @@ function renderProjectOverview() {
   document.documentElement.dataset.projectOverview = String(visible);
   const skipLink = document.querySelector('.skip-link');
   skipLink.href = visible || state.readOnly ? '#conversation-scroll' : '#composer';
-  skipLink.textContent = visible
-    ? 'Aller aux sessions du projet'
-    : state.readOnly
-      ? 'Aller à la conversation'
-      : 'Aller au message';
+  bindText(skipLink, () =>
+    visible
+      ? tr('ui.aller_aux_sessions_du_projet')
+      : state.readOnly
+        ? tr('ui.aller_a_la_conversation')
+        : tr('ui.aller_au_message'),
+  );
   if (!visible) return;
-  $('project-overview-title').textContent = p.name || 'Sessions du projet';
+  bindText($('project-overview-title'), () => p.name || tr('ui.sessions_du_projet'));
   $('project-new-session').hidden = state.readOnly;
   $('project-new-session').disabled = p.exists === false;
   const sessions = (p.sessions || []).map((s) => ({ ...s, cwd: s.cwd || p.cwd }));
@@ -700,19 +745,21 @@ function renderProjectOverview() {
     (r) => samePath(r.cwd, p.cwd) && isRunning(r) && !sessions.some((s) => s.id === r.sessionId),
   );
   const count = sessions.filter((s) => !s.archived).length + pendingRuns.length;
-  $('project-session-count').textContent = `${count} session${count > 1 ? 's' : ''}`;
+  bindText($('project-session-count'), () => tr('count.sessions', { count: count }));
   $('project-show-recent').setAttribute('aria-pressed', String(!state.archived));
   $('project-show-archived').setAttribute('aria-pressed', String(state.archived));
-  document.querySelector('.project-overview-description').textContent = state.readOnly
-    ? 'Ouvrez une conversation pour consulter ses échanges et suivre l’agent en direct.'
-    : 'Retrouvez une conversation et reprenez là où vous en étiez.';
-  const query = $('project-session-search').value.trim().toLocaleLowerCase('fr');
+  bindText(document.querySelector('.project-overview-description'), () =>
+    state.readOnly
+      ? tr('ui.ouvrez_une_conversation_pour_consulter_ses_echanges_et_suivre_l_a')
+      : tr('ui.retrouvez_une_conversation_et_reprenez_la_ou_vous_en_etiez'),
+  );
+  const query = $('project-session-search').value.trim().toLocaleLowerCase(getLanguage());
   const items = [
     ...sessions,
     ...pendingRuns.map((r) => ({
       id: r.sessionId,
       runId: r.id,
-      title: r.prompt?.slice(0, 100) || 'Nouvelle session',
+      title: r.prompt?.slice(0, 100) || tr('ui.nouvelle_session'),
       cwd: r.cwd,
       updatedAt: r.startedAt,
     })),
@@ -720,7 +767,7 @@ function renderProjectOverview() {
     .filter(
       (s) =>
         Boolean(s.archived) === state.archived &&
-        (!query || (s.title || '').toLocaleLowerCase('fr').includes(query)),
+        (!query || (s.title || '').toLocaleLowerCase(getLanguage()).includes(query)),
     )
     .sort(
       (a, b) =>
@@ -751,23 +798,29 @@ function renderProjectOverview() {
     if (s.runId) card.dataset.runId = s.runId;
     card.append(icon(s.archived ? 'archive' : s.pinned ? 'pin' : 'chat', 'project-session-icon'));
     const content = el('span', 'project-session-content');
-    content.append(el('span', 'project-session-title', s.title || 'Nouvelle session'));
+    content.append(el('span', 'project-session-title', () => s.title || tr('ui.nouvelle_session')));
     const meta = el('span', 'project-session-meta');
     if (running) {
       const status = el('span', 'project-session-running');
-      status.append(el('span', 'running-dot'), document.createTextNode('Agent en cours'));
+      status.append(
+        el('span', 'running-dot'),
+        textNode(() => tr('ui.agent_en_cours')),
+      );
       meta.append(status);
     } else if (unread) {
       const status = el('span', 'project-session-unread');
-      status.append(activityDot('unread'), document.createTextNode('Réponse non lue'));
+      status.append(
+        activityDot('unread'),
+        textNode(() => tr('ui.reponse_non_lue')),
+      );
       meta.append(status);
-    } else if (s.pinned) meta.append(el('span', '', 'Épinglée'));
+    } else if (s.pinned) meta.append(el('span', '', () => tr('ui.epinglee')));
     if (Number.isFinite(s.messageCount))
-      meta.append(el('span', '', `${s.messageCount} message${s.messageCount > 1 ? 's' : ''}`));
-    const date = el('time', '', dateLabel(s.updatedAt));
+      meta.append(el('span', '', () => tr('count.messages', { count: s.messageCount })));
+    const date = el('time', '', () => dateLabel(s.updatedAt));
     if (toTime(s.updatedAt)) {
       date.dateTime = new Date(toTime(s.updatedAt)).toISOString();
-      date.title = new Date(toTime(s.updatedAt)).toLocaleString('fr-FR');
+      bindAttribute(date, 'title', () => new Date(toTime(s.updatedAt)).toLocaleString(getLanguage()));
     }
     meta.append(date);
     content.append(meta);
@@ -782,21 +835,21 @@ function renderProjectOverview() {
     const empty = el('div', 'project-sessions-empty');
     empty.append(
       icon(query ? 'search' : state.archived ? 'archive' : 'chat'),
-      el(
-        'h2',
-        '',
-        query ? 'Aucun résultat' : state.archived ? 'Aucune session archivée' : 'Votre première session',
-      ),
-      el(
-        'p',
-        '',
+      el('h2', '', () =>
         query
-          ? 'Essayez un autre mot pour retrouver votre conversation.'
+          ? tr('ui.aucun_resultat')
           : state.archived
-            ? 'Les conversations archivées de ce projet apparaîtront ici.'
+            ? tr('ui.aucune_session_archivee_2')
+            : tr('ui.votre_premiere_session'),
+      ),
+      el('p', '', () =>
+        query
+          ? tr('ui.essayez_un_autre_mot_pour_retrouver_votre_conversation')
+          : state.archived
+            ? tr('ui.les_conversations_archivees_de_ce_projet_apparaitront_ici')
             : state.readOnly
-              ? 'Ce projet ne contient pas encore de conversation.'
-              : 'Créez une session pour commencer à travailler avec Prime Agent.',
+              ? tr('ui.ce_projet_ne_contient_pas_encore_de_conversation')
+              : tr('ui.creez_une_session_pour_commencer_a_travailler_avec_prime_agent'),
       ),
     );
     root.append(empty);
@@ -806,66 +859,78 @@ function renderDetails() {
   const p = project(),
     s = session(),
     run = activeRun();
-  $('header-project').textContent = p?.name || 'Espace de travail';
-  $('header-project').title = p?.cwd || '';
+  bindText($('header-project'), () => p?.name || tr('ui.espace_de_travail'));
+  bindAttribute($('header-project'), 'title', () => p?.cwd || '');
   $('header-project').disabled = !p;
-  $('header-project').setAttribute(
-    'aria-label',
-    p ? `Afficher les sessions de ${p.name}` : 'Espace de travail',
+  bindAttribute($('header-project'), 'aria-label', () =>
+    p ? tr('ui.afficher_les_sessions_de', { value1: p.name }) : tr('ui.espace_de_travail'),
   );
-  $('header-session').textContent =
-    s?.title ||
-    (run
-      ? 'Session en cours'
-      : state.projectOverview
-        ? 'Sessions'
-        : state.readOnly
-          ? 'Consultation des sessions'
-          : 'Nouvelle session');
-  $('header-session').title = $('header-session').textContent;
-  document.title = s?.title ? `${s.title} · Prime Agent Studio` : 'Prime Agent Studio';
-  $('detail-project-name').textContent =
-    p?.name || (state.readOnly ? 'Vos projets' : 'Votre prochain projet');
-  $('detail-project-path').textContent =
-    p?.cwd ||
-    (state.readOnly
-      ? 'Les projets du Studio sont accessibles depuis le menu.'
-      : 'Connectez un dossier local pour donner du contexte à votre agent.');
+  bindText(
+    $('header-session'),
+    () =>
+      s?.title ||
+      (run
+        ? tr('ui.session_en_cours')
+        : state.projectOverview
+          ? tr('ui.sessions')
+          : state.readOnly
+            ? tr('ui.consultation_des_sessions')
+            : tr('ui.nouvelle_session')),
+  );
+  bindAttribute($('header-session'), 'title', () => $('header-session').textContent);
+  bindAttribute(document, 'title', () =>
+    s?.title ? `${s.title} · Prime Agent Studio` : 'Prime Agent Studio',
+  );
+  bindText(
+    $('detail-project-name'),
+    () => p?.name || (state.readOnly ? tr('ui.vos_projets') : tr('ui.votre_prochain_projet')),
+  );
+  bindText(
+    $('detail-project-path'),
+    () =>
+      p?.cwd ||
+      (state.readOnly
+        ? tr('ui.les_projets_du_studio_sont_accessibles_depuis_le_menu')
+        : tr('ui.connectez_un_dossier_local_pour_donner_du_contexte_a_votre_agent')),
+  );
   $('copy-project-path').hidden = !p;
-  $('welcome-project').lastElementChild.textContent = p
-    ? p.exists === false
-      ? `${p.name} · dossier introuvable`
-      : p.name
-    : state.readOnly
-      ? 'Vos sessions apparaîtront ici'
-      : 'Ajoutez un projet pour commencer';
+  bindText($('welcome-project').lastElementChild, () =>
+    p
+      ? p.exists === false
+        ? tr('ui.dossier_introuvable_2', { value1: p.name })
+        : p.name
+      : state.readOnly
+        ? tr('ui.vos_sessions_apparaitront_ici')
+        : tr('ui.ajoutez_un_projet_pour_commencer_2'),
+  );
   const status = isRunning(run)
     ? run.status === 'stopping'
-      ? 'Arrêt en cours'
-      : 'En cours'
+      ? tr('ui.arret_en_cours')
+      : tr('ui.en_cours')
     : s?.archived
-      ? 'Archivée'
+      ? tr('ui.archivee')
       : s
-        ? 'Disponible'
+        ? tr('ui.disponible')
         : state.readOnly
-          ? 'Consultation'
-          : 'Prête à démarrer';
+          ? tr('ui.consultation')
+          : tr('ui.prete_a_demarrer');
   $('detail-status').replaceChildren(
     el('span', `status-dot${s?.archived ? ' waiting' : ''}`),
-    document.createTextNode(status),
+    textNode(() => translateKnown(status)),
   );
-  $('detail-message-count').textContent =
+  bindText($('detail-message-count'), () =>
     s || run
       ? String(activeMessages().filter((m) => m.role === 'user' || m.role === 'assistant').length)
-      : '—';
-  $('detail-updated').textContent = dateLabel(s?.updatedAt || run?.startedAt);
+      : '—',
+  );
+  bindText($('detail-updated'), () => dateLabel(s?.updatedAt || run?.startedAt));
   $('detail-session-id').hidden = !state.sessionId;
-  $('detail-session-id').textContent = state.sessionId ? `ID ${state.sessionId}` : '';
-  $('detail-session-id').title = state.sessionId || '';
+  bindText($('detail-session-id'), () => (state.sessionId ? `ID ${state.sessionId}` : ''));
+  bindAttribute($('detail-session-id'), 'title', () => state.sessionId || '');
   $('session-menu-button').disabled = !state.sessionId;
   $('export-session').hidden = !state.sessionId;
   $('session-state').hidden = !isRunning(run);
-  $('session-state').textContent = 'Agent en cours';
+  bindText($('session-state'), () => tr('ui.agent_en_cours'));
   const runs = [...state.runs.values()].filter(isRunning);
   $('active-runs-section').hidden = !runs.length;
   $('active-runs').replaceChildren();
@@ -876,7 +941,7 @@ function renderDetails() {
       el(
         'span',
         'active-run-label',
-        session(r.sessionId)?.title || r.prompt?.slice(0, 55) || 'Nouvelle session',
+        () => session(r.sessionId)?.title || r.prompt?.slice(0, 55) || tr('ui.nouvelle_session'),
       ),
     );
     b.onclick = () => selectRun(r);
@@ -885,9 +950,10 @@ function renderDetails() {
   if (state.online && state.version?.available !== false) {
     if (p?.exists === false)
       banner(
-        state.readOnly
-          ? 'Le dossier de ce projet est introuvable. Ses conversations restent consultables.'
-          : 'Le dossier de ce projet est introuvable. Ajoutez son nouvel emplacement pour poursuivre.',
+        () =>
+          state.readOnly
+            ? tr('ui.le_dossier_de_ce_projet_est_introuvable_ses_conversations_restent')
+            : tr('ui.le_dossier_de_ce_projet_est_introuvable_ajoutez_son_nouvel_emplac'),
         true,
       );
     else if ($('global-banner').dataset.persistent !== 'true') banner('');
@@ -905,6 +971,7 @@ marked.setOptions({ gfm: true, breaks: false });
 function markdown(text, { cwd = state.projectCwd, basePath = '' } = {}) {
   const n = el('div', 'markdown');
   const references = [];
+  n.dataset.i18nIgnore = '';
   n.innerHTML = DOMPurify.sanitize(
     marked.parse(String(text || ''), { renderer: fileLinkRenderer(marked, references) }),
     {
@@ -925,6 +992,8 @@ function markdown(text, { cwd = state.projectCwd, basePath = '' } = {}) {
         'math',
       ],
       FORBID_ATTR: ['style', 'id', 'name', 'target'],
+      ALLOW_DATA_ATTR: false,
+      ADD_ATTR: ['data-studio-file'],
     },
   );
   bindFileLinks(n, references, (reference) => inspectorUI?.openDocument(reference, { cwd, basePath }));
@@ -933,7 +1002,7 @@ function markdown(text, { cwd = state.projectCwd, basePath = '' } = {}) {
     const href = a.getAttribute('href') || '';
     if (!/^(https?:|mailto:|#|\/)/i.test(href)) {
       a.removeAttribute('href');
-      a.title = href;
+      bindAttribute(a, 'title', () => href);
     } else if (/^https?:/i.test(href)) {
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
@@ -942,18 +1011,21 @@ function markdown(text, { cwd = state.projectCwd, basePath = '' } = {}) {
   n.querySelectorAll('img').forEach((img) => {
     const src = img.getAttribute('src') || '';
     if (!src.startsWith('/') && !src.startsWith('data:image/'))
-      img.replaceWith(el('span', '', `[Image : ${img.alt || src}]`));
+      img.replaceWith(el('span', '', () => `[Image : ${img.alt || src}]`));
   });
   n.querySelectorAll('pre').forEach((pre) => {
     const code = pre.querySelector('code');
     if (!code) return;
     const bar = el('div', 'code-bar'),
       lang = (code.className.match(/language-([\w+#.-]+)/) || [])[1] || 'code';
-    bar.append(el('span', '', lang));
+    bar.append(el('span', '', () => lang));
     const b = el('button', 'copy-code');
     b.type = 'button';
-    b.append(icon('copy'), document.createTextNode('Copier'));
-    b.onclick = () => copyText(code.textContent, 'Code copié');
+    b.append(
+      icon('copy'),
+      textNode(() => tr('ui.copier')),
+    );
+    b.onclick = () => copyText(code.textContent, () => tr('ui.code_copie'));
     bar.append(b);
     pre.prepend(bar);
   });
@@ -986,23 +1058,31 @@ function renderTool(t, messageId) {
     summary = el('summary');
   const status =
     t.status === 'running'
-      ? 'En cours'
+      ? tr('ui.en_cours')
       : t.isError
-        ? 'Erreur'
+        ? tr('common.error')
         : t.status === 'pending'
-          ? 'Préparation'
-          : 'Terminé';
+          ? tr('ui.preparation')
+          : tr('ui.termine');
   summary.append(
     icon(t.status === 'running' ? 'terminal' : 'tool'),
-    el('span', 'tool-name', t.name || 'Outil'),
-    el('span', `tool-status${t.isError ? ' error' : ''}`, status),
+    el('span', 'tool-name', () => t.name || tr('common.tool')),
+    el('span', `tool-status${t.isError ? ' error' : ''}`, () => translateKnown(status)),
     icon('chevron', 'chevron'),
   );
   d.append(summary);
   const content = el('div', 'tool-content');
-  if (t.args != null) content.append(el('h4', '', 'PARAMÈTRES'), el('pre', '', stringify(t.args)));
-  if (t.result != null) content.append(el('h4', '', 'RÉSULTAT'), el('pre', '', stringify(t.result)));
-  if (!content.childNodes.length) content.append(el('pre', '', 'En attente du résultat…'));
+  if (t.args != null)
+    content.append(
+      el('h4', '', () => tr('ui.parametres')),
+      el('pre', '', () => stringify(t.args)),
+    );
+  if (t.result != null)
+    content.append(
+      el('h4', '', () => tr('ui.resultat_2')),
+      el('pre', '', () => stringify(t.result)),
+    );
+  if (!content.childNodes.length) content.append(el('pre', '', () => tr('ui.en_attente_du_resultat')));
   d.append(content);
   return d;
 }
@@ -1019,28 +1099,26 @@ function renderMessage(m, index) {
   avatar.append(m.role === 'user' ? icon('user') : icon('model'));
   heading.append(
     avatar,
-    el(
-      'span',
-      'message-author',
-      m.role === 'user' ? 'Vous' : m.role === 'assistant' ? 'Prime Agent' : 'Contexte',
+    el('span', 'message-author', () =>
+      m.role === 'user' ? tr('ui.vous') : m.role === 'assistant' ? 'Prime Agent' : tr('ui.contexte'),
     ),
   );
   if (m.model) {
-    const model = el('span', 'message-model', String(m.model).split('/').pop());
-    model.title = String(m.model);
+    const model = el('span', 'message-model', () => String(m.model).split('/').pop());
+    bindAttribute(model, 'title', () => String(m.model));
     heading.append(model);
   }
-  heading.append(el('span', 'message-time', dateLabel(m.timestamp)));
+  heading.append(el('span', 'message-time', () => dateLabel(m.timestamp)));
   n.append(heading);
   const body = el('div', 'message-body');
-  if (m.role === 'user') body.textContent = m.text || '';
+  if (m.role === 'user') bindText(body, () => m.text || '');
   else {
     if (m.thinking) {
       const d = makeDetails('thinking-block', `thinking:${id}`, reasoningMode(prefs) === 'expanded'),
         s = el('summary');
       s.append(
         icon('brain'),
-        el('span', '', m.streaming ? 'Réflexion en cours' : 'Raisonnement'),
+        el('span', '', () => (m.streaming ? tr('ui.reflexion_en_cours') : tr('ui.raisonnement'))),
         icon('chevron', 'chevron'),
       );
       const content = el('div', 'thinking-content reasoning-markdown');
@@ -1051,11 +1129,13 @@ function renderMessage(m, index) {
     }
     if (m.text) body.append(markdown(m.text));
     for (const tool of m.tools || []) body.append(renderTool(tool, id));
-    if (m.error) body.append(el('div', 'message-error', m.error));
+    if (translateKnown(m.error)) body.append(el('div', 'message-error', () => translateKnown(m.error)));
     if (m.streaming) body.append(el('span', 'stream-caret'));
-    if (!m.text && !m.thinking && !m.tools?.length && !m.error && !m.streaming)
+    if (!m.text && !m.thinking && !m.tools?.length && !translateKnown(m.error) && !m.streaming)
       body.append(
-        el('span', '', m.stopReason === 'aborted' ? 'Réponse interrompue.' : 'Aucun contenu textuel.'),
+        el('span', '', () =>
+          m.stopReason === 'aborted' ? tr('ui.reponse_interrompue') : tr('ui.aucun_contenu_textuel'),
+        ),
       );
   }
   if (m.attachments?.length) body.append(renderImages(m.attachments));
@@ -1063,8 +1143,11 @@ function renderMessage(m, index) {
   if (m.text) {
     const actions = el('div', 'message-actions'),
       b = el('button', '');
-    b.append(icon('copy'), document.createTextNode('Copier'));
-    b.onclick = () => copyText(m.text, 'Message copié');
+    b.append(
+      icon('copy'),
+      textNode(() => tr('ui.copier')),
+    );
+    b.onclick = () => copyText(m.text, () => tr('ui.message_copie'));
     actions.append(b);
     n.append(actions);
   }
@@ -1247,8 +1330,8 @@ async function selectSession(id, cwd) {
     if (token !== state.requestId) return;
     state.loading = false;
     renderMessages();
-    banner(e.message, true);
-    toast(e.message, true);
+    banner(translateKnown(e.message), true);
+    toast(translateKnown(e.message), true);
   }
 }
 async function selectRun(run) {
@@ -1286,7 +1369,7 @@ function upsertSession(id, run) {
     p.sessions.unshift({
       id,
       cwd: run.cwd,
-      title: run.prompt?.replace(/\s+/g, ' ').slice(0, 100) || 'Nouvelle session',
+      title: run.prompt?.replace(/\s+/g, ' ').slice(0, 100) || tr('ui.nouvelle_session'),
       createdAt: run.startedAt,
       updatedAt: run.startedAt,
     });
@@ -1342,7 +1425,7 @@ function applyRunEvent(run, e) {
       ensureAssistant(run, e.seq).thinking += e.delta || '';
       break;
     case 'message': {
-      const incoming = e.message || {};
+      const incoming = translateKnown(e.message) || {};
       if (incoming.role === 'assistant') {
         const m = ensureAssistant(run, e.seq),
           known = new Map((m.tools || []).map((t) => [t.id, t]));
@@ -1401,14 +1484,14 @@ function applyRunEvent(run, e) {
     case 'status':
       run.statusLabel =
         e.status === 'compacting'
-          ? 'Optimisation du contexte…'
+          ? tr('ui.optimisation_du_contexte')
           : e.status === 'retrying'
-            ? 'Nouvelle tentative en cours…'
-            : 'L’agent travaille…';
+            ? tr('ui.nouvelle_tentative_en_cours')
+            : tr('ui.l_agent_travaille');
       break;
     case 'replay_truncated':
       if (state.viewRunId === run.id)
-        toast('Le début de cette exécution sera rechargé depuis l’historique à la fin.');
+        toast(() => tr('ui.le_debut_de_cette_execution_sera_recharge_depuis_l_historique_a_l'));
       break;
     case 'done':
       void finishRun(run, e);
@@ -1425,11 +1508,11 @@ function subscribe(run) {
     try {
       applyRunEvent(run, JSON.parse(e.data));
     } catch (error) {
-      console.error('Événement Prime Agent invalide', error);
+      translateKnown(console.error)(tr('ui.evenement_prime_agent_invalide'), error);
     }
   };
   source.onopen = () => {
-    if (run.disconnected) run.statusLabel = 'L’agent travaille…';
+    if (run.disconnected) run.statusLabel = tr('ui.l_agent_travaille');
     run.disconnected = false;
     if (state.viewRunId === run.id) updateComposer();
   };
@@ -1440,7 +1523,7 @@ function subscribe(run) {
       return;
     }
     run.disconnected = true;
-    run.statusLabel = 'Reconnexion à l’agent…';
+    run.statusLabel = tr('ui.reconnexion_a_l_agent');
     if (state.viewRunId === run.id) updateComposer();
     void refreshOverview();
   };
@@ -1456,7 +1539,7 @@ async function finishRun(run, e) {
     run.sessionId = e.sessionId;
     upsertSession(e.sessionId, run);
   }
-  if (e.error) {
+  if (translateKnown(e.error)) {
     run.messages.push({
       id: `${run.id}-error`,
       role: 'system',
@@ -1464,8 +1547,8 @@ async function finishRun(run, e) {
       tools: [],
       timestamp: run.endedAt,
     });
-    toast(e.error, true);
-  } else if (e.status === 'stopped' || e.status === 'cancelled') toast('L’agent a été arrêté.');
+    toast(translateKnown(e.error), true);
+  } else if (e.status === 'stopped' || e.status === 'cancelled') toast(() => tr('ui.l_agent_a_ete_arrete'));
   if (state.viewRunId === run.id) {
     state.sessionId = run.sessionId || state.sessionId;
     state.history = [...run.base, ...run.messages];
@@ -1477,7 +1560,7 @@ async function finishRun(run, e) {
         sessionActivity.observe(h);
         if (state.viewRunId === run.id && h.messages?.length) {
           state.history = h.messages;
-          if (e.error)
+          if (translateKnown(e.error))
             state.history.push({
               id: `${run.id}-error`,
               role: 'system',
@@ -1505,7 +1588,7 @@ async function sendMessage(event) {
   const files = imageDraft?.files || [];
   const originalDraft = composerText();
   const message =
-      originalDraft.trim() || (images.length || files.length ? 'Analyse les pièces jointes.' : ''),
+      originalDraft.trim() || (images.length || files.length ? tr('ui.analyse_les_pieces_jointes') : ''),
     cwd = state.projectCwd,
     sessionId = state.sessionId,
     base = [...activeMessages()],
@@ -1556,7 +1639,7 @@ async function sendMessage(event) {
     subscribe(run);
     renderNavigation();
   } catch (e) {
-    toast(e.message, true);
+    toast(translateKnown(e.message), true);
   } finally {
     state.sending = false;
     updateComposer();
@@ -1573,7 +1656,7 @@ async function stopRun() {
     await api(`/api/runs/${encodeURIComponent(r.id)}/stop`, { method: 'POST', body: {} });
   } catch (e) {
     r.status = 'running';
-    toast(e.message, true);
+    toast(translateKnown(e.message), true);
     updateComposer();
   }
 }
@@ -1607,7 +1690,7 @@ function refreshOverview() {
             run.source = null;
             for (const m of run.messages || []) m.streaming = false;
             if (state.viewRunId === run.id) {
-              toast('Cette exécution n’est plus active. L’historique enregistré a été conservé.', true);
+              toast(() => tr('ui.cette_execution_n_est_plus_active_l_historique_enregistre_a_ete_c'), true);
               if (run.sessionId) void selectSession(run.sessionId, run.cwd);
               else scheduleMessages();
             }
@@ -1642,22 +1725,26 @@ function renderModelDefaults() {
 function selectDefaultModel(id) {
   const button = $('default-main-model'),
     model = state.models.find((item) => item.id === id),
-    name = model?.name || (id ? `Indisponible · ${id}` : 'Choix automatique');
+    name = model?.name || (id ? tr('common.unavailable', { value1: id }) : tr('ui.choix_automatique'));
   button.value = id;
-  button.querySelector('.model-picker-name').textContent = name;
-  button.querySelector('.model-picker-provider').textContent =
-    model?.provider || (id ? 'Modèle indisponible' : 'Configuration Prime Agent');
-  button.title = id || 'Choix automatique de Prime Agent';
-  button.setAttribute('aria-label', `Modèle principal par défaut. ${name}${model ? ', ' + model.id : ''}`);
+  bindText(button.querySelector('.model-picker-name'), () => name);
+  bindText(
+    button.querySelector('.model-picker-provider'),
+    () => model?.provider || (id ? tr('ui.modele_indisponible') : tr('ui.configuration_prime_agent')),
+  );
+  bindAttribute(button, 'title', () => id || tr('ui.choix_automatique_de_prime_agent'));
+  bindAttribute(button, 'aria-label', () =>
+    tr('ui.modele_principal_par_defaut', { value1: name, value2: model ? ', ' + model.id : '' }),
+  );
   $('save-default-model').disabled = id === (state.modelDefaults?.mainModel || '');
 }
 function renderModelConfig() {
   const configuration = state.modelConfig || { models: [] },
     models = configuration.models || [],
     list = $('custom-model-list');
-  $('model-config-count').textContent = models.length
-    ? `${models.length} modèle${models.length > 1 ? 's' : ''} configuré${models.length > 1 ? 's' : ''}`
-    : 'Aucun modèle configuré';
+  bindText($('model-config-count'), () =>
+    models.length ? tr('count.models', { count: models.length }) : tr('ui.aucun_modele_configure'),
+  );
   $('model-config-empty').hidden = models.length > 0;
   list.replaceChildren();
   const apiNames = new Map((configuration.apis || []).map((item) => [item.id, item.name]));
@@ -1668,28 +1755,39 @@ function renderModelConfig() {
       title = el('div', 'custom-model-title'),
       badges = el('div', 'custom-model-badges'),
       actions = el('div', 'custom-model-actions'),
-      editButton = el('button', 'secondary-button', ''),
-      deleteButton = el('button', 'model-config-delete', '');
+      editButton = el('button', 'secondary-button', () => ''),
+      deleteButton = el('button', 'model-config-delete', () => '');
     symbol.append(icon('model'));
-    title.append(el('strong', '', model.name), el('code', '', `${model.provider}/${model.id}`));
-    badges.append(
-      el('span', '', apiNames.get(model.api) || model.api || 'API héritée'),
-      el('span', '', `${modelConfigNumber(model.contextWindow)} jetons`),
+    title.append(
+      el('strong', '', () => model.name),
+      el('code', '', () => `${model.provider}/${model.id}`),
     );
-    if (model.reasoning) badges.append(el('span', '', 'Raisonnement'));
-    if (model.input?.includes('image')) badges.append(el('span', '', 'Images'));
-    if (!model.authenticationAvailable) badges.append(el('span', 'warning', 'Identification à vérifier'));
-    if (!model.editable) badges.append(el('span', 'warning', 'Options avancées en lecture seule'));
+    badges.append(
+      el('span', '', () => apiNames.get(model.api) || model.api || tr('ui.api_heritee')),
+      el('span', '', () => tr('model.tokens', { value1: modelConfigNumber(model.contextWindow) })),
+    );
+    if (model.reasoning) badges.append(el('span', '', () => tr('ui.raisonnement')));
+    if (model.input?.includes('image')) badges.append(el('span', '', () => tr('ui.images')));
+    if (!model.authenticationAvailable)
+      badges.append(el('span', 'warning', () => tr('ui.identification_a_verifier')));
+    if (!model.editable)
+      badges.append(el('span', 'warning', () => tr('ui.options_avancees_en_lecture_seule')));
     copy.append(title, badges);
     editButton.type = 'button';
     editButton.dataset.editModel = String(index);
     editButton.disabled = !model.editable;
-    editButton.setAttribute('aria-label', `Modifier ${model.name}`);
-    editButton.append(icon('pencil'), document.createTextNode('Modifier'));
+    bindAttribute(editButton, 'aria-label', () => tr('common.editName', { value1: model.name }));
+    editButton.append(
+      icon('pencil'),
+      textNode(() => tr('ui.modifier')),
+    );
     deleteButton.type = 'button';
     deleteButton.dataset.deleteModel = String(index);
-    deleteButton.setAttribute('aria-label', `Supprimer ${model.name}`);
-    deleteButton.append(icon('x'), document.createTextNode('Supprimer'));
+    bindAttribute(deleteButton, 'aria-label', () => tr('common.deleteName', { value1: model.name }));
+    deleteButton.append(
+      icon('x'),
+      textNode(() => tr('ui.supprimer')),
+    );
     actions.append(editButton, deleteButton);
     card.append(symbol, copy, actions);
     list.append(card);
@@ -1705,16 +1803,18 @@ function showModelConfigForm(model = null) {
   state.modelConfigOriginal = model ? { provider: model.provider, id: model.id } : null;
   $('model-config-list-view').hidden = true;
   $('model-config-form').hidden = false;
-  $('model-config-form-title').textContent = model ? 'Modifier le modèle' : 'Ajouter un modèle';
+  bindText($('model-config-form-title'), () =>
+    model ? tr('ui.modifier_le_modele') : tr('ui.ajouter_un_modele'),
+  );
   $('custom-model-provider').value = model?.provider || '';
   $('custom-model-id').value = model?.id || '';
   $('custom-model-name').value = model?.name || '';
   $('custom-model-api').value = model?.api || 'openai-responses';
   $('custom-model-url').value = model?.baseUrl || '';
   $('custom-model-credential').value = model?.credentialEnv || '';
-  $('custom-model-credential').placeholder = model?.credentialConfigured
-    ? 'Identification existante conservée'
-    : 'ex. PROVIDER_API_KEY';
+  bindAttribute($('custom-model-credential'), 'placeholder', () =>
+    model?.credentialConfigured ? tr('ui.identification_existante_conservee') : tr('example.keyVariable'),
+  );
   $('custom-model-context').value = String(model?.contextWindow || 128000);
   $('custom-model-output').value = String(model?.maxTokens || 16384);
   $('custom-model-reasoning').checked = model?.reasoning === true;
@@ -1724,12 +1824,12 @@ function showModelConfigForm(model = null) {
 }
 async function openModelConfig() {
   if (state.remote) {
-    toast('La configuration des modèles est disponible uniquement sur l’ordinateur local.', true);
+    toast(() => tr('ui.la_configuration_des_modeles_est_disponible_uniquement_sur_l_ordi'), true);
     return;
   }
   $('settings-dialog').close();
   $('model-config-loading').hidden = false;
-  $('model-config-loading').textContent = 'Chargement de la configuration…';
+  bindText($('model-config-loading'), () => tr('ui.chargement_de_la_configuration'));
   $('model-config-content').hidden = true;
   $('model-config-dialog').showModal();
   try {
@@ -1747,9 +1847,9 @@ async function openModelConfig() {
   } catch (error) {
     const message =
       error.status === 404
-        ? 'Le serveur en cours doit être redémarré pour activer le configurateur. Arrêtez puis relancez Prime Agent Studio.'
-        : `Impossible de charger la configuration. ${error.message}`;
-    $('model-config-loading').textContent = message;
+        ? tr('ui.le_serveur_en_cours_doit_etre_redemarre_pour_activer_le_configura')
+        : tr('ui.impossible_de_charger_la_configuration', { value1: translateKnown(error.message) });
+    bindText($('model-config-loading'), () => message);
     toast(message, true);
   }
 }
@@ -1767,14 +1867,17 @@ async function saveDefaultModel() {
     savePreferences({ model: data.mainModel || '' });
     if (data.catalog) populateModels(data.catalog);
     renderModelDefaults();
-    toast(
+    toast(() =>
       data.mainModel
-        ? 'Le modèle par défaut de l’agent principal a été enregistré.'
-        : 'Prime Agent choisira automatiquement le modèle principal.',
+        ? tr('ui.le_modele_par_defaut_de_l_agent_principal_a_ete_enregistre')
+        : tr('ui.prime_agent_choisira_automatiquement_le_modele_principal'),
     );
   } catch (error) {
     button.disabled = false;
-    toast(`Impossible d’enregistrer le modèle par défaut. ${error.message}`, true);
+    toast(
+      () => tr('ui.impossible_d_enregistrer_le_modele_par_defaut', { value1: translateKnown(error.message) }),
+      true,
+    );
   } finally {
     $('default-main-model').disabled = false;
   }
@@ -1806,9 +1909,9 @@ async function saveModelConfiguration(event) {
     updateModelsAfterConfiguration(data);
     renderModelConfig();
     showModelConfigList(true);
-    toast(`${body.name} a été enregistré.`);
+    toast(() => tr('ui.a_ete_enregistre', { value1: body.name }));
   } catch (error) {
-    $('model-config-error').textContent = error.message;
+    bindText($('model-config-error'), () => translateKnown(error.message));
     $('model-config-error').hidden = false;
   } finally {
     button.disabled = false;
@@ -1816,7 +1919,7 @@ async function saveModelConfiguration(event) {
 }
 async function deleteModelConfiguration(index) {
   const model = state.modelConfig?.models?.[index];
-  if (!model || !confirm(`Supprimer « ${model.name} » de Prime Agent ?`)) return;
+  if (!model || !confirm(tr('ui.supprimer_de_prime_agent', { value1: model.name }))) return;
   try {
     const data = await api('/api/model-config', {
       method: 'DELETE',
@@ -1825,9 +1928,9 @@ async function deleteModelConfiguration(index) {
     state.modelConfig = data;
     updateModelsAfterConfiguration(data, `${model.provider}/${model.id}`);
     renderModelConfig();
-    toast(`${model.name} a été supprimé.`);
+    toast(() => tr('ui.a_ete_supprime', { value1: model.name }));
   } catch (error) {
-    toast(`Impossible de supprimer ce modèle. ${error.message}`, true);
+    toast(() => tr('ui.impossible_de_supprimer_ce_modele', { value1: translateKnown(error.message) }), true);
   }
 }
 function populateModels(catalog) {
@@ -1835,7 +1938,7 @@ function populateModels(catalog) {
   state.modelCatalogDefault = typeof catalog?.default?.model === 'string' ? catalog.default.model : '';
   const select = $('model-select');
   select.replaceChildren();
-  const option = el('option', '', 'Modèle par défaut');
+  const option = el('option', '', () => tr('ui.modele_par_defaut'));
   option.value = '';
   select.append(option);
   const groups = new Map();
@@ -1846,7 +1949,7 @@ function populateModels(catalog) {
       groups.set(model.provider, group);
       select.append(group);
     }
-    const item = el('option', '', model.name || model.id);
+    const item = el('option', '', () => model.name || model.id);
     item.value = model.id;
     groups.get(model.provider).append(item);
   }
@@ -1877,13 +1980,14 @@ async function bootstrap() {
     state.projectOverview = Boolean(state.projectCwd && (selection.projectOverview ?? state.remote));
     state.initialized = true;
     setConnection(true);
-    $('cli-version').textContent = state.version.version ? `v${state.version.version}` : '';
-    $('settings-runtime').textContent =
+    bindText($('cli-version'), () => (state.version.version ? `v${state.version.version}` : ''));
+    bindText($('settings-runtime'), () =>
       state.version.available === false
-        ? 'Prime Agent introuvable sur cet ordinateur'
-        : `Prime Agent ${state.version.version || ''} · sessions natives conservées`;
+        ? tr('ui.prime_agent_introuvable_sur_cet_ordinateur')
+        : tr('ui.prime_agent_sessions_natives_conservees', { value1: state.version.version || '' }),
+    );
     if (state.version.available === false) {
-      banner('Prime Agent est introuvable. Installez ou configurez le CLI puis relancez le Studio.', true);
+      banner(() => tr('ui.prime_agent_est_introuvable_installez_ou_configurez_le_cli_puis_r'), true);
       $('global-banner').dataset.persistent = 'true';
     }
     renderNavigation();
@@ -1899,9 +2003,9 @@ async function bootstrap() {
     void syncSessionActivity();
   } catch (e) {
     setConnection(false);
-    banner(`Impossible de joindre le serveur. ${e.message}`, true);
+    banner(() => tr('ui.impossible_de_joindre_le_serveur', { value1: translateKnown(e.message) }), true);
     $('project-list').replaceChildren(
-      el('div', 'sidebar-empty', 'Le serveur local est indisponible. Reconnexion automatique…'),
+      el('div', 'sidebar-empty', () => tr('ui.le_serveur_local_est_indisponible_reconnexion_automatique')),
     );
     $('session-list').replaceChildren();
     setTimeout(bootstrap, 5000);
@@ -1927,9 +2031,9 @@ async function addProject(e) {
     await refreshOverview();
     $('project-dialog').close();
     selectProject(p.cwd || $('project-cwd').value.trim());
-    toast('Projet ajouté à votre espace de travail.');
+    toast(() => tr('ui.projet_ajoute_a_votre_espace_de_travail'));
   } catch (e) {
-    $('project-error').textContent = e.message;
+    bindText($('project-error'), () => translateKnown(e.message));
     $('project-error').hidden = false;
   } finally {
     b.disabled = false;
@@ -1964,7 +2068,7 @@ function openProjectMenu(cwd, anchor) {
   if (!p) return;
   menuProjectCwd = cwd;
   projectMenuAnchor = anchor;
-  $('project-pin-label').textContent = p.pinned ? 'Désépingler' : 'Épingler';
+  bindText($('project-pin-label'), () => (p.pinned ? tr('ui.desepingler') : tr('ui.epingler')));
   $('project-menu').querySelector('[data-project-action="open"]').disabled = p.exists === false;
   $('project-menu').hidden = false;
   anchor.setAttribute('aria-expanded', 'true');
@@ -1978,18 +2082,18 @@ async function projectMenuAction(action) {
   try {
     if (action === 'open') {
       await api('/api/projects/open', { method: 'POST', body: { cwd: p.cwd } });
-      toast('Dossier ouvert sur le PC.');
+      toast(() => tr('ui.dossier_ouvert_sur_le_pc'));
     } else if (action === 'pin') {
       await api('/api/projects', { method: 'PATCH', body: { cwd: p.cwd, pinned: !p.pinned } });
       await refreshOverview();
     } else if (action === 'remove') {
-      $('remove-project-name').textContent = p.name;
+      bindText($('remove-project-name'), () => p.name);
       $('remove-project-dialog').dataset.cwd = p.cwd;
       $('remove-project-error').hidden = true;
       $('remove-project-dialog').showModal();
     }
   } catch (error) {
-    toast(error.message, true);
+    toast(translateKnown(error.message), true);
   }
 }
 async function removeProject(event) {
@@ -2012,9 +2116,9 @@ async function removeProject(event) {
       renderNavigation();
       renderMessages(true);
     }
-    toast('Projet retiré du Studio.');
+    toast(() => tr('ui.projet_retire_du_studio'));
   } catch (error) {
-    $('remove-project-error').textContent = error.message;
+    bindText($('remove-project-error'), () => translateKnown(error.message));
     $('remove-project-error').hidden = false;
   } finally {
     button.disabled = false;
@@ -2026,10 +2130,10 @@ async function logout() {
   try {
     saveDraft();
     const response = await fetch('/lan/logout', { method: 'POST' });
-    if (!response.ok && response.status !== 401) throw new Error('La déconnexion a échoué. Réessayez.');
+    if (!response.ok && response.status !== 401) throw new Error(tr('ui.la_deconnexion_a_echoue_reessayez'));
     location.replace('/');
   } catch (error) {
-    toast(error.message, true);
+    toast(translateKnown(error.message), true);
     button.disabled = false;
   }
 }
@@ -2046,8 +2150,8 @@ function openSessionMenu(id, anchor) {
   const s = session(id);
   if (!s) return;
   const menu = $('session-menu');
-  $('pin-label').textContent = s.pinned ? 'Désépingler' : 'Épingler';
-  $('archive-label').textContent = s.archived ? 'Désarchiver' : 'Archiver';
+  bindText($('pin-label'), () => (s.pinned ? tr('ui.desepingler') : tr('ui.epingler')));
+  bindText($('archive-label'), () => (s.archived ? tr('ui.desarchiver') : tr('ui.archiver')));
   menu.hidden = false;
   positionMenus();
   anchor.setAttribute('aria-expanded', 'true');
@@ -2073,14 +2177,14 @@ async function menuAction(action) {
       $('session-title').select();
     } else if (action === 'pin') {
       await patchSession(id, { pinned: !s.pinned });
-      toast(s.pinned ? 'Session désépinglée.' : 'Session épinglée.');
+      toast(() => (s.pinned ? tr('ui.session_desepinglee') : tr('ui.session_epinglee')));
     } else if (action === 'archive') {
       await patchSession(id, { archived: !s.archived });
-      toast(s.archived ? 'Session restaurée.' : 'Session archivée.');
+      toast(() => (s.archived ? tr('ui.session_restauree') : tr('ui.session_archivee')));
       if (s.id === state.sessionId && !s.archived) newSession();
     } else if (action === 'export') await exportSession(id);
   } catch (e) {
-    toast(e.message, true);
+    toast(translateKnown(e.message), true);
   }
 }
 async function renameSession(e) {
@@ -2090,15 +2194,15 @@ async function renameSession(e) {
   try {
     await patchSession($('rename-dialog').dataset.sessionId, { title: $('session-title').value.trim() });
     $('rename-dialog').close();
-    toast('Session renommée.');
+    toast(() => tr('ui.session_renommee'));
   } catch (e) {
-    $('rename-error').textContent = e.message;
+    bindText($('rename-error'), () => translateKnown(e.message));
     $('rename-error').hidden = false;
   } finally {
     b.disabled = false;
   }
 }
-async function copyText(text, label = 'Copié') {
+async function copyText(text, label = tr('ui.copie')) {
   try {
     await navigator.clipboard.writeText(text);
     toast(label);
@@ -2110,7 +2214,7 @@ async function copyText(text, label = 'Copié') {
     const ok = document.execCommand('copy');
     area.remove();
     if (ok) toast(label);
-    else toast('Le navigateur ne permet pas la copie. Sélectionnez le texte manuellement.', true);
+    else toast(() => tr('ui.le_navigateur_ne_permet_pas_la_copie_selectionnez_le_texte_manuel'), true);
   }
 }
 function fence(text) {
@@ -2122,19 +2226,29 @@ async function exportSession(id = state.sessionId) {
   if (!id) return;
   try {
     const h = await api(`/api/history?id=${encodeURIComponent(id)}`),
-      parts = [`# ${h.title || 'Conversation Prime Agent'}`, `Projet : ${h.cwd || ''}`, `Session : ${h.id}`];
+      parts = [
+        `# ${h.title || tr('ui.conversation_prime_agent')}`,
+        tr('export.project', { value1: h.cwd || '' }),
+        tr('export.session', { value1: h.id }),
+      ];
     for (const m of h.messages || []) {
       parts.push(
-        `## ${m.role === 'user' ? 'Vous' : m.role === 'assistant' ? 'Prime Agent' : 'Contexte'}`,
+        `## ${m.role === 'user' ? tr('ui.vous') : m.role === 'assistant' ? 'Prime Agent' : tr('ui.contexte')}`,
         m.text || '',
       );
       if (m.thinking)
-        parts.push('<details><summary>Raisonnement</summary>', '', m.thinking, '', '</details>');
+        parts.push(
+          '<details><summary data-i18n="ui.raisonnement">Raisonnement</summary>',
+          '',
+          m.thinking,
+          '',
+          '</details>',
+        );
       for (const t of m.tools || [])
         parts.push(
           `### Outil : ${t.name || 'outil'}`,
-          `Paramètres :\n\n${fence(stringify(t.args))}`,
-          `Résultat :\n\n${fence(stringify(t.result))}`,
+          tr('ui.parametres_2', { value1: fence(stringify(t.args)) }),
+          tr('ui.resultat_3', { value1: fence(stringify(t.result)) }),
         );
     }
     const url = URL.createObjectURL(
@@ -2147,9 +2261,9 @@ async function exportSession(id = state.sessionId) {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    toast('Conversation exportée en Markdown.');
+    toast(() => tr('ui.conversation_exportee_en_markdown'));
   } catch (e) {
-    toast(e.message, true);
+    toast(translateKnown(e.message), true);
   }
 }
 
@@ -2184,7 +2298,7 @@ imageComposer = createImageComposer({
       ?.input,
   }),
   onChange: () => updateComposer(),
-  onError: (error) => toast(error.message || String(error), true),
+  onError: (error) => toast(translateKnown(error.message) || String(error), true),
 });
 commandsUI = createCommands({
   api,
@@ -2200,14 +2314,14 @@ commandsUI = createCommands({
     saveDraft();
     resizeComposer();
   },
-  onError: (error) => toast(error.message, true),
+  onError: (error) => toast(translateKnown(error.message), true),
   action: async (name, args) => {
     if (!['model', 'effort', 'name'].includes(name) && args)
-      throw new Error('Ce raccourci du Studio s’utilise sans argument.');
+      throw new Error(tr('ui.ce_raccourci_du_studio_s_utilise_sans_argument'));
     if (['model', 'effort'].includes(name) && isRunning(activeRun()))
-      throw new Error('Le modèle et son effort se choisissent entre deux tours.');
+      throw new Error(tr('ui.le_modele_et_son_effort_se_choisissent_entre_deux_tours'));
     if (['name', 'session', 'export', 'copy'].includes(name) && !state.sessionId)
-      throw new Error('Ouvrez d’abord une session.');
+      throw new Error(tr('ui.ouvrez_d_abord_une_session'));
     switch (name) {
       case 'help':
         return commandsUI.open();
@@ -2229,10 +2343,10 @@ commandsUI = createCommands({
       case 'effort':
         if (args) {
           if (![...$('thinking-select').options].some((option) => option.value === args))
-            throw new Error('Niveau attendu : off, minimal, low, medium, high, xhigh ou max.');
+            throw new Error(tr('ui.niveau_attendu_off_minimal_low_medium_high_xhigh_ou_max'));
           $('thinking-select').value = args;
           $('thinking-select').dispatchEvent(new Event('change'));
-          toast('Effort de raisonnement modifié.');
+          toast(() => tr('ui.effort_de_raisonnement_modifie'));
         } else {
           $('thinking-select').focus();
           try {
@@ -2264,8 +2378,8 @@ commandsUI = createCommands({
         const last = [...activeMessages()]
           .reverse()
           .find((message) => message.role === 'assistant' && message.text);
-        if (!last) throw new Error('Aucune réponse à copier.');
-        await copyText(last.text, 'Dernière réponse copiée.');
+        if (!last) throw new Error(tr('ui.aucune_reponse_a_copier'));
+        await copyText(last.text, () => tr('ui.derniere_reponse_copiee'));
         break;
       }
       case 'export':
@@ -2297,7 +2411,7 @@ liveMessagesUI = createLiveMessages({
     saveDraft();
     resizeComposer();
   },
-  onError: (error) => toast(error.message || String(error), true),
+  onError: (error) => toast(translateKnown(error.message) || String(error), true),
 });
 applyPreferences();
 $('new-session').onclick = newSession;
@@ -2336,7 +2450,7 @@ $('session-menu').onclick = (e) => {
   if (b) void menuAction(b.dataset.action);
 };
 $('export-session').onclick = () => exportSession();
-$('copy-project-path').onclick = () => copyText(state.projectCwd, 'Chemin du projet copié.');
+$('copy-project-path').onclick = () => copyText(state.projectCwd, () => tr('ui.chemin_du_projet_copie'));
 $('open-settings').onclick = () => $('settings-dialog').showModal();
 createRemoteAccessSettings({ api, isRemote: () => state.remote, toast });
 $('project-menu').onclick = (e) => {
@@ -2358,9 +2472,15 @@ $('default-main-model').onclick = () => {
   openModelPicker({
     button: $('default-main-model'),
     value: $('default-main-model').value,
-    title: 'Modèle principal par défaut',
-    defaultLabel: 'Choix automatique de Prime Agent',
-    defaultDetail: 'Laisser Prime Agent choisir le modèle principal',
+    get title() {
+      return tr('ui.modele_principal_par_defaut_2');
+    },
+    get defaultLabel() {
+      return tr('ui.choix_automatique_de_prime_agent');
+    },
+    get defaultDetail() {
+      return tr('ui.laisser_prime_agent_choisir_le_modele_principal');
+    },
     onSelect: selectDefaultModel,
   });
 };
@@ -2560,6 +2680,16 @@ window.addEventListener('storage', (event) => {
   if ($('model-dialog').open) renderModelList();
 });
 window.addEventListener('beforeunload', saveDraft);
+onLanguageChange(() => {
+  if (!state.initialized) return;
+  applyAccessMode();
+  applyPreferences();
+  setConnection(state.online);
+  renderNavigation();
+  setSelectedModel($('model-select').value);
+  renderModelDefaults();
+  resizeComposer();
+});
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && state.initialized) void refreshOverview();
 });
@@ -2570,7 +2700,7 @@ setInterval(() => {
   const r = activeRun();
   if (isRunning(r)) {
     const s = Math.max(0, Math.floor((Date.now() - toTime(r.startedAt)) / 1000));
-    $('run-elapsed').textContent = s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${s % 60} s`;
+    bindText($('run-elapsed'), () => (s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${s % 60} s`));
   }
 }, 1000);
 setInterval(() => {

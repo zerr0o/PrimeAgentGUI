@@ -147,7 +147,7 @@ let browser;
 const checks = [];
 try {
   browser = await chromium.launch({ channel: 'msedge', headless: true });
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const context = await browser.newContext({ locale: 'fr-FR', viewport: { width: 390, height: 844 } });
   const page = await context.newPage(),
     errors = [];
   page.setDefaultTimeout(10000);

@@ -1,11 +1,26 @@
+import { t as tr } from './i18n.js';
 export const thinkingLabels = {
-  off: 'Désactivée',
-  minimal: 'Minimale',
-  low: 'Faible',
-  medium: 'Moyenne',
-  high: 'Élevée',
-  xhigh: 'Très élevée',
-  max: 'Maximum',
+  get off() {
+    return tr('ui.desactivee');
+  },
+  get minimal() {
+    return tr('ui.minimale');
+  },
+  get low() {
+    return tr('ui.faible');
+  },
+  get medium() {
+    return tr('ui.moyenne');
+  },
+  get high() {
+    return tr('ui.elevee');
+  },
+  get xhigh() {
+    return tr('ui.tres_elevee');
+  },
+  get max() {
+    return tr('ui.maximum');
+  },
 };
 export function reasoningMode(preferences = {}) {
   if (['hidden', 'preview', 'expanded'].includes(preferences.reasoningMode)) return preferences.reasoningMode;
@@ -14,5 +29,5 @@ export function reasoningMode(preferences = {}) {
   return 'preview';
 }
 export function thinkingLabel(level) {
-  return thinkingLabels[level] || 'Non renseignée';
+  return thinkingLabels[level] || tr('ui.non_renseignee');
 }

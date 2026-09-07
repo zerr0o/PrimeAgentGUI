@@ -1,3 +1,4 @@
+import { t as tr, bindAttribute } from './i18n.js';
 // Only explicit file references are linked. Plain prose and code blocks stay unchanged.
 export function isFileReference(value) {
   if (typeof value !== 'string' || value.length > 4096 || /[\x00-\x1f]/.test(value)) return false;
@@ -25,7 +26,7 @@ export function bindFileLinks(root, references, open) {
     anchor.classList.add('document-link');
     anchor.href = '#document';
     anchor.removeAttribute('target');
-    anchor.title = `Aperçu du fichier : ${reference}`;
+    bindAttribute(anchor, 'title', () => tr('ui.apercu_du_fichier', { value1: reference }));
     anchor.onclick = (event) => {
       event.preventDefault();
       event.stopPropagation();

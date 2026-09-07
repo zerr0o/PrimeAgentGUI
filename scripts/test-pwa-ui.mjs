@@ -181,6 +181,7 @@ try {
   assert.ok(!navigationRequests.some((request) => request.status === 403));
 
   const ios = await browser.newContext({
+    locale: 'fr-FR',
     viewport: { width: 390, height: 844 },
     userAgent:
       'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1',

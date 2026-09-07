@@ -1,3 +1,4 @@
+import { t as tr, bindText, bindAttribute, translateKnown } from './i18n.js';
 const TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 const MAX_FILE = 4 * 1024 * 1024,
   MAX_TOTAL = 8 * 1024 * 1024;
@@ -8,7 +9,7 @@ const source = (image) =>
 const node = (tag, className, text) => {
   const value = document.createElement(tag);
   value.className = className || '';
-  if (text) value.textContent = text;
+  if (text) bindText(value, () => text);
   return value;
 };
 
@@ -16,7 +17,7 @@ export function renderImages(images) {
   const gallery = node('div', 'message-images');
   for (const [index, image] of images.entries()) {
     if (image.type === 'file') {
-      const link = node('a', 'message-file', image.name || 'Fichier joint');
+      const link = node('a', 'message-file', () => image.name || tr('ui.fichier_joint'));
       if (/^[a-f0-9-]{36}$/.test(image.id || '')) {
         link.href = `/api/files/${image.id}`;
         link.setAttribute('download', image.name || 'fichier');
@@ -26,25 +27,25 @@ export function renderImages(images) {
     }
     const url = source(image);
     if (!url) {
-      gallery.append(node('span', 'attachment-note', 'Image dans la session native'));
+      gallery.append(node('span', 'attachment-note', () => tr('ui.image_dans_la_session_native')));
       continue;
     }
     const button = node('button', 'message-image');
     button.type = 'button';
-    button.setAttribute('aria-label', `Agrandir l’image ${index + 1}`);
+    bindAttribute(button, 'aria-label', () => tr('images.enlarge', { value1: index + 1 }));
     const img = node('img');
     img.src = url;
-    img.alt = `Image jointe ${index + 1}`;
+    bindAttribute(img, 'alt', () => tr('ui.image_jointe', { value1: index + 1 }));
     img.loading = 'lazy';
     button.append(img);
     button.onclick = () => {
       const dialog = node('dialog', 'image-viewer');
-      const close = node('button', 'image-viewer-close', 'Fermer');
+      const close = node('button', 'image-viewer-close', () => tr('ui.fermer'));
       close.type = 'button';
       const full = node('img');
       full.src = url;
-      full.alt = img.alt;
-      dialog.setAttribute('aria-label', img.alt);
+      bindAttribute(full, 'alt', () => img.alt);
+      bindAttribute(dialog, 'aria-label', () => img.alt);
       dialog.append(close, full);
       document.body.append(dialog);
       close.onclick = () => dialog.close();
@@ -68,8 +69,8 @@ export function createImageComposer({ getContext, onChange, onError }) {
   const add = node('button', 'attach-image-button');
   add.id = 'attach-images';
   add.type = 'button';
-  add.title = 'Ajouter une photo';
-  add.setAttribute('aria-label', add.title);
+  bindAttribute(add, 'title', () => tr('ui.ajouter_une_photo'));
+  bindAttribute(add, 'aria-label', () => add.title);
   add.innerHTML =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 6-6 4 4 3-3 5 5"/></svg>';
   const input = node('input');
@@ -81,8 +82,8 @@ export function createImageComposer({ getContext, onChange, onError }) {
   const attach = node('button', 'attach-image-button');
   attach.id = 'attach-files';
   attach.type = 'button';
-  attach.title = 'Ajouter une pièce jointe';
-  attach.setAttribute('aria-label', attach.title);
+  bindAttribute(attach, 'title', () => tr('ui.ajouter_une_piece_jointe'));
+  bindAttribute(attach, 'aria-label', () => attach.title);
   attach.innerHTML =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 11-8.5 8.5a6 6 0 0 1-8.5-8.5l9-9a4 4 0 0 1 5.7 5.7l-9 9a2 2 0 0 1-2.9-2.9L15 6.5"/></svg>';
   const fileInput = node('input');
@@ -92,7 +93,7 @@ export function createImageComposer({ getContext, onChange, onError }) {
   fileInput.hidden = true;
   const controls = node('div', 'attachment-controls');
   controls.setAttribute('role', 'group');
-  controls.setAttribute('aria-label', 'Pièces jointes');
+  bindAttribute(controls, 'aria-label', () => tr('ui.pieces_jointes'));
   controls.append(add, attach, input, fileInput);
   const tray = node('div', 'image-draft-tray');
   tray.id = 'image-draft-tray';
@@ -109,25 +110,23 @@ export function createImageComposer({ getContext, onChange, onError }) {
     signature = '';
   const notify = () => queueMicrotask(onChange);
   const database = new Promise((done, reject) => {
-    if (!globalThis.indexedDB) return reject(new Error('Stockage des pièces jointes indisponible.'));
+    if (!globalThis.indexedDB) return reject(new Error(tr('ui.stockage_des_pieces_jointes_indisponible')));
     const req = indexedDB.open('prime-studio-images', 1);
     req.onupgradeneeded = () => req.result.createObjectStore('drafts');
     req.onsuccess = () => done(req.result);
-    req.onerror = () => reject(req.error);
+    req.onerror = () => reject(translateKnown(req.error));
   }).catch(() => null);
   async function write(key, entry) {
     const db = await database;
     if (!db) {
-      onError(
-        new Error('Les pièces jointes restent dans cet onglet ; leur sauvegarde locale est indisponible.'),
-      );
+      onError(new Error(tr('ui.les_pieces_jointes_restent_dans_cet_onglet_leur_sauvegarde_locale')));
       return;
     }
     const tx = db.transaction('drafts', 'readwrite');
     const store = tx.objectStore('drafts');
     if (entry.items.length) store.put(entry.items, key);
     else store.delete(key);
-    tx.onerror = () => onError(new Error('Impossible de sauvegarder les pièces jointes du brouillon.'));
+    tx.onerror = () => onError(new Error(tr('ui.impossible_de_sauvegarder_les_pieces_jointes_du_brouillon')));
   }
   function entry(key = getContext().key) {
     if (!drafts.has(key)) {
@@ -140,12 +139,12 @@ export function createImageComposer({ getContext, onChange, onError }) {
             const saved = await new Promise((done, reject) => {
               const req = db.transaction('drafts').objectStore('drafts').get(key);
               req.onsuccess = () => done(req.result);
-              req.onerror = () => reject(req.error);
+              req.onerror = () => reject(translateKnown(req.error));
             });
             if (value.revision === 0 && Array.isArray(saved)) value.items = saved;
           }
         } catch {
-          onError(new Error('Impossible de relire les pièces jointes du brouillon.'));
+          onError(new Error(tr('ui.impossible_de_relire_les_pieces_jointes_du_brouillon')));
         } finally {
           value.loading = false;
           notify();
@@ -167,11 +166,14 @@ export function createImageComposer({ getContext, onChange, onError }) {
       value = entry(context.key);
     currentKey = context.key;
     add.disabled = attach.disabled = !!context.disabled || context.available === false || value.loading;
-    add.title =
+    bindAttribute(add, 'title', () =>
       context.available === false
-        ? 'Les pièces jointes seront disponibles après la mise à jour du serveur.'
-        : 'Ajouter une photo';
-    attach.title = context.available === false ? add.title : 'Ajouter une pièce jointe';
+        ? tr('ui.les_pieces_jointes_seront_disponibles_apres_la_mise_a_jour_du_ser')
+        : tr('ui.ajouter_une_photo'),
+    );
+    bindAttribute(attach, 'title', () =>
+      context.available === false ? add.title : tr('ui.ajouter_une_piece_jointe'),
+    );
     const next = JSON.stringify([
       currentKey,
       value.items.map((image) => image.id),
@@ -187,14 +189,14 @@ export function createImageComposer({ getContext, onChange, onError }) {
     tray.hidden = !value.items.length;
     for (const item of value.items) {
       const card = node('div', 'image-draft');
-      const img = item.type === 'image' ? node('img') : node('span', 'file-draft-name', item.name);
+      const img = item.type === 'image' ? node('img') : node('span', 'file-draft-name', () => item.name);
       if (item.type === 'image') {
         img.src = source(item);
-        img.alt = item.name;
+        bindAttribute(img, 'alt', () => item.name);
       }
-      const remove = node('button', 'image-remove', '×');
+      const remove = node('button', 'image-remove', () => '×');
       remove.type = 'button';
-      remove.setAttribute('aria-label', `Retirer ${item.name}`);
+      bindAttribute(remove, 'aria-label', () => tr('common.removeName', { value1: item.name }));
       remove.disabled = !!context.disabled;
       remove.onclick = () => {
         value.items = value.items.filter((image) => image.id !== item.id);
@@ -203,20 +205,21 @@ export function createImageComposer({ getContext, onChange, onError }) {
         update();
         notify();
       };
-      card.title = item.name;
+      bindAttribute(card, 'title', () => item.name);
       card.append(img, remove);
       tray.append(card);
     }
-    note.textContent =
+    bindText(note, () =>
       value.items.length && context.available === false
-        ? 'Brouillon conservé : les pièces jointes attendent la mise à jour du serveur.'
+        ? tr('ui.brouillon_conserve_les_pieces_jointes_attendent_la_mise_a_jour_du')
         : incompatible()
-          ? 'Ce modèle ne prend pas en charge les images. Choisissez un modèle compatible.'
+          ? tr('ui.ce_modele_ne_prend_pas_en_charge_les_images_choisissez_un_modele')
           : value.pending
-            ? 'Préparation des pièces jointes…'
+            ? tr('ui.preparation_des_pieces_jointes')
             : value.items.length
-              ? `${value.items.length}/8 pièces jointes · images 4 Mo, fichiers 10 Mo`
-              : '';
+              ? tr('ui.8_pieces_jointes_images_4_mo_fichiers_10_mo', { value1: value.items.length })
+              : '',
+    );
     note.hidden = !note.textContent;
   }
   async function addFiles(files, photosOnly = false) {
@@ -233,13 +236,15 @@ export function createImageComposer({ getContext, onChange, onError }) {
         if (photosOnly && !isImage) {
           onError(
             new Error(
-              `${file.name} : choisissez une image PNG, JPEG, GIF ou WebP. Pour les autres formats, utilisez Pièce jointe.`,
+              tr('ui.choisissez_une_image_png_jpeg_gif_ou_webp_pour_les_autres_formats', {
+                value1: file.name,
+              }),
             ),
           );
           continue;
         }
         if (file.size > (isImage ? MAX_FILE : 10 * 1024 * 1024)) {
-          onError(new Error(`${file.name} : limite de ${isImage ? 4 : 10} Mo.`));
+          onError(new Error(tr('ui.limite_de_mo', { value1: file.name, value2: isImage ? 4 : 10 })));
           continue;
         }
         const fits = () =>
@@ -249,15 +254,13 @@ export function createImageComposer({ getContext, onChange, onError }) {
             file.size <=
             (isImage ? MAX_TOTAL : 20 * 1024 * 1024);
         if (!fits()) {
-          onError(
-            new Error('Limite : 8 pièces jointes, dont 4 images ; 8 Mo d’images et 20 Mo de fichiers.'),
-          );
+          onError(new Error(tr('ui.limite_8_pieces_jointes_dont_4_images_8_mo_d_images_et_20_mo_de_f')));
           break;
         }
         const dataUrl = await new Promise((done, reject) => {
           const reader = new FileReader();
           reader.onload = () => done(reader.result);
-          reader.onerror = () => reject(new Error('Impossible de lire ce fichier.'));
+          reader.onerror = () => reject(new Error(tr('ui.impossible_de_lire_ce_fichier')));
           reader.readAsDataURL(file);
         });
         if (isImage) {
@@ -266,7 +269,7 @@ export function createImageComposer({ getContext, onChange, onError }) {
           try {
             await decoded.decode();
           } catch {
-            onError(new Error(`${file.name} : image illisible.`));
+            onError(new Error(tr('ui.image_illisible', { value1: file.name })));
             continue;
           }
         }
@@ -274,7 +277,7 @@ export function createImageComposer({ getContext, onChange, onError }) {
         if (!fits()) break;
         value.items.push({
           id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-          name: file.name || 'Image collée',
+          name: file.name || tr('ui.image_collee'),
           size: file.size,
           type,
           mimeType: file.type,

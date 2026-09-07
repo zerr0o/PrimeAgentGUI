@@ -4,22 +4,25 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="theme-color" content="#1b1c1e" />
-    <title>Prime Agent Studio · Reconnexion</title>
+    <title data-i18n="ui.prime_agent_studio_reconnexion">Prime Agent Studio · Reconnexion</title>
     <link rel="stylesheet" href="/public/pwa.css" />
     <link rel="manifest" href="/manifest.webmanifest" />
+    <script type="module" src="/public/i18n.js"></script>
   </head>
   <body class="pwa-offline">
     <main>
       <img src="/assets/prime-agent-192.png" alt="Prime Agent Studio" />
-      <h1>Retrouvons votre Studio.</h1>
-      <p>
+      <h1 data-i18n="ui.retrouvons_votre_studio">Retrouvons votre Studio.</h1>
+      <p data-i18n="ui.la_connexion_au_pc_est_interrompue_verifiez_qu_il_est_allume_et_q">
         La connexion au PC est interrompue. Vérifiez qu’il est allumé et que Tailscale est connecté sur vos
         deux appareils.
       </p>
-      <a href="/">Réessayer</a
+      <a href="/"><span data-i18n="ui.reessayer">Réessayer</span></a
       ><small
-        >Vos brouillons restent dans cet appareil. Le travail sur le PC peut continuer pendant cette
-        coupure.</small
+        ><span data-i18n="ui.vos_brouillons_restent_dans_cet_appareil_le_travail_sur_le_pc_peu"
+          >Vos brouillons restent dans cet appareil. Le travail sur le PC peut continuer pendant cette
+          coupure.</span
+        ></small
       >
     </main>
   </body>

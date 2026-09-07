@@ -246,6 +246,7 @@ try {
   ]) {
     const mobile = viewport.width < 1080;
     const context = await browser.newContext({
+      locale: 'fr-FR',
       viewport,
       isMobile: mobile,
       hasTouch: mobile,
@@ -429,7 +430,7 @@ try {
     await context.close();
   }
   // Editable local chat keeps its unsent draft while opening and closing both kinds of details.
-  page = await browser.newPage({ viewport: { width: 1440, height: 960 } });
+  page = await browser.newPage({ locale: 'fr-FR', viewport: { width: 1440, height: 960 } });
   await page.goto(local);
   await page.locator('#session-list .session-select').first().click();
   await page.locator('#composer').fill('Brouillon à conserver');
@@ -462,6 +463,7 @@ try {
   await new Promise((done) => controlGateway.listen(0, '127.0.0.1', done));
   try {
     const mobile = await browser.newPage({
+      locale: 'fr-FR',
       viewport: { width: 390, height: 844 },
       isMobile: true,
       hasTouch: true,

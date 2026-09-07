@@ -1,7 +1,10 @@
-const CACHE = 'prime-studio-pwa-v1';
+const CACHE = 'prime-studio-pwa-v2';
 const PUBLIC_FILES = [
   '/public/offline.html',
   '/public/pwa.css',
+  '/public/i18n.js',
+  '/public/i18n-core.js',
+  '/public/translations.js',
   '/manifest.webmanifest',
   '/assets/prime-agent-180.png',
   '/assets/prime-agent-192.png',

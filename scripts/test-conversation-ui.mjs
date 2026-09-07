@@ -244,7 +244,7 @@ async function assertToolbarFits(width, active) {
 
 try {
   browser = await chromium.launch({ channel: 'msedge', headless: true });
-  page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  page = await browser.newPage({ locale: 'fr-FR', viewport: { width: 1280, height: 900 } });
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(url);
