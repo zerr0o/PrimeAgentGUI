@@ -2,6 +2,8 @@
   "name": "prime-agent-studio",
   "version": "2.5.0",
   "private": true,
+  "author": "zerr0o",
+  "license": "MIT",
   "type": "module",
   "description": "Espace de travail local pour Prime Agent, avec sessions persistantes et lancement Windows silencieux.",
   "scripts": {

@@ -5,6 +5,14 @@
 <h1 align="center">Prime Agent Studio</h1>
 
 <p align="center">
+  <a href="https://github.com/zerr0o/PrimeAgentGUI/releases/latest"><img src="https://img.shields.io/github/v/release/zerr0o/PrimeAgentGUI?logo=github&amp;label=release" alt="Dernière release GitHub"></a>
+  <a href="https://github.com/zerr0o/PrimeAgentGUI/stargazers"><img src="https://img.shields.io/github/stars/zerr0o/PrimeAgentGUI?logo=github&amp;label=stars" alt="Étoiles GitHub"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="Licence MIT"></a>
+  <a href="#démarrage-rapide"><img src="https://img.shields.io/badge/Node.js-%3E%3D22.8-339933?logo=nodedotjs&amp;logoColor=white" alt="Node.js 22.8 ou ultérieur"></a>
+  <a href="#démarrage-rapide"><img src="https://img.shields.io/badge/platform-Windows-0078D4" alt="Plateforme Windows"></a>
+</p>
+
+<p align="center">
   <strong>Vos projets. Vos agents. Un seul espace de travail.</strong><br>
   Une interface locale en français et en anglais pour Prime Agent, pensée pour Windows.
 </p>
@@ -272,6 +280,14 @@ npm run test:providers
 ```
 
 Les tests automatiques utilisent des données temporaires et un moteur simulé. Les tests de navigateur nécessitent Microsoft Edge ; les tests réels facultatifs avec Luna sont documentés séparément.
+
+## Licence et attribution
+
+Prime Agent Studio est développé par **[zerr0o](https://github.com/zerr0o)** et distribué sous [licence MIT](LICENSE). Copyright © 2026 zerr0o.
+
+Vous pouvez utiliser, modifier et redistribuer ce projet, y compris à des fins commerciales, en conservant la mention de copyright de **zerr0o** et le texte de la licence dans les copies ou portions substantielles du logiciel. Le fichier [LICENSE](LICENSE) reprend le [texte standard de la licence MIT](https://opensource.org/license/mit).
+
+Prime Agent et les dépendances tierces conservent leurs licences respectives.
 
 ---
 
