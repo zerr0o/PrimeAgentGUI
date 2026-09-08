@@ -54,6 +54,10 @@ Studio serves repository files directly. Use a separate worktree when sessions a
 
 `lib/remote-network.mjs` owns the gateways and their lifecycle separately. Network changes and PIN rotation share a write queue and configuration revision. A new listener must bind before persistence and replacement of the old listener; failure rolls back staged listeners. Closing a gateway destroys its proxy connections without invoking agent cancellation. The remote gateway never forwards network or system configuration routes.
 
+`lib/tailscale-https.mjs` prepares and verifies Tailscale Serve using `execFile`, without a shell or Windows console. The loopback gateway must listen before changing Serve. Rollback restores only the staged forwarding if it still belongs to Studio; third-party services and Funnel are never replaced. Approval links are restricted to HTTPS Serve/DNS pages on `login.tailscale.com`. Disabling HTTPS closes the local gateway and retains private forwarding for the next activation.
+
+`npm run test:https` checks approval, retry, pending state, PIN, QR and HTTPS options on desktop/mobile. `test/https-settings.test.mjs` checks conflicts, rollback and agent continuity. These tests and the preview use a Tailscale emulator: no real configuration command runs.
+
 `npm run test:settings` checks navigation, focus, network changes, QR codes, languages and 390/320 px widths. `test/remote-network.test.mjs` checks PIN preservation, failures, concurrent revisions, permissions and agents remaining active. Tests use only temporary data and loopback ports. Set `PRIME_STUDIO_TEST_BROWSER=chrome` to use Chrome instead of Edge in the relevant UI tests.
 
 ## Checks

@@ -6,22 +6,30 @@ The PWA opens Studio with an icon and a dedicated window. It uses the same engin
 
 ## Prepare the HTTPS address
 
-Connect the PC and phone to the same Tailscale network, with MagicDNS enabled. From the project folder on the PC:
+Connect the PC and phone to the same Tailscale network. On the PC, open **Preferences → Remote access** and enable **Tailscale HTTPS**.
+
+The panel configures **Tailscale Serve in private mode**, preserves the existing code and displays the HTTPS address and its QR. If no remote access exists, it creates a code shown once without enabling LAN or HTTP Tailscale access. Activation applies immediately, without restarting or interrupting agents.
+
+If MagicDNS or HTTPS needs account approval, use **Open Tailscale**, follow Tailscale’s instructions, then return and click **Try again**. Another service on HTTPS port 443 or a public Funnel configuration is preserved; the panel reports the conflict.
+
+Open the displayed `https://pc-name.network-name.ts.net` address or scan its QR with Tailscale connected on the phone. HTTP addresses on a LAN or Tailscale IP still work for the website, but HTTPS is required for full installation on the phone.
+
+### Command-line alternative
+
+From the project folder on the PC:
 
 ```powershell
 npm run pwa:enable
 ```
 
-The command configures **Tailscale Serve in private mode**, preserves the existing code and displays this PC’s HTTPS address. If no remote access exists, it prepares and displays a code. If Tailscale asks you to enable HTTPS for the account, follow its link, then run the command again. An existing service on HTTPS port 443 is preserved; the script reports the conflict.
+The command preserves the existing code or creates one. If Tailscale requests account approval, follow its link, then run the command again. It also refuses to replace another service.
 
-**After runs finish**, apply the configuration:
+Unlike the panel, this command requires a restart. **After runs finish**, apply the configuration:
 
 ```powershell
 npm stop
 npm run start:silent
 ```
-
-Open the displayed `https://pc-name.network-name.ts.net` address. HTTP addresses on a LAN or Tailscale IP still work for the website, but HTTPS is required for full installation on the phone.
 
 ## Install on each device
 
@@ -49,7 +57,9 @@ The interface is read from the server when opened; no automatic reload is impose
 
 Tailscale Serve terminates HTTPS and forwards requests to port **3090 on `127.0.0.1`**. This gateway retains access-code and permission checks. It does not expose desktop-only configuration routes. The engine remains on `127.0.0.1:3088`. No public exposure through Funnel is configured.
 
-Configuration is in `.local/lan-access.json`, under `tailscale.https`: `enabled`, `origin` and `port`. Existing LAN and Tailscale HTTP access remain independent. To disable the PWA gateway, set `tailscale.https.enabled` to `false`, then restart after runs finish. If Serve only serves Studio on 443, `tailscale serve --https=443 off` also removes this HTTPS listener.
+Configuration is in `.local/lan-access.json`, under `tailscale.https`: `enabled`, `origin` and `port`. Existing LAN and Tailscale HTTP access remain independent. **Connection options** lets you change the gateway’s local port, 3090 by default, without changing the HTTPS address visible within your Tailscale network.
+
+Disabling the **Tailscale HTTPS** switch immediately closes the local gateway without interrupting agents. The private Serve forwarding remains configured for reactivation; it no longer grants access to Studio while the gateway is closed. If Serve only serves Studio on 443, `tailscale serve --https=443 off` also removes this HTTPS listener.
 
 For troubleshooting, check `.local/logs/server.log` and `tailscale serve status`. The `pwa:enable` command is reusable; it refuses to replace another service or a public Funnel configuration on the same address.
 

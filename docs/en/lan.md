@@ -38,7 +38,7 @@ Install Tailscale on the PC and phone, connect them to the same Tailscale networ
 
 In **Preferences → Remote access**, enable **Tailscale**. The panel uses the connected Tailscale interface and displays `http://100.x.y.z:3089`. It preserves LAN, the port, PIN and permissions. First activation creates a PIN without enabling LAN. Studio does not install Tailscale or connect your account for you.
 
-Activation is immediate. From the phone on 4G/5G, connect Tailscale and open the link or scan the QR. This HTTP access works without Tailscale Serve; [PWA installation](pwa.md) uses Serve for HTTPS. An existing HTTPS gateway remains available and appears separately in the panel.
+Activation is immediate. From the phone on 4G/5G, connect Tailscale and open the link or scan the QR. This HTTP access works without Tailscale Serve; [PWA installation](pwa.md) uses Serve for HTTPS. The **Tailscale HTTPS** card configures this access in the same panel without a restart, with its own link and QR.
 
 Studio opens a second listener on the Tailscale interface’s IPv4 address, in addition to the LAN listener. This gateway accepts only peers in Tailscale’s `100.64.0.0/10` range and local connections; Studio authentication is still required. Tailscale encrypts traffic between devices. The model configurator and desktop-only routes remain unavailable remotely.
 

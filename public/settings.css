@@ -270,6 +270,26 @@
 .network-advanced {
   margin-top: 12px;
 }
+.settings-modal .https-progress {
+  color: var(--accent);
+  font-size: 11px;
+  margin: 12px 0 0;
+}
+.https-guidance {
+  border-left: 2px solid var(--accent);
+  margin-top: 14px;
+  padding-left: 12px;
+}
+.settings-modal .https-guidance p {
+  font-size: 11px;
+  margin: 0;
+}
+.https-guidance a {
+  text-decoration: none;
+}
+.https-fields > div:first-child {
+  flex: 0 1 170px;
+}
 .network-advanced summary {
   font-size: 10px;
   color: var(--muted);

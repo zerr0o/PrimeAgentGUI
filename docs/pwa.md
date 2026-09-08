@@ -6,22 +6,30 @@ La PWA ouvre le Studio avec une icône et une fenêtre dédiée. Elle utilise le
 
 ## Préparer l’adresse HTTPS
 
-Connectez le PC et le téléphone au même réseau Tailscale, avec MagicDNS activé. Depuis le dossier du projet sur le PC :
+Connectez le PC et le téléphone au même réseau Tailscale. Sur le PC, ouvrez **Préférences → Accès distant** et activez **Tailscale HTTPS**.
+
+Le panneau configure **Tailscale Serve en mode privé**, conserve le code existant et affiche l’adresse HTTPS et son QR. Si aucun accès distant n’existe, il crée un code affiché une seule fois, sans activer le LAN ou l’accès HTTP Tailscale. L’activation s’applique immédiatement, sans redémarrage ni interruption des agents.
+
+Si MagicDNS ou HTTPS doit être autorisé dans votre compte, utilisez **Ouvrir Tailscale**, suivez les instructions de Tailscale, puis revenez cliquer sur **Réessayer**. Un autre service sur le port HTTPS 443 ou une configuration Funnel publique est conservé ; le panneau signale le conflit.
+
+Ouvrez l’adresse `https://nom-du-pc.nom-du-reseau.ts.net` affichée ou scannez son QR avec Tailscale connecté sur le téléphone. L’adresse HTTP sur une IP LAN ou Tailscale permet toujours d’utiliser le site, mais HTTPS est nécessaire pour l’installation complète sur le téléphone.
+
+### Alternative en ligne de commande
+
+Depuis le dossier du projet sur le PC :
 
 ```powershell
 npm run pwa:enable
 ```
 
-La commande configure **Tailscale Serve en mode privé**, conserve le code existant et affiche l’adresse HTTPS de ce PC. Si aucun accès distant n’existe, elle prépare un code et l’affiche. Si Tailscale demande d’activer HTTPS dans le compte, suivez son lien, puis relancez la commande. Un service déjà présent sur le port HTTPS 443 est conservé ; le script signale le conflit.
+La commande conserve le code existant ou en crée un. Si Tailscale demande une autorisation du compte, suivez son lien, puis relancez la commande. Elle refuse aussi de remplacer un autre service.
 
-**Après la fin des exécutions**, appliquez la configuration :
+Contrairement au panneau, cette commande nécessite un redémarrage. **Après la fin des exécutions**, appliquez la configuration :
 
 ```powershell
 npm stop
 npm run start:silent
 ```
-
-Ouvrez l’adresse `https://nom-du-pc.nom-du-reseau.ts.net` affichée. L’adresse HTTP sur une IP LAN ou Tailscale permet toujours d’utiliser le site, mais HTTPS est nécessaire pour l’installation complète sur le téléphone.
 
 ## Installer sur chaque appareil
 
@@ -49,7 +57,9 @@ L’interface est relue depuis le serveur à l’ouverture ; aucun rechargement 
 
 Tailscale Serve termine HTTPS et transmet au port **3090 sur `127.0.0.1`**. Cette passerelle conserve le contrôle du code d’accès et des permissions. Elle n’expose pas les routes de configuration réservées au PC. Le moteur reste sur `127.0.0.1:3088`. Aucune ouverture publique par Funnel n’est configurée.
 
-La configuration se trouve dans `.local/lan-access.json`, sous `tailscale.https` : `enabled`, `origin` et `port`. Les accès HTTP LAN et Tailscale existants restent indépendants. Pour désactiver la passerelle PWA, passez `tailscale.https.enabled` à `false`, puis redémarrez après la fin des exécutions. Si Serve ne dessert que le Studio sur 443, `tailscale serve --https=443 off` supprime également cette écoute HTTPS.
+La configuration se trouve dans `.local/lan-access.json`, sous `tailscale.https` : `enabled`, `origin` et `port`. Les accès HTTP LAN et Tailscale existants restent indépendants. **Options de connexion** permet de changer le port local de la passerelle, par défaut 3090, sans changer l’adresse HTTPS publique dans votre réseau Tailscale.
+
+L’interrupteur **Tailscale HTTPS** ferme immédiatement la passerelle locale lorsqu’il est désactivé, sans interrompre les agents. La redirection privée Serve reste configurée pour la réactivation ; elle ne donne plus accès au Studio tant que la passerelle est fermée. Si Serve ne dessert que le Studio sur 443, `tailscale serve --https=443 off` supprime également cette écoute HTTPS.
 
 En cas de problème, consultez `.local/logs/server.log` et `tailscale serve status`. La commande `pwa:enable` est réutilisable ; elle refuse de remplacer un autre service ou une configuration Funnel publique sur la même adresse.
 

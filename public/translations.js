@@ -5,6 +5,65 @@ export const languages = [
   { id: 'en', label: 'English' },
 ];
 export const messages = {
+  'https.authorization': {
+    fr: 'Tailscale demande une autorisation pour activer HTTPS.',
+    en: 'Tailscale requires authorization to enable HTTPS.',
+  },
+  'https.not_installed': {
+    fr: 'Tailscale est introuvable. Installez et connectez Tailscale sur ce PC, puis réessayez.',
+    en: 'Tailscale was not found. Install and connect Tailscale on this PC, then retry.',
+  },
+  'https.failed': {
+    fr: 'Tailscale n’a pas confirmé l’activation. Vérifiez sa connexion et réessayez.',
+    en: 'Tailscale did not confirm activation. Check its connection and retry.',
+  },
+  'https.connect': {
+    fr: 'Connectez Tailscale sur ce PC avant d’activer HTTPS.',
+    en: 'Connect Tailscale on this PC before enabling HTTPS.',
+  },
+  'https.magicdns': {
+    fr: 'Activez MagicDNS dans les paramètres DNS de Tailscale, puis réessayez.',
+    en: 'Enable MagicDNS in Tailscale DNS settings, then retry.',
+  },
+  'https.conflict': {
+    fr: 'Le port HTTPS de Tailscale est utilisé par un autre service ou par Funnel. Sa configuration a été conservée.',
+    en: 'The Tailscale HTTPS port is used by another service or Funnel. Its configuration was preserved.',
+  },
+  'https.changed': {
+    fr: 'La configuration Tailscale a changé pendant l’activation. Actualisez et réessayez.',
+    en: 'Tailscale configuration changed during activation. Refresh and retry.',
+  },
+  'https.not_serving': {
+    fr: 'Tailscale Serve ne dessert pas cette passerelle. Réessayez l’activation.',
+    en: 'Tailscale Serve is not serving this gateway. Retry activation.',
+  },
+  'https.rollback_failed': {
+    fr: 'L’enregistrement a échoué. La nouvelle passerelle locale a été fermée, mais vérifiez la configuration Tailscale Serve.',
+    en: 'Saving failed. The new local gateway was closed, but check the Tailscale Serve configuration.',
+  },
+  'https.local_port': { fr: 'Port local HTTPS', en: 'Local HTTPS port' },
+  'https.port_note': {
+    fr: 'Port interne réservé à HTTPS. Par défaut : 3090. Le LAN et l’accès HTTP Tailscale gardent leur port.',
+    en: 'Internal port reserved for HTTPS. Default: 3090. LAN and HTTP Tailscale keep their port.',
+  },
+  'https.activating': {
+    fr: 'Activation HTTPS en cours… Cela peut prendre quelques secondes.',
+    en: 'Enabling HTTPS… This may take a few seconds.',
+  },
+  'https.approval_note': {
+    fr: 'Terminez l’étape demandée dans Tailscale, puis revenez ici pour réessayer.',
+    en: 'Complete the required step in Tailscale, then return here and retry.',
+  },
+  'https.open_tailscale': { fr: 'Ouvrir Tailscale', en: 'Open Tailscale' },
+  'https.retry': { fr: 'Réessayer', en: 'Retry' },
+  'https.intro': {
+    fr: 'Crée une adresse privée avec Tailscale Serve. Le PIN est conservé et les agents continuent.',
+    en: 'Creates a private address with Tailscale Serve. Your PIN is preserved and agents keep running.',
+  },
+  'https.saved': {
+    fr: 'HTTPS est actif. Utilisez son lien ou son QR code pour installer le Studio.',
+    en: 'HTTPS is active. Use its link or QR code to install Studio.',
+  },
   'settings.qr_scan_lan': {
     fr: 'Scannez avec votre téléphone connecté au même réseau local.',
     en: 'Scan with your phone connected to the same local network.',
@@ -75,8 +134,8 @@ export const messages = {
     en: 'Between your devices connected to Tailscale.',
   },
   'settings.https_note': {
-    fr: 'Connexion HTTPS déjà configurée pour la PWA.',
-    en: 'HTTPS connection already configured for the PWA.',
+    fr: 'Pour installer le Studio sur votre téléphone.',
+    en: 'Install Studio on your phone.',
   },
   'settings.lan_missing': {
     fr: 'Aucune adresse locale détectée. Connectez ce PC au Wi-Fi ou à Ethernet, puis actualisez.',

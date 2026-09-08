@@ -4,20 +4,23 @@ import { tmpdir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
 import { createApp } from '../server.mjs';
 import { createLanGateway } from '../lib/lan.mjs';
+import { createTailscaleHttps } from '../lib/tailscale-https.mjs';
+import { fakeTailscale } from '../test/fixtures/tailscale.mjs';
 
-export async function preferencesFixture() {
+export async function preferencesFixture({ runtime } = {}) {
   const temp = await mkdtemp(join(tmpdir(), 'prime-preferences-preview-'));
   const cwd = join(temp, 'Projet de démonstration'),
     agentHome = join(temp, 'agent');
   const sessionDir = join(temp, 'sessions'),
     dataDir = join(temp, 'data');
   await Promise.all([cwd, agentHome, sessionDir, dataDir].map((path) => mkdir(path)));
+  const tailscale = fakeTailscale();
   const app = createApp({
     initialCwd: cwd,
     agentHome,
     sessionDir,
     dataDir,
-    runtime: {
+    runtime: runtime || {
       getStatus: async () => ({ available: true, version: '0.9.3 · démo' }),
       getModels: async () => ({ models: [], default: {} }),
       start: async () => {
@@ -27,6 +30,7 @@ export async function preferencesFixture() {
     },
     openDirectory: async () => {},
     networkOptions: {
+      httpsService: createTailscaleHttps({ run: tailscale.run }),
       interfaces: () => ({
         'Wi-Fi': [{ family: 'IPv4', internal: false, address: '192.168.1.42' }],
         Ethernet: [{ family: 'IPv4', internal: false, address: '192.168.10.42' }],
@@ -46,6 +50,7 @@ export async function preferencesFixture() {
     app,
     url,
     temp,
+    tailscale,
     async close() {
       await app.close();
       if (dirname(temp) !== resolve(tmpdir())) throw new Error('Unexpected fixture directory');

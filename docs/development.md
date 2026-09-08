@@ -54,6 +54,10 @@ Le Studio sert directement les fichiers du dépôt. Pour travailler pendant des 
 
 `lib/remote-network.mjs` gère séparément les passerelles et leur cycle de vie. Les modifications réseau et du PIN utilisent la même file d’écriture et une révision de configuration. Une nouvelle écoute doit réussir avant l’enregistrement et le remplacement de l’ancienne ; un échec annule les écoutes préparées. La fermeture d’une passerelle détruit ses connexions proxy, sans appeler l’annulation des agents. La passerelle distante ne relaie aucune route de configuration réseau ou système.
 
+`lib/tailscale-https.mjs` prépare et vérifie Tailscale Serve avec `execFile`, sans shell ni fenêtre Windows. La passerelle loopback doit écouter avant toute modification Serve. L’annulation restaure uniquement la redirection préparée si elle appartient encore au Studio ; les services tiers et Funnel ne sont jamais remplacés. Les liens d’autorisation sont limités aux pages Serve/DNS HTTPS de `login.tailscale.com`. Désactiver HTTPS ferme la passerelle locale et conserve la redirection privée pour la prochaine activation.
+
+`npm run test:https` vérifie l’autorisation, la nouvelle tentative, l’état d’attente, le PIN, le QR et les options HTTPS sur PC/mobile. `test/https-settings.test.mjs` vérifie les conflits, l’annulation et la continuité des agents. Ces tests et l’aperçu utilisent un émulateur Tailscale : aucune commande réelle de configuration n’est exécutée.
+
 `npm run test:settings` vérifie la navigation, le focus, les changements réseau, le QR, les langues et les largeurs 390/320 px. `test/remote-network.test.mjs` vérifie la conservation du PIN, les échecs, les révisions concurrentes, les permissions et les agents toujours actifs. Les tests utilisent uniquement des données temporaires et des ports loopback. Définissez `PRIME_STUDIO_TEST_BROWSER=chrome` pour Chrome à la place d’Edge dans les tests d’interface concernés.
 
 ## Vérifications

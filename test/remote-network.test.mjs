@@ -59,6 +59,7 @@ async function fixture(t) {
       close: async () => finish?.({ status: 'completed' }),
     },
     networkOptions: {
+      httpsService: { verify: async () => ({}) },
       interfaces: () => topology.value,
       makeGateway: (options) => {
         if (options.host === failHost) {

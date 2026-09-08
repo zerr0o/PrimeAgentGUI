@@ -10,6 +10,8 @@ A note below each title explains scope without adding controls: appearance and t
 
 **Tools** opens MCP and Skills/Prompts catalogs, with their global and selected-project folders. **Remote access**, restricted to the PC, enables LAN and Tailscale without interrupting agents and provides links and QR codes: see [the mobile guide](lan.md). **System** shows versions, engine availability and the running agent count; copied diagnostics exclude keys and conversations. Opening logs is restricted to the PC.
 
+The **Tailscale HTTPS** card also configures the private address needed for [PWA installation](pwa.md), with a Tailscale approval link when needed and a retry action in the panel. It preserves the PIN and other access channels.
+
 ## Interface language
 
 **Preferences → Appearance → Language** offers **Automatic**, **Français** and **English** on desktop and mobile. Automatic mode uses browser languages, with French as the fallback. The choice is stored in `prime-studio.language` for this browser and access address. Tabs at the same address synchronize; other devices keep their own choice.

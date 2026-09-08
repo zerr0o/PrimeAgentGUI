@@ -9,6 +9,7 @@ import { createStore, HttpError, validateDirectory, cwdKey, validId } from './li
 import { createAgentRuntime } from './lib/agent.mjs';
 import { createRemoteNetwork } from './lib/remote-network.mjs';
 import { createRemoteAccess } from './lib/remote-access.mjs';
+import { tailscaleSetupUrl } from './lib/tailscale-https.mjs';
 import { createModelConfigStore } from './lib/model-config.mjs';
 import { createModelDefaultsStore } from './lib/model-defaults.mjs';
 import { createSubagentDefaultsStore } from './lib/subagent-defaults.mjs';
@@ -722,6 +723,7 @@ export function createApp(options = {}) {
         return;
       }
       json(res, error.status || 500, {
+        ...(tailscaleSetupUrl(error.setupUrl) ? { setupUrl: tailscaleSetupUrl(error.setupUrl) } : {}),
         error: error.status ? error.message : tr('server.une_erreur_interne_est_survenue') + error.message,
       });
     }

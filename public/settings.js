@@ -10,6 +10,8 @@ export function createSettings({ api, getContext, openResources, copyText, toast
     loading = false,
     generation = 0,
     system,
+    setupUrl,
+    httpsBusy = false,
     returnFrom,
     returnButton;
   const node = (tag, className, message) => {
@@ -135,7 +137,6 @@ export function createSettings({ api, getContext, openResources, copyText, toast
     );
     const content = document.createDocumentFragment();
     for (const channel of network.channels) {
-      if (channel.kind === 'https' && !channel.enabled) continue;
       const card = node('div', 'network-card'),
         heading = node('div', 'network-heading'),
         title = node('div');
@@ -211,14 +212,67 @@ export function createSettings({ api, getContext, openResources, copyText, toast
         if (channel.url) card.append(connection(channel));
         card.append(details);
       } else {
-        heading.append(state);
+        const toggle = node('input', 'switch');
+        toggle.id = 'network-https';
+        toggle.type = 'checkbox';
+        toggle.setAttribute('role', 'switch');
+        toggle.checked = channel.enabled;
+        const control = node('div', 'network-toggle');
+        control.append(state, toggle);
+        heading.append(control);
         card.append(heading);
+        const details = node('details', 'network-advanced');
+        details.dataset.channel = 'https';
+        details.open = expanded.has('https');
+        details.append(node('summary', '', 'settings.connection_options'));
+        const fields = node('div', 'network-fields https-fields');
+        const portGroup = node('div'),
+          portLabel = node('label', '', 'https.local_port'),
+          port = node('input');
+        port.id = 'network-port-https';
+        portLabel.htmlFor = port.id;
+        port.type = 'number';
+        port.required = true;
+        port.min = '1024';
+        port.max = '65535';
+        port.value = channel.port || 3090;
+        const apply = (enabled = true) => {
+          toggle.checked = channel.enabled;
+          if (enabled && !port.reportValidity()) return;
+          void changeNetwork({ channel: 'https', enabled, port: Number(port.value) });
+        };
+        toggle.onchange = () => apply(toggle.checked);
+        portGroup.append(portLabel, port);
+        fields.append(
+          portGroup,
+          button('settings.apply', () => apply()),
+        );
+        details.append(fields, node('p', 'settings-footnote', 'https.port_note'));
+        if (httpsBusy) card.append(node('p', 'https-progress', 'https.activating'));
+        if (setupUrl) {
+          const guidance = node('div', 'https-guidance');
+          guidance.setAttribute('role', 'status');
+          guidance.append(node('p', '', 'https.approval_note'));
+          const actions = node('div', 'network-link-actions'),
+            link = node('a', 'secondary-button', 'https.open_tailscale');
+          link.href = setupUrl;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          actions.append(
+            link,
+            button('https.retry', () => apply()),
+          );
+          guidance.append(actions);
+          card.append(guidance);
+        } else if (!channel.enabled) card.append(node('p', 'network-hint', 'https.intro'));
         if (channel.url) card.append(connection(channel));
         if (channel.error) {
           const p = node('p', 'network-problem');
           bindText(p, () => translateKnown(channel.error));
           card.append(p);
         }
+        if (channel.enabled && channel.status === 'error') card.append(button('https.retry', () => apply()));
+        card.append(details);
       }
       content.append(card);
     }
@@ -268,6 +322,14 @@ export function createSettings({ api, getContext, openResources, copyText, toast
   async function changeNetwork(body) {
     if (busy || !network || getContext().remote) return;
     busy = true;
+    httpsBusy = body.channel === 'https' && body.enabled;
+    if (body.channel === 'https') setupUrl = undefined;
+    // Keep the form values while displaying progress for the potentially slower Serve setup.
+    if (httpsBusy) {
+      const progress = node('p', 'https-progress', 'https.activating');
+      progress.setAttribute('role', 'status');
+      $('network-https')?.closest('.network-card').append(progress);
+    }
     controlsDisabled(true);
     error('network-error');
     try {
@@ -277,6 +339,7 @@ export function createSettings({ api, getContext, openResources, copyText, toast
       });
       const { generatedCode, ...state } = next;
       network = state;
+      httpsBusy = false;
       if (generatedCode) {
         $('network-generated-code').textContent = generatedCode;
         $('network-new-code').hidden = false;
@@ -284,9 +347,27 @@ export function createSettings({ api, getContext, openResources, copyText, toast
       renderNetwork();
       if (generatedCode && dialog.open && selected === 'remote') $('network-copy-code').focus();
       toast(() =>
-        tr(body.channel === 'permissions' ? 'settings.permissions_saved' : 'settings.network_saved'),
+        tr(
+          body.channel === 'permissions'
+            ? 'settings.permissions_saved'
+            : body.channel === 'https' && body.enabled
+              ? 'https.saved'
+              : 'settings.network_saved',
+        ),
       );
     } catch (e) {
+      httpsBusy = false;
+      try {
+        const link = new URL(e.setupUrl);
+        if (
+          link.protocol === 'https:' &&
+          link.hostname === 'login.tailscale.com' &&
+          !link.port &&
+          !link.username &&
+          !link.password
+        )
+          setupUrl = link.href;
+      } catch {}
       // Keep the last working controls; refresh a conflict so the next action is deliberate.
       try {
         network = await api('/api/remote-access/network');
@@ -295,6 +376,7 @@ export function createSettings({ api, getContext, openResources, copyText, toast
       error('network-error', e.message);
     } finally {
       busy = false;
+      httpsBusy = false;
       controlsDisabled(false);
     }
   }

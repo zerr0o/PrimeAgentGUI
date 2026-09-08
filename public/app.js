@@ -404,6 +404,7 @@ async function api(path, { method = 'GET', body, signal } = {}) {
   if (!r.ok) {
     const e = new Error(translateKnown(data.error) || tr('common.httpError', { value1: r.status }));
     e.status = r.status;
+    if (path === '/api/remote-access/network') e.setupUrl = data.setupUrl;
     throw e;
   }
   return data;

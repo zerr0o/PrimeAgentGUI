@@ -38,7 +38,7 @@ Installez Tailscale sur le PC et le téléphone, connectez-les au même réseau 
 
 Dans **Préférences → Accès distant**, activez **Tailscale**. Le panneau utilise l’interface Tailscale déjà connectée et affiche l’adresse `http://100.x.y.z:3089`. Il conserve le LAN, le port, le PIN et les permissions. Si aucun accès distant n’était configuré, il crée un PIN sans activer le LAN. Le Studio n’installe pas Tailscale et ne connecte pas votre compte à votre place.
 
-L’activation s’applique immédiatement. Depuis le téléphone en 4G/5G, activez Tailscale et ouvrez le lien ou scannez le QR. Cet accès HTTP fonctionne sans Tailscale Serve ; [l’installation PWA](pwa.md) utilise Serve pour fournir HTTPS. Une passerelle HTTPS déjà configurée reste disponible et apparaît séparément dans le panneau.
+L’activation s’applique immédiatement. Depuis le téléphone en 4G/5G, activez Tailscale et ouvrez le lien ou scannez le QR. Cet accès HTTP fonctionne sans Tailscale Serve ; [l’installation PWA](pwa.md) utilise Serve pour fournir HTTPS. La carte **Tailscale HTTPS** permet de configurer cet accès depuis le même panneau, sans redémarrage, avec son propre lien et QR.
 
 Le Studio ouvre une seconde écoute sur l’adresse IPv4 de l’interface Tailscale, en plus de celle du LAN. Cette passerelle n’accepte que les pairs de la plage Tailscale `100.64.0.0/10` et les connexions locales ; l’authentification du Studio reste obligatoire. Le trafic entre appareils est chiffré par Tailscale. Le configurateur de modèles et les routes réservées au PC restent inaccessibles à distance.
 

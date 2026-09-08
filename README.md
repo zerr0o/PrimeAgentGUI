@@ -240,13 +240,9 @@ To use Studio **outside Wi-Fi, over 4G/5G**, connect the PC and phone to Tailsca
 
 ## Install Studio as an application
 
-Studio is an **installable PWA**. With Tailscale connected on the PC and phone, prepare its private HTTPS address:
+Studio is an **installable PWA**. With Tailscale connected on the PC and phone, open **Preferences → Remote access** on the PC and enable **Tailscale HTTPS**. If account approval is needed, use **Open Tailscale**, then **Try again** in the panel.
 
-```powershell
-npm run pwa:enable
-```
-
-The command keeps your access code and displays an address such as `https://pc-name.network-name.ts.net`. Wait for runs to finish, then restart Studio. Open this address in the phone’s browser and choose **Install Studio**. On iPhone, use **Safari → Share → Add to Home Screen**.
+Activation keeps your access code and displays an address such as `https://pc-name.network-name.ts.net`, without restarting or interrupting agents. Open this link or scan its QR in the phone’s browser and choose **Install Studio**. On iPhone, use **Safari → Share → Add to Home Screen**.
 
 The PWA keeps the website’s commands and attachments. If connectivity is lost, a **Try again** screen helps you reconnect. The PC is still needed to run agents; closing the app lets them keep working.
 
