@@ -50,6 +50,8 @@ La fermeture d’un onglet ne tue pas l’agent. Le bouton **Arrêter**, lui, fe
 
 ## Développement des préférences sans interruption
 
+L’application native et son installateur se construisent avec `npm run desktop:build` : voir [le guide Windows](desktop.md). Les tests natifs utilisent un dossier temporaire et un port dédié. L’interface ne possède aucun accès générique au shell Tauri ; les commandes du lanceur vérifient leur origine locale, et les liens externes s’ouvrent dans le navigateur.
+
 Le Studio sert directement les fichiers du dépôt. Pour travailler pendant des sessions actives, utilisez un worktree séparé : modifier le checkout servi pourrait changer l’interface de ces sessions. `node scripts/preview-preferences.mjs --serve` lance un aperçu avec dossiers temporaires, moteur simulé et écoute exclusivement loopback ; les adresses affichées sont de démonstration. Ce script ne lance aucun agent et ne modifie aucun compte ou accès réel.
 
 `lib/remote-network.mjs` gère séparément les passerelles et leur cycle de vie. Les modifications réseau et du PIN utilisent la même file d’écriture et une révision de configuration. Une nouvelle écoute doit réussir avant l’enregistrement et le remplacement de l’ancienne ; un échec annule les écoutes préparées. La fermeture d’une passerelle détruit ses connexions proxy, sans appeler l’annulation des agents. La passerelle distante ne relaie aucune route de configuration réseau ou système.

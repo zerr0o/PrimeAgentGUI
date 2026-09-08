@@ -42,6 +42,8 @@ Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une 
 
 **Version 2.7.0** — [Télécharger le code source et consulter les notes de version](https://github.com/zerr0o/prime-agent-studio/releases/latest). Retrouvez les préférences par catégorie et activez le LAN, Tailscale ou HTTPS depuis le panneau, avec liens et QR codes pour votre téléphone.
 
+**Application Windows Tauri 2 (2.8.0)** — Une fenêtre dédiée, un raccourci, un démarrage silencieux et une icône près de l’horloge. Node.js est inclus dans l’installateur ; les agents continuent quand la fenêtre se ferme. [Installation, reprise des données et compilation](docs/desktop.md).
+
 ## Nouveautés de la version 2.6
 
 - **Dossier du projet** : dans **Un projet à explorer.**, **Choisir un dossier** ouvre le sélecteur Windows et remplit le chemin. Le nom saisi est conservé ; une annulation laisse le formulaire intact.

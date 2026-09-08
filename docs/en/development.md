@@ -50,6 +50,8 @@ Closing a tab does not kill the agent. **Stop** closes the run and its descendan
 
 ## Developing preferences without interruptions
 
+Build the native application and installer with `npm run desktop:build`: see [the Windows guide](desktop.md). Native tests use a temporary folder and dedicated port. The interface has no generic Tauri shell access; launcher commands check their local origin, and external links open in the browser.
+
 Studio serves repository files directly. Use a separate worktree when sessions are active: editing the served checkout could change their interface. `node scripts/preview-preferences.mjs --serve` starts a preview with temporary directories, a simulated runtime and loopback listeners only; displayed network addresses are examples. It starts no agents and changes no real accounts or access settings.
 
 `lib/remote-network.mjs` owns the gateways and their lifecycle separately. Network changes and PIN rotation share a write queue and configuration revision. A new listener must bind before persistence and replacement of the old listener; failure rolls back staged listeners. Closing a gateway destroys its proxy connections without invoking agent cancellation. The remote gateway never forwards network or system configuration routes.

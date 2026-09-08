@@ -1,7 +1,10 @@
 import { t as tr, bindText } from './i18n.js';
 const button = document.getElementById('pwa-install');
 let invitation;
-const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const standalone = () =>
+  window.__PRIME_STUDIO_DESKTOP__ === true ||
+  matchMedia('(display-mode: standalone)').matches ||
+  navigator.standalone === true;
 const update = () => {
   if (button) button.hidden = standalone();
 };

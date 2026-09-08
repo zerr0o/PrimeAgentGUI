@@ -25,9 +25,15 @@ async function rotateLog(path) {
   }
 }
 
-export async function startServer({ root = APP_ROOT, port = parsePort(), timeout = 18000 } = {}) {
+export async function startServer({
+  root = APP_ROOT,
+  port = parsePort(),
+  timeout = 18000,
+  node = process.execPath,
+  env = process.env,
+} = {}) {
   port = parsePort(port);
-  const paths = pathsFor(root);
+  const paths = pathsFor(root, env.PRIME_AGENT_GUI_DATA_DIR);
   verifyInstallation(paths);
   await preparePaths(paths);
   const release = await acquireLock(paths);
@@ -44,9 +50,9 @@ export async function startServer({ root = APP_ROOT, port = parsePort(), timeout
     let spawnFailure;
     let exitCode;
     try {
-      child = spawn(process.execPath, [join(root, 'server.mjs')], {
+      child = spawn(node, [join(root, 'server.mjs')], {
         cwd: root,
-        env: { ...process.env, PORT: String(port), PRIME_AGENT_GUI_INSTANCE: instanceId },
+        env: { ...env, PORT: String(port), PRIME_AGENT_GUI_INSTANCE: instanceId },
         windowsHide: true,
         detached: true,
         shell: false,

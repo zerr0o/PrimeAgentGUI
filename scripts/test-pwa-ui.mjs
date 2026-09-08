@@ -65,7 +65,7 @@ const checks = [],
   errors = [];
 try {
   const context = await chromium.launchPersistentContext(join(dir, 'browser-profile'), {
-    channel: 'msedge',
+    channel: process.env.PRIME_STUDIO_TEST_BROWSER || 'msedge',
     headless: true,
     viewport: { width: 390, height: 844 },
     locale: 'fr-FR',

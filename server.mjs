@@ -3,7 +3,8 @@ import { createServer } from 'node:http';
 import { readFile, stat, mkdir } from 'node:fs/promises';
 import { dirname, join, resolve, extname, sep } from 'node:path';
 import { homedir } from 'node:os';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
+import { isDirectInvocation } from './scripts/launcher-common.mjs';
 import { randomUUID } from 'node:crypto';
 import { createStore, HttpError, validateDirectory, cwdKey, validId } from './lib/store.mjs';
 import { createAgentRuntime } from './lib/agent.mjs';
@@ -28,7 +29,7 @@ import { openFile as openLocalFile, fileLaunchMode } from './lib/open-file.mjs';
 import { createSessionInspector } from './lib/session-inspector.mjs';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
-const VERSION = '2.7.0';
+const VERSION = '2.8.0';
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -85,7 +86,13 @@ export function createApp(options = {}) {
     options.agentHome || process.env.PRIME_AGENT_CODING_AGENT_DIR || join(homedir(), '.prime', 'agent');
   const sessionDir = options.sessionDir || process.env.PRIME_AGENT_SESSION_DIR || join(agentHome, 'sessions');
   const dataDir = options.dataDir || process.env.PRIME_AGENT_GUI_DATA_DIR || join(ROOT, '.local');
-  const store = options.store || createStore({ sessionDir, dataDir, initialCwd: options.initialCwd || ROOT });
+  const store =
+    options.store ||
+    createStore({
+      sessionDir,
+      dataDir,
+      initialCwd: options.initialCwd || process.env.PRIME_AGENT_GUI_INITIAL_CWD || ROOT,
+    });
   const fileStore = createFileStore(join(dataDir, 'attachments'));
   const remoteAccess = createRemoteAccess({ dataDir });
   const remoteNetwork = createRemoteNetwork({
@@ -100,6 +107,7 @@ export function createApp(options = {}) {
       agentHome,
       sessionDir,
       cliPath: process.env.PRIME_AGENT_CLI,
+      kernelRoot: process.env.PRIME_AGENT_GUI_KERNEL_ROOT,
       subagentPolicyFile: subagentDefaults.file,
     });
   const modelConfig = options.modelConfig || createModelConfigStore({ agentHome });
@@ -746,7 +754,7 @@ export function createApp(options = {}) {
   return { server, store, runtime, modelConfig, modelDefaults, remoteAccess, remoteNetwork, runs, close };
 }
 
-if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
+if (isDirectInvocation(import.meta.url)) {
   const port = Number(process.env.PORT || 3088);
   if (!Number.isInteger(port) || port < 1 || port > 65535)
     throw new Error(tr('server.port_doit_etre_compris_entre_1_et_65535'));

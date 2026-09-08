@@ -3,12 +3,21 @@
   "languages": ["fr", "en"],
   "pages": [
     {
+      "id": "desktop",
+      "fr": "docs/desktop.md",
+      "en": "docs/en/desktop.md",
+      "reviewed": {
+        "fr": "0eb78d4906c3a08bc1dbf7c1c019abe58de4b8bcb95be76989c7d6500528f0b9",
+        "en": "b288d5ba5f6b2a3c74058cd14117292c447f4aa116e7ad1d09ad03351ad5a70f"
+      }
+    },
+    {
       "id": "readme",
       "fr": "README.fr.md",
       "en": "README.md",
       "reviewed": {
-        "fr": "5712c95d1565c1754b943246385481f883bc02c1a93f6134b19d12741c9babb1",
-        "en": "cdca0bbc031fd040c27729bbef02feb848b4f634c7fd50b733b758058406c630"
+        "fr": "a2b6c67eeef54e5cf0be568b6be180e3f83599c6a5abf3c4f69b06266372941d",
+        "en": "6104c2429a5ff1f840bdd363a5e753316c3ceeef8f04cd48bcdd2032c000cbaf"
       }
     },
     {
@@ -34,8 +43,8 @@
       "fr": "docs/development.md",
       "en": "docs/en/development.md",
       "reviewed": {
-        "fr": "a6f6fc819dc36458ea1f7e3f5b62fd770c4fdd8027358245139b78f2d07ed976",
-        "en": "91770d3aa0473db65a95c4f0813e90d2df5a632af737d7fce50be7161f7ef987"
+        "fr": "d1b3e8b4623289b883f5f0db094d8f077b8fc0a21fbf2d2d460292ae1502c295",
+        "en": "bab7fb99df7ab45d7e06763d492d721d0854e0772e40391d75f5408c0b51f9e3"
       }
     },
     {

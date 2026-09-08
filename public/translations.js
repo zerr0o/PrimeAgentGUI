@@ -83,6 +83,10 @@ export const messages = {
     fr: 'Pour ce navigateur · Apparence et conversation',
     en: 'This browser · Appearance and conversation',
   },
+  'settings.scope_desktop': {
+    fr: 'Pour cette application · Apparence et conversation',
+    en: 'This application · Appearance and conversation',
+  },
   'settings.scope_agent': {
     fr: 'Prime Agent sur ce PC · Configuration partagée',
     en: 'Prime Agent on this PC · Shared configuration',

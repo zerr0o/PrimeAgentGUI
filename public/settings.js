@@ -4,6 +4,11 @@ export function createSettings({ api, getContext, openResources, copyText, toast
   const $ = (id) => document.getElementById(id);
   const dialog = $('settings-dialog'),
     tabs = [...dialog.querySelectorAll('[data-settings-tab]')];
+  if (window.__PRIME_STUDIO_DESKTOP__ === true) {
+    const scope = dialog.querySelector('[data-i18n="settings.scope_browser"]');
+    scope.dataset.i18n = 'settings.scope_desktop';
+    bindText(scope, () => tr('settings.scope_desktop'));
+  }
   let selected = 'appearance',
     network,
     busy = false,

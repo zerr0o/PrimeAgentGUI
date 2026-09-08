@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Prime Agent Studio</title>
+    <link rel="stylesheet" href="desktop.css" />
+    <script src="desktop.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <header>
+        <img src="icon.png" alt="" width="48" height="48" /><span>Prime Agent Studio</span
+        ><span class="platform">WINDOWS</span>
+      </header>
+      <section class="intro">
+        <p class="eyebrow" id="eyebrow"></p>
+        <h1 id="title"></h1>
+        <p class="description" id="description"></p>
+      </section>
+      <section id="choices" hidden>
+        <label class="preference"
+          ><span><strong id="startup-label"></strong><small id="startup-note"></small></span
+          ><input id="autostart" type="checkbox" role="switch"
+        /></label>
+        <div class="import">
+          <button id="import" class="text-button"></button>
+          <p id="import-note"></p>
+          <p id="source" hidden></p>
+        </div>
+      </section>
+      <div id="progress" role="status" hidden>
+        <span class="pulse"></span><span id="progress-text"></span>
+      </div>
+      <div id="error" role="alert" hidden></div>
+      <div class="actions">
+        <button id="start" class="primary" disabled></button
+        ><button id="logs" class="text-button" hidden></button>
+      </div>
+      <footer>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M4 12h3l3-7 4 14 3-7h3" /></svg
+        ><span id="footer"></span>
+      </footer>
+    </main>
+  </body>
+</html>

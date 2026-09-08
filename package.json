@@ -1,6 +1,6 @@
 {
   "name": "prime-agent-studio",
-  "version": "2.7.0",
+  "version": "2.8.0",
   "private": true,
   "author": "zerr0o",
   "license": "MIT",
@@ -39,7 +39,13 @@
     "check": "node --check server.mjs && node --check public/app.js && node scripts/check-translations.mjs && node scripts/check-docs.mjs",
     "format": "prettier --write --ignore-unknown server.mjs lib public scripts test index.html README.md package.json",
     "test:settings": "node scripts/test-settings-ui.mjs",
-    "test:https": "node scripts/test-https-ui.mjs"
+    "test:https": "node scripts/test-https-ui.mjs",
+    "desktop:dev": "tauri dev",
+    "desktop:build": "tauri build",
+    "desktop:resources": "node scripts/build-desktop-resources.mjs",
+    "desktop:icons": "node scripts/generate-desktop-icons.mjs",
+    "test:desktop": "node scripts/test-desktop-native.mjs",
+    "test:desktop-ui": "node scripts/test-desktop-ui.mjs"
   },
   "engines": {
     "node": ">=22.8.0"
@@ -52,6 +58,7 @@
   },
   "devDependencies": {
     "@playwright/test": "1.62.1",
+    "@tauri-apps/cli": "2.11.4",
     "prettier": "3.9.6"
   }
 }

@@ -42,6 +42,8 @@ Prime Agent Studio brings your **local Prime Agent sessions** together in a brow
 
 **Version 2.7.0** — [Download the source code and read the release notes](https://github.com/zerr0o/prime-agent-studio/releases/latest). Browse preferences by category and enable LAN, Tailscale or HTTPS from the panel, with links and QR codes for your phone.
 
+**Tauri 2 Windows application (2.8.0)** — A dedicated window, shortcut, silent startup and tray icon. Node.js is included in the installer; agents keep working when the window closes. [Installation, data migration and building](docs/en/desktop.md).
+
 ## What’s new in version 2.6
 
 - **Project folder**: **Choose folder** in the add-project dialog opens the Windows picker and fills in the path. Your project name is preserved; cancelling leaves the form unchanged.

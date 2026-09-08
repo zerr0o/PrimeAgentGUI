@@ -1,7 +1,7 @@
 import { request } from 'node:http';
 import { mkdir, readFile, writeFile, rename, unlink, open } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { existsSync, realpathSync } from 'node:fs';
+import { dirname, join, resolve, toNamespacedPath } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const APP_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -15,8 +15,8 @@ export function parsePort(value = process.env.PORT || '3088') {
   return Number(value);
 }
 
-export function pathsFor(root = APP_ROOT) {
-  const local = join(root, '.local');
+export function pathsFor(root = APP_ROOT, dataDir = process.env.PRIME_AGENT_GUI_DATA_DIR) {
+  const local = dataDir ? resolve(dataDir) : join(root, '.local');
   return {
     root,
     local,
@@ -132,7 +132,13 @@ export async function acquireLock(paths, { timeout = 22000 } = {}) {
 }
 
 export function isDirectInvocation(metaUrl) {
-  return Boolean(process.argv[1]) && resolve(process.argv[1]) === fileURLToPath(metaUrl);
+  const canonical = (path) =>
+    process.platform === 'win32' ? toNamespacedPath(realpathSync(path)).toLowerCase() : realpathSync(path);
+  try {
+    return Boolean(process.argv[1]) && canonical(process.argv[1]) === canonical(fileURLToPath(metaUrl));
+  } catch {
+    return false;
+  }
 }
 
 export function verifyInstallation(paths) {

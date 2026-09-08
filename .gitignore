@@ -9,3 +9,6 @@ __pycache__/
 .env.*
 !.env.example
 /nul
+/.desktop-build/
+/src-tauri/target/
+/src-tauri/gen/
