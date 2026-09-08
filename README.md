@@ -40,7 +40,7 @@
 
 Prime Agent Studio brings your **local Prime Agent sessions** together in a browser application. Follow streaming responses, find your projects and continue a conversation without opening a terminal. On Windows, agents and their tools run in the background, without unexpected PowerShell windows.
 
-**Version 2.6.0** — [Download the source code and read the release notes](https://github.com/zerr0o/PrimeAgentGUI/releases/latest). Choose project folders with the Windows picker and open skill and prompt folders directly from Studio.
+**Version 2.7.0** — [Download the source code and read the release notes](https://github.com/zerr0o/PrimeAgentGUI/releases/latest). Browse preferences by category and enable LAN, Tailscale or HTTPS from the panel, with links and QR codes for your phone.
 
 ## What’s new in version 2.6
 
