@@ -9,6 +9,13 @@ import { commandCatalog } from '../lib/commands.mjs';
 
 const delay = (milliseconds) => new Promise((done) => setTimeout(done, milliseconds));
 
+test('server health and system settings report the packaged release version', async (t) => {
+  const { version } = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  const { api } = await fixture(t);
+  assert.equal((await api('/api/health')).json.version, version);
+  assert.equal((await api('/api/system')).json.studio, version);
+});
+
 test('resource folders use the chosen scope and reject unknown sources, scopes and projects', async (t) => {
   const opened = [];
   const f = await fixture(t, {
