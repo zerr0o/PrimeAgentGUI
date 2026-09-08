@@ -41,7 +41,15 @@
 
 Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une application Windows et une interface accessible depuis le navigateur. Suivez les réponses en direct, retrouvez vos projets et continuez une conversation sans ouvrir de terminal. Sous Windows, les agents et leurs outils démarrent en arrière-plan, sans fenêtres PowerShell intempestives.
 
-**Version 2.8.1** — [Télécharger l’installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.8.1/Prime-Agent-Studio_2.8.1_x64-setup.exe) · [Notes de version et code source](https://github.com/zerr0o/prime-agent-studio/releases/tag/v2.8.1).
+**Version 2.9.0** — [Télécharger l’installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.9.0/Prime-Agent-Studio_2.9.0_x64-setup.exe) · [Notes de version et code source](https://github.com/zerr0o/prime-agent-studio/releases/tag/v2.9.0).
+
+## Nouveautés de la version 2.9
+
+- **Messages d’agents** : cartes dédiées et lisibles, nom de l’expéditeur et détails de transmission repliés. Les messages automatiques en attente sont clairement identifiés et protégés contre la modification ou la suppression.
+- **Ordre des projets** : déplacez les projets depuis leur menu, avec un ordre conservé entre les appareils.
+- **Non-lus partagés** : lire une réponse sur PC efface son indicateur sur le téléphone et inversement, y compris en accès distant en consultation.
+- **Sessions Codex longues** : renouvellement des connexions WebSocket anciennes et inactives entre les requêtes, et suppression des états d’échec transitoires après une reprise native réussie. Les requêtes actives sont préservées.
+- **Présentation sobre** : texte lisible et libellés discrets, sans liserés colorés. Rendu vérifié sur PC/mobile, en français/anglais et dans les thèmes clair/sombre.
 
 ## Nouveautés de la version 2.8
 

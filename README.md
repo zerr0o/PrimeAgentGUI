@@ -41,7 +41,15 @@
 
 Prime Agent Studio brings your **local Prime Agent sessions** together in a Windows application and a browser interface. Follow streaming responses, find your projects and continue a conversation without opening a terminal. On Windows, agents and their tools run in the background, without unexpected PowerShell windows.
 
-**Version 2.8.1** — [Download the Windows x64 installer](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.8.1/Prime-Agent-Studio_2.8.1_x64-setup.exe) · [Release notes and source code](https://github.com/zerr0o/prime-agent-studio/releases/tag/v2.8.1).
+**Version 2.9.0** — [Download the Windows x64 installer](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.9.0/Prime-Agent-Studio_2.9.0_x64-setup.exe) · [Release notes and source code](https://github.com/zerr0o/prime-agent-studio/releases/tag/v2.9.0).
+
+## What’s new in version 2.9
+
+- **Agent messages**: dedicated, readable cards with the sender’s name and collapsed delivery details. Automatic queued messages are clearly identified and protected from editing or removal.
+- **Project order**: move projects up or down from their menu, with the order saved across devices.
+- **Shared unread state**: reading a response on desktop clears its indicator on the phone and vice versa, including read-only remote access.
+- **Long Codex sessions**: renew aging idle WebSocket connections between requests and clear transient failure states after a successful native retry. Active requests are preserved.
+- **Restrained presentation**: readable text and discreet labels, without colored side borders. Desktop/mobile, French/English and light/dark rendering reviewed.
 
 ## What’s new in version 2.8
 
