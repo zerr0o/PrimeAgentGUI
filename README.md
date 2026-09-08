@@ -98,7 +98,9 @@ Runs continue when you switch sessions, reload the page or close the tab. The se
 
 Each project’s **⋯** menu also works on mobile; desktop supports right-click. Removing a project hides its Studio entry while preserving its folder and sessions. Add the folder again to find them. A project with an active run cannot be removed.
 
-In the project list, the folder becomes a **green dot** while a session is working, or a **blue dot** when a completed response is unread. Green takes priority. The corresponding session also has a blue dot: read its latest response to clear it. This state survives reloads and is shared between tabs in the same browser; each device tracks it independently.
+In the project list, the folder becomes a **green dot** while a session is working, or a **blue dot** when a completed response is unread. Green takes priority. The corresponding session also has a blue dot: read its latest response to clear it. Read receipts are saved on the host PC and shared across browsers, phones and the Windows application, including read-only access. Open devices synchronize at the next refresh (within 10 seconds), or when brought back to the foreground. When shared tracking is first enabled, existing responses become the common starting point.
+
+A project’s **…** menu offers **Move project up** and **Move project down**. The order is saved on the server and shared across devices; pinned projects stay at the top.
 
 In remote Studio, **Preferences → Sign out** closes this browser’s access and returns to the access-code screen. Agents and other connected devices keep running.
 
@@ -192,7 +194,9 @@ The input remains available during a run. Choose when your message should take e
 | **Steer**     | After the current step’s tools, to adjust the ongoing request. |
 | **Follow up** | After the current response, to continue with a new request.    |
 
-You can edit queued messages, reorder them, remove them or move them between modes. Engine acceptance is separate from actual delivery, which appears later in the conversation.
+You can edit your queued messages, reorder them, remove them or move them between modes. Automatic messages between agents show **Automatic · protected** and offer no editing or removal controls. Engine acceptance is separate from actual delivery, which appears later in the conversation.
+
+Messages received from subagents have a dedicated card with their name and content. Technical identifiers remain available under **Delivery details**, collapsed by default. When the native queue does not provide the sender’s name, Studio simply displays **Agent message**.
 
 ![Desktop messages during a run: queue, steering, follow-up and a separate stop control.](docs/screenshots/en/desktop-live-messages.png)
 

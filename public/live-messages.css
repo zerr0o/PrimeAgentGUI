@@ -248,3 +248,59 @@
     font-size: 16px;
   }
 }
+.message.system.agent-message .agent-message-body {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text);
+}
+.agent-message-badge {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted, #a2a2ad);
+  white-space: nowrap;
+}
+.agent-message .message-author {
+  overflow-wrap: anywhere;
+}
+.agent-message-details {
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--muted, #a2a2ad);
+}
+.agent-message-details summary {
+  cursor: pointer;
+  width: fit-content;
+  padding: 4px 0;
+}
+.agent-message-details dl {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px 16px;
+  margin-bottom: 0;
+}
+.agent-message-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.live-queue-agent-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+.live-queue-agent .live-queue-text {
+  color: var(--muted, #a2a2ad);
+}
+@media (max-width: 600px) {
+  .agent-message .message-heading {
+    flex-wrap: wrap;
+  }
+  .live-queue-agent-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}

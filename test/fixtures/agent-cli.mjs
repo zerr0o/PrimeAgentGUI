@@ -10,7 +10,7 @@ if (process.argv.includes('--version')) {
     const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { stdio: 'ignore' });
     emit({ type: 'tool_execution_start', toolCallId: 'process', toolName: 'test', args: { pid: child.pid } });
     setInterval(() => {}, 1000);
-  } else if (prompt === '[fail]') {
+  } else if (prompt === '[fail]' || prompt === '[recovered]') {
     emit({
       type: 'message_end',
       message: {
@@ -20,6 +20,17 @@ if (process.argv.includes('--version')) {
         errorMessage: 'Provider rejected this request',
       },
     });
+    if (prompt === '[recovered]') {
+      emit({ type: 'auto_retry_end', success: true, attempt: 1 });
+      emit({
+        type: 'message_end',
+        message: {
+          role: 'assistant',
+          content: [{ type: 'text', text: 'Recovered answer' }],
+          stopReason: 'stop',
+        },
+      });
+    }
   } else {
     emit({ type: 'message_start', message: { role: 'assistant' } });
     emit({ type: 'message_update', assistantMessageEvent: { type: 'thinking_delta', delta: 'Plan' } });

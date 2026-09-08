@@ -4,6 +4,7 @@ import { mkdtemp, mkdir, writeFile, appendFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { createApp } from '../server.mjs';
+import { createLanGateway, hashAccessCode } from '../lib/lan.mjs';
 
 const root = await mkdtemp(join(tmpdir(), 'prime-studio-activity-'));
 const cwd = join(root, 'Atelier'),
@@ -84,6 +85,16 @@ const runtime = {
 const app = createApp({ runtime, sessionDir, agentHome, dataDir: join(root, 'data'), initialCwd: cwd });
 await new Promise((resolve) => app.server.listen(0, '127.0.0.1', resolve));
 const url = `http://127.0.0.1:${app.server.address().port}`;
+const code = '49283175',
+  salt = 'e54d6dd09bb15f7c347b38b671472aa9';
+const gateway = createLanGateway({
+  host: '127.0.0.1',
+  port: 0,
+  upstreamPort: app.server.address().port,
+  config: { readOnly: true, salt, codeHash: hashAccessCode(code, salt) },
+});
+await new Promise((resolve) => gateway.listen(0, '127.0.0.1', resolve));
+const phoneUrl = `http://127.0.0.1:${gateway.address().port}`;
 let browser, page;
 const project = (name = 'Atelier', target = page) => target.locator('.project-row').filter({ hasText: name });
 async function refresh(target = page) {
@@ -93,7 +104,11 @@ async function run(id) {
   const response = await fetch(url + '/api/runs', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Origin: url },
-    body: JSON.stringify({ cwd: id === 'other' ? other : cwd, sessionId: id, message: 'Travail de test' }),
+    body: JSON.stringify({
+      cwd: id === 'other' ? other : cwd,
+      sessionId: id,
+      message: `Travail de test ${serial}`,
+    }),
   });
   expect(response.status, await response.clone().text()).toBe(201);
   await refresh();
@@ -101,13 +116,21 @@ async function run(id) {
   return controls.get(id);
 }
 async function openSession(id, target = page) {
+  if (
+    target.viewportSize().width <= 760 &&
+    !(await target.locator('#sidebar').evaluate((node) => node.classList.contains('mobile-open')))
+  )
+    await target.locator('#toggle-sidebar').click();
   await project(id === 'other' ? 'Documents' : 'Atelier', target).click();
   await target.locator(`.project-session-card[data-session-id="${id}"]`).click();
   await expect(target.locator('#messages')).toBeVisible();
   await expect(target.locator('#conversation-loading')).toBeHidden();
 }
 try {
-  browser = await chromium.launch({ channel: 'msedge', headless: true });
+  browser = await chromium.launch({
+    channel: process.env.PRIME_STUDIO_TEST_BROWSER || 'chrome',
+    headless: true,
+  });
   const context = await browser.newContext({ locale: 'fr-FR', viewport: { width: 1440, height: 960 } });
   page = await context.newPage();
   page.on('pageerror', (error) => errors.push(error.message));
@@ -206,6 +229,10 @@ try {
   await expect(project()).toHaveAttribute('data-activity', 'idle');
   const reading = await run('first');
   await openSession('first');
+  await expect(page.locator('#messages')).toContainText('Paragraphe 60.');
+  await expect
+    .poll(() => page.locator('#conversation-scroll').evaluate((node) => node.scrollTop))
+    .toBeGreaterThan(0);
   await page.locator('#conversation-scroll').evaluate((node) => {
     node.scrollTop = 0;
   });
@@ -221,14 +248,22 @@ try {
   await tabRun.finish();
   await refresh();
   await expect(project()).toHaveAttribute('data-activity', 'unread');
-  const tab = await context.newPage();
+  const independentDevice = await browser.newContext({
+    locale: 'fr-FR',
+    viewport: { width: 390, height: 844 },
+  });
+  const tab = await independentDevice.newPage();
   tab.on('pageerror', (error) => errors.push(error.message));
-  await tab.goto(url);
+  await independentDevice.request.post(phoneUrl + '/lan/login', { form: { code } });
+  await tab.goto(phoneUrl);
+  await expect(tab.locator('html')).toHaveAttribute('data-read-only', 'true');
   await openSession('first', tab);
   await expect(project('Atelier', tab)).toHaveAttribute('data-activity', 'idle');
-  await expect(project()).toHaveAttribute('data-activity', 'idle');
+  // Other devices poll every 10 seconds; no shared localStorage or manual refresh.
+  await expect(project()).toHaveAttribute('data-activity', 'idle', { timeout: 15000 });
   await tab.close();
-  checks.push('La lecture est partagée entre deux onglets du même navigateur');
+  await independentDevice.close();
+  checks.push('La lecture sur téléphone en consultation est partagée avec le PC, stockages indépendants');
 
   await project('Documents').click();
   const offline = await run('first');
@@ -272,6 +307,8 @@ try {
   process.exitCode = 1;
 } finally {
   await browser?.close();
+  gateway.closeAllConnections();
+  await new Promise((resolve) => gateway.close(resolve));
   await app.close();
   if (dirname(resolve(root)) !== resolve(tmpdir()) || !root.includes('prime-studio-activity-'))
     throw new Error('Répertoire de nettoyage inattendu.');

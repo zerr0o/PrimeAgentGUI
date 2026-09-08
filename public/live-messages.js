@@ -1,5 +1,6 @@
 import { t as tr, bindText, bindAttribute, translateKnown } from './i18n.js';
 import { composerText, setComposerText } from './composer.js';
+import { queuedAgentMessage } from './agent-messages.js';
 const icons = {
   edit: 'M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L9 17l-4 1 1-4Z',
   delete: 'M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6',
@@ -246,6 +247,21 @@ export function createLiveMessages({
           const row = node('li', 'live-queue-item');
           row.dataset.lane = lane;
           row.dataset.index = String(index);
+          const agent = queuedAgentMessage(text);
+          if (agent) {
+            row.classList.add('live-queue-agent');
+            const heading = node('div', 'live-queue-agent-heading');
+            heading.append(
+              node('strong', '', () => agent.name || tr('agents.message_title')),
+              node('span', 'agent-message-badge', () => tr('agents.protected')),
+            );
+            row.append(
+              heading,
+              node('p', 'live-queue-text', () => agent.text),
+            );
+            list.append(row);
+            return;
+          }
           row.append(node('p', 'live-queue-text', () => queuedText(text)));
           if (queuedText(text) !== text)
             row.append(node('small', 'live-queue-file-note', () => tr('ui.fichier_s_joint_s_conserve_s')));

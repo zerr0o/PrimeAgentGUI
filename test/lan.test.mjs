@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { request } from 'node:http';
-import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, appendFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { createApp } from '../server.mjs';
@@ -148,8 +148,49 @@ async function fixture(t, permissions = {}, extraOptions = {}) {
     assert.equal(response.status, 303, response.text);
     return response.headers['set-cookie'][0].split(';')[0];
   }
-  return { api, local, login, authenticate, runtime, app, cwd, port, config };
+  return { api, local, login, authenticate, runtime, app, cwd, sessionDir, port, config };
 }
+
+test('authenticated phone receipts synchronize in consultation mode without allowing project changes', async (t) => {
+  const f = await fixture(t, { readOnly: true });
+  await f.app.store.overview();
+  await appendFile(
+    join(f.sessionDir, 'native-session.jsonl'),
+    JSON.stringify({
+      type: 'message',
+      id: 'new-answer',
+      parentId: 'initial-message',
+      message: { role: 'assistant', content: 'Completed answer', stopReason: 'stop' },
+    }) + '\n',
+  );
+  const body = JSON.stringify({ id: 'native-session', answer: 'new-answer' });
+  const headers = { 'Content-Type': 'application/json' };
+  assert.equal((await f.api('/api/sessions/read', { method: 'POST', headers, body })).status, 401);
+  headers.Cookie = await f.authenticate();
+  const response = await f.api('/api/sessions/read', { method: 'POST', headers, body });
+  assert.equal(response.status, 200, response.text);
+  assert.equal((await f.local('/api/history?id=native-session')).json.readState.read, 'new-answer');
+  assert.equal(
+    (
+      await f.api('/api/projects/move', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ cwd: f.cwd, direction: 1 }),
+      })
+    ).status,
+    405,
+  );
+  assert.equal(
+    (
+      await f.api('/api/sessions/read', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ id: 'native-session', answer: 'initial-message' }),
+      })
+    ).status,
+    400,
+  );
+});
 
 test('logout revokes this browser and its SSE, keeps another browser connected, and leaves the agent running', async (t) => {
   for (const readOnly of [true, false]) {

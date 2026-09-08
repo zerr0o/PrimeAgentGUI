@@ -98,7 +98,9 @@ Les exécutions continuent lorsque vous changez de session, rechargez la page ou
 
 Le menu **⋯** de chaque projet fonctionne aussi sur mobile ; le clic droit est disponible sur PC. Retirer un projet masque son entrée dans le Studio et conserve son dossier et ses sessions. Vous pouvez retrouver ceux-ci en ajoutant à nouveau le dossier. Un projet avec une exécution active ne peut pas être retiré.
 
-Dans la liste des projets, le dossier devient un **point vert** lorsqu’une session travaille, ou un **point bleu** lorsqu’une réponse terminée reste à lire. Le vert est prioritaire. La session concernée porte aussi un point bleu : consultez sa dernière réponse pour l’effacer. Ce suivi est conservé après rechargement et partagé entre les onglets d’un même navigateur ; il reste indépendant sur chaque appareil.
+Dans la liste des projets, le dossier devient un **point vert** lorsqu’une session travaille, ou un **point bleu** lorsqu’une réponse terminée reste à lire. Le vert est prioritaire. La session concernée porte aussi un point bleu : consultez sa dernière réponse pour l’effacer. La lecture est enregistrée sur le PC serveur et partagée entre les navigateurs, le téléphone et l’application Windows, y compris en mode consultation. Les appareils ouverts se synchronisent au prochain rafraîchissement (au plus 10 secondes), ou dès leur retour au premier plan. À la première activation de ce suivi partagé, les réponses déjà présentes constituent le point de départ commun.
+
+Le menu **…** d’un projet propose **Monter le projet** et **Descendre le projet**. L’ordre est enregistré sur le serveur et partagé entre appareils ; les projets épinglés restent en tête de liste.
 
 Dans le Studio distant, **Préférences → Se déconnecter** ferme l’accès de ce navigateur et revient au code d’accès. Les agents et les autres appareils connectés continuent de fonctionner.
 
@@ -192,7 +194,9 @@ Le champ de saisie reste disponible pendant une exécution. Choisissez le moment
 | **Réorienter** | Après les outils de l’étape courante, pour ajuster la demande en cours. |
 | **À la suite** | Après la réponse courante, pour enchaîner avec une nouvelle demande.    |
 
-Vous pouvez modifier les messages en attente, les réordonner, les retirer ou les déplacer d’un mode à l’autre. L’acceptation par le moteur est distincte de la transmission effective, qui apparaît ensuite dans la conversation.
+Vous pouvez modifier vos messages en attente, les réordonner, les retirer ou les déplacer d’un mode à l’autre. Les messages automatiques entre agents portent la mention **Automatique · protégé** et ne proposent aucun contrôle de modification ou de suppression. L’acceptation par le moteur est distincte de la transmission effective, qui apparaît ensuite dans la conversation.
+
+Les messages reçus des sous-agents ont une carte dédiée avec leur nom et leur contenu. Les identifiants techniques restent accessibles dans **Détails de transmission**, repliés par défaut. Lorsque la file native ne fournit pas le nom de l’expéditeur, le Studio indique simplement **Message d’agent**.
 
 ![Messages pendant une exécution sur PC : file d’attente, réorientation, message à la suite et commande d’arrêt séparée.](docs/screenshots/desktop-live-messages.png)
 

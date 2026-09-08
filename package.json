@@ -23,6 +23,7 @@
     "check:docs": "node scripts/check-docs.mjs",
     "docs:sync": "node scripts/check-docs.mjs --record",
     "test:activity": "node scripts/test-project-activity-ui.mjs",
+    "test:stability": "node scripts/test-session-stability-ui.mjs",
     "test:mobile": "node scripts/test-mobile-control.mjs",
     "test:workspace": "node scripts/test-workspace-ui.mjs",
     "test:inspector": "node scripts/test-inspector-ui.mjs",

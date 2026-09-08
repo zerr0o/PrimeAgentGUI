@@ -23,6 +23,7 @@ import { composerText, setComposerText, composerCommand } from './composer.js';
 import { createInspector } from './inspector.js';
 import { fileLinkRenderer, bindFileLinks } from './file-links.js';
 import { createSessionActivity } from './session-activity.js';
+import { parseAgentEnvelope } from './agent-messages.js';
 let imageComposer;
 let liveMessagesUI;
 let commandsUI;
@@ -142,6 +143,12 @@ const sessionActivity = createSessionActivity({
   read: readStorage,
   write: writeStorage,
   loadHistory: (id) => api(`/api/history?id=${encodeURIComponent(id)}`),
+  saveRead: (id, answer) => api('/api/sessions/read', { method: 'POST', body: { id, answer } }),
+  onChange: () => {
+    renderProjects();
+    renderSessions();
+    renderProjectOverview();
+  },
 });
 const normalizedPath = (p) =>
   String(p || '')
@@ -387,7 +394,11 @@ function banner(message, error = false) {
   $('global-banner').classList.toggle('error', error);
 }
 async function api(path, { method = 'GET', body, signal } = {}) {
-  if (state.readOnly && method.toUpperCase() !== 'GET')
+  if (
+    state.readOnly &&
+    method.toUpperCase() !== 'GET' &&
+    !(method.toUpperCase() === 'POST' && path === '/api/sessions/read')
+  )
     throw new Error(tr('ui.cette_connexion_permet_de_consulter_les_sessions'));
   const r = await fetch(path, {
     method,
@@ -1094,6 +1105,49 @@ function renderMessage(m, index) {
     signature = JSON.stringify(m),
     old = messageNodes.get(id);
   if (old?.signature === signature) return old.node;
+  const agent = m.agentMessage || (m.role === 'system' ? parseAgentEnvelope(m.text) : null);
+  if (agent) {
+    const card = el('article', 'message system agent-message');
+    card.dataset.messageId = id;
+    const header = el('div', 'message-heading');
+    const avatar = el('span', 'message-avatar');
+    avatar.append(icon('model'));
+    header.append(
+      avatar,
+      el('span', 'message-author', () => agent.name || tr('agents.message_title')),
+      el('span', 'agent-message-badge', () =>
+        tr(
+          agent.relationship === 'child'
+            ? 'agents.message_child'
+            : agent.relationship === 'parent'
+              ? 'agents.parent'
+              : 'agents.message_title',
+        ),
+      ),
+      el('span', 'message-time', () => dateLabel(m.timestamp)),
+    );
+    const body = el('div', 'message-body agent-message-body');
+    body.append(markdown(agent.text));
+    const details = makeDetails('agent-message-details', `agent-source:${id}`);
+    details.append(el('summary', '', () => tr('agents.details')));
+    const metadata = el('dl');
+    for (const [label, value] of [
+      ['agents.sender', agent.sender],
+      ['agents.recipient', agent.target],
+      ['agents.identifier', agent.id],
+    ]) {
+      if (value)
+        metadata.append(
+          el('dt', '', () => tr(label)),
+          el('dd', '', () => value),
+        );
+    }
+    details.append(metadata);
+    body.append(details);
+    card.append(header, body);
+    messageNodes.set(id, { node: card, signature });
+    return card;
+  }
   const n = el('article', `message ${['assistant', 'user'].includes(m.role) ? m.role : 'system'}`);
   n.dataset.messageId = id;
   const heading = el('div', 'message-heading'),
@@ -2103,6 +2157,15 @@ function openProjectMenu(cwd, anchor) {
   projectMenuAnchor = anchor;
   bindText($('project-pin-label'), () => (p.pinned ? tr('ui.desepingler') : tr('ui.epingler')));
   $('project-menu').querySelector('[data-project-action="open"]').disabled = p.exists === false;
+  const projectIndex = state.projects.indexOf(p);
+  for (const [action, direction] of [
+    ['up', -1],
+    ['down', 1],
+  ]) {
+    const next = state.projects[projectIndex + direction];
+    $('project-menu').querySelector(`[data-project-action="${action}"]`).disabled =
+      !next || !!next.pinned !== !!p.pinned;
+  }
   $('project-menu').hidden = false;
   anchor.setAttribute('aria-expanded', 'true');
   positionMenus();
@@ -2118,6 +2181,12 @@ async function projectMenuAction(action) {
       toast(() => tr('ui.dossier_ouvert_sur_le_pc'));
     } else if (action === 'pin') {
       await api('/api/projects', { method: 'PATCH', body: { cwd: p.cwd, pinned: !p.pinned } });
+      await refreshOverview();
+    } else if (action === 'up' || action === 'down') {
+      await api('/api/projects/move', {
+        method: 'POST',
+        body: { cwd: p.cwd, direction: action === 'up' ? -1 : 1 },
+      });
       await refreshOverview();
     } else if (action === 'remove') {
       bindText($('remove-project-name'), () => p.name);

@@ -626,6 +626,10 @@ export function createApp(options = {}) {
         const { file, ...history } = await store.history(url.searchParams.get('id'));
         return json(res, 200, history);
       }
+      if (method === 'POST' && path === '/api/sessions/read')
+        return json(res, 200, await store.markRead(await readBody(req)));
+      if (method === 'POST' && path === '/api/projects/move')
+        return json(res, 200, await store.moveProject(await readBody(req)));
       if (method === 'GET' && path === '/api/check-cwd') {
         try {
           return json(res, 200, { cwd: await validateDirectory(url.searchParams.get('cwd')), exists: true });

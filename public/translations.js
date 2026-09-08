@@ -5,6 +5,28 @@ export const languages = [
   { id: 'en', label: 'English' },
 ];
 export const messages = {
+  'agents.message_title': { fr: 'Message d’agent', en: 'Agent message' },
+  'agents.message_child': { fr: 'Sous-agent', en: 'Subagent' },
+  'agents.parent': { fr: 'Agent parent', en: 'Parent agent' },
+  'agents.protected': { fr: 'Automatique · protégé', en: 'Automatic · protected' },
+  'agents.message_protected': {
+    fr: 'Les messages entre agents sont protégés et ne peuvent pas être modifiés.',
+    en: 'Messages between agents are protected and cannot be changed.',
+  },
+  'agents.details': { fr: 'Détails de transmission', en: 'Delivery details' },
+  'agents.sender': { fr: 'Expéditeur', en: 'Sender' },
+  'agents.recipient': { fr: 'Destinataire', en: 'Recipient' },
+  'agents.identifier': { fr: 'Identifiant', en: 'Identifier' },
+  'projects.move_up': { fr: 'Monter le projet', en: 'Move project up' },
+  'projects.move_down': { fr: 'Descendre le projet', en: 'Move project down' },
+  'projects.invalid_order': {
+    fr: 'L’ordre des projets a changé. Actualisez la liste.',
+    en: 'The project order changed. Refresh the list.',
+  },
+  'activity.invalid_receipt': {
+    fr: 'Ce message ne peut pas être marqué comme lu.',
+    en: 'This message cannot be marked as read.',
+  },
   'https.authorization': {
     fr: 'Tailscale demande une autorisation pour activer HTTPS.',
     en: 'Tailscale requires authorization to enable HTTPS.',

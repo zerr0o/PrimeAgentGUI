@@ -41,6 +41,12 @@ export function validateTranslations(table = messages, supported = languages, fa
 
 export async function validateTranslationReferences() {
   const errors = [];
+  const tableSource = await readFile('public/translations.js', 'utf8');
+  const keys = new Set();
+  for (const match of tableSource.matchAll(/^  '([^']+)':/gm)) {
+    if (keys.has(match[1])) errors.push(`translations.js: duplicate message ${match[1]}`);
+    keys.add(match[1]);
+  }
   const files = [
     'index.html',
     'server.mjs',

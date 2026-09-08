@@ -57,6 +57,12 @@ test('provider errors are failures even when the CLI exits successfully', async 
   assert.equal((await handle.done).status, 'failed');
 });
 
+test('a successful native retry clears the transient provider failure', async (t) => {
+  const { dir, runtime } = await setup(t);
+  const handle = await runtime.start({ cwd: dir, message: '[recovered]' });
+  assert.equal((await handle.done).status, 'completed');
+});
+
 test('model catalogue returns a positive allowlist and never credential-bearing config', async (t) => {
   const { runtime } = await setup(t);
   const secret = 'SECRET_MUST_NOT_LEAVE_SERVER';
