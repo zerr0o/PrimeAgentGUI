@@ -1,0 +1,63 @@
+name: Windows desktop release
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing stable tag to build (for example v2.8.0)
+        required: true
+        type: string
+permissions:
+  contents: write
+concurrency:
+  group: desktop-release-${{ inputs.tag }}
+  cancel-in-progress: false
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.tag }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Validate tag and signing configuration
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ($version -notmatch '^\d+\.\d+\.\d+$' -or $env:RELEASE_TAG -cne "v$version") { throw 'Tag and package version must match' }
+          if (!$env:TAURI_SIGNING_PRIVATE_KEY) { throw 'Missing TAURI_SIGNING_PRIVATE_KEY repository secret' }
+      - run: rustup default stable
+      - run: npm ci
+      - run: npm test
+      - run: npm run check
+      - run: cargo test --manifest-path src-tauri/Cargo.toml --locked
+      - name: Build signed Windows installer
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: npm run desktop:build
+      - run: npm run desktop:manifest
+      - name: Prepare a draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          $release = gh release view $env:RELEASE_TAG --json isDraft 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            if (!(($release | ConvertFrom-Json).isDraft)) { throw 'Refusing to replace assets on a published release' }
+          } else {
+            gh release create $env:RELEASE_TAG --verify-tag --draft --title "Prime Agent Studio $env:RELEASE_TAG" --generate-notes
+            if ($LASTEXITCODE -ne 0) { throw 'Could not create the draft release' }
+          }
+          gh release view $env:RELEASE_TAG --json body --jq .body | Set-Content .local/release-notes.md -Encoding utf8
+          npm run desktop:manifest -- .local/release-notes.md
+          if ($LASTEXITCODE -ne 0) { throw 'Could not prepare update metadata' }
+          $artifacts = Get-ChildItem -LiteralPath ".local/desktop-release/$env:RELEASE_TAG" -File | ForEach-Object FullName
+          gh release upload $env:RELEASE_TAG @artifacts --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'Could not upload release artifacts' }

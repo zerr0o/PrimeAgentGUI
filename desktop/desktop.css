@@ -218,6 +218,80 @@ footer svg {
 [hidden] {
   display: none !important;
 }
+.app-settings {
+  padding-top: 30px;
+  padding-bottom: 30px;
+}
+.app-settings .intro {
+  margin: 28px 0 22px;
+}
+.app-settings h1 {
+  font-size: 28px;
+}
+.app-settings footer {
+  margin-top: 28px;
+}
+.updates {
+  padding: 20px 0;
+  border-top: 1px solid #36373b;
+  border-bottom: 1px solid #36373b;
+}
+.update-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.updates h2 {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0;
+}
+#app-version {
+  font-size: 12px;
+  color: #a5a6ae;
+}
+.updates p {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #a5a6ae;
+  margin: 9px 0;
+}
+.updates .failed {
+  color: #f0b0b0;
+}
+.update-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 24px;
+  align-items: center;
+  margin-top: 10px;
+}
+.update-actions .primary {
+  padding: 9px 14px;
+  min-width: auto;
+  font-size: 12px;
+}
+.updates details {
+  font-size: 12px;
+  margin: 12px 0;
+}
+.updates summary {
+  cursor: pointer;
+  color: #c9c5ed;
+}
+#update-notes-body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 120px;
+  overflow-y: auto;
+}
+#update-progress {
+  width: 100%;
+  height: 5px;
+  margin: 8px 0;
+  accent-color: #b7b2e7;
+}
 @media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;
@@ -264,6 +338,19 @@ footer svg {
   footer,
   .platform {
     color: #666874;
+  }
+  .updates {
+    border-color: #d4d2d9;
+  }
+  .updates p,
+  #app-version {
+    color: #666874;
+  }
+  .updates summary {
+    color: #62588f;
+  }
+  .updates .failed {
+    color: #963f4e;
   }
   #source {
     color: #62588f;

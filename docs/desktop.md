@@ -26,6 +26,8 @@ Les préférences visuelles et brouillons du navigateur ne sont pas copiés : la
 
 Pour retrouver un serveur arrêté, ouvrez **Réglages de l’application → Ouvrir le Studio**. Ce bouton réutilise une instance existante et n’arrête pas les agents.
 
+Un raccourci Windows peut utiliser l’argument `--settings` pour ouvrir directement les réglages de l’application, y compris lorsqu’elle fonctionne déjà en arrière-plan.
+
 ## Données et mises à jour
 
 Les données se trouvent dans `%LOCALAPPDATA%\com.primeagent.studio` :
@@ -40,7 +42,11 @@ Les données se trouvent dans `%LOCALAPPDATA%\com.primeagent.studio` :
 
 Une mise à jour installe la nouvelle application et prépare une nouvelle copie du serveur au prochain démarrage nécessaire. Un serveur déjà actif reste utilisé : la nouvelle version du serveur prendra effet après son arrêt volontaire, à la fin de vos exécutions. Les anciennes copies ne sont pas effacées automatiquement afin de préserver les processus encore actifs.
 
-Les installateurs produits localement ne sont pas signés numériquement. La publication d’un installateur signé demande un certificat de signature Windows ; les mises à jour automatiques ne sont pas configurées dans cette première version.
+Dans le menu de l’icône près de l’horloge, ouvrez **Réglages de l’application → Mises à jour → Vérifier les mises à jour**. Si une version stable plus récente est publiée sur GitHub, ses nouveautés et le bouton **Installer et relancer** apparaissent. Le téléchargement affiche sa progression, puis Tauri vérifie la signature avant de lancer l’installation. Aucune installation ne démarre sans ce clic. Le serveur et les agents continuent pendant la relance de l’application.
+
+Une erreur réseau, un catalogue absent ou une signature invalide ne sont jamais présentés comme « à jour ». Vous pouvez réessayer ; les détails techniques sont dans `desktop-update-error.log`, dans le dossier de données. Le catalogue devient disponible lors de la première release contenant `latest.json`. La vérification est manuelle, sans interrogation périodique en arrière-plan.
+
+Les mises à jour portent une signature cryptographique Tauri. Les installateurs ne possèdent pas encore de signature Windows Authenticode : celle-ci demande un certificat Windows distinct.
 
 ## Construire et vérifier
 
@@ -56,3 +62,13 @@ L’installateur se trouve dans `src-tauri/target/release/bundle/nsis`. `npm run
 `npm run test:desktop` vérifie le binaire debug préalablement compilé : réutilisation d’un serveur avec un agent simulé actif, démarrage réel du serveur inclus, instance unique et survie du serveur à la fermeture du processus Tauri. Passez le chemin du binaire après `--` pour tester une autre compilation. `npm run test:desktop-ui` vérifie les adaptations de présentation dans Chrome/Edge. Les tests ne lancent aucun appel payant à un modèle.
 
 Pour les tests isolés, `PRIME_STUDIO_DESKTOP_DATA_ROOT` et `PRIME_STUDIO_DESKTOP_PORT` changent respectivement le dossier de données et le port. Ne les définissez pas pour un usage normal. Le VBS reste disponible pour les installations depuis les sources.
+
+`npm run test:desktop-updates` vérifie les états du panneau en français et anglais. `cargo test --manifest-path src-tauri/Cargo.toml --locked` teste le véritable client de mise à jour contre un serveur local : signature valide, fichier altéré, versions égales/antérieures et catalogue invalide. Les tests n’exécutent aucun installateur.
+
+## Préparer une release avec mise à jour
+
+La clé privée de signature reste hors du dépôt, dans `%USERPROFILE%\.tauri\prime-agent-studio.key` sur le poste de publication. Sauvegardez-la dans un emplacement sûr : les applications installées font confiance à sa clé publique intégrée et une nouvelle clé incompatible empêcherait leurs mises à jour. `desktop:build` utilise cette clé locale ou `TAURI_SIGNING_PRIVATE_KEY` (chemin ou contenu) et `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. Sans clé, `npm run desktop:build -- --no-bundle` permet de compiler seulement l’exécutable.
+
+Après la compilation signée, lancez `npm run desktop:manifest -- chemin/notes.md` (notes facultatives). `.local/desktop-release/v<version>` contient les trois fichiers à joindre ensemble à la release stable `v<version>` : l’installateur au nom sans espaces, sa signature `.sig` et `latest.json`. Ne renommez pas l’installateur après cette étape : le catalogue contient son URL exacte.
+
+Le workflow GitHub **Windows desktop release** se lance manuellement avec un tag stable existant, correspondant à la version de `package.json`. Il teste, compile, signe et prépare une **release brouillon** avec ces trois fichiers. Configurez les secrets du dépôt `TAURI_SIGNING_PRIVATE_KEY` et, si la clé est chiffrée, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. Il refuse de remplacer une release déjà publiée. Relisez le brouillon, puis publiez-le comme dernière release stable pour rendre la mise à jour disponible. Ne publiez pas ensuite une release stable sans son catalogue et son installateur.

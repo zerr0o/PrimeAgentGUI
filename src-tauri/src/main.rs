@@ -1,5 +1,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+#[cfg(test)]
+mod update_tests;
+mod updates;
+
 use serde::{Deserialize, Serialize};
 use std::{
     fs,
@@ -34,13 +38,19 @@ struct Desktop {
 
 fn native_only(window: &WebviewWindow) -> Result<(), String> {
     let url = window.url().map_err(|e| e.to_string())?;
-    if (url.scheme() == "tauri" && url.host_str() == Some("localhost"))
-        || (["http", "https"].contains(&url.scheme()) && url.host_str() == Some("tauri.localhost"))
-    {
+    if is_launcher_url(&url) {
         Ok(())
     } else {
         Err("This action is reserved for the desktop launcher.".into())
     }
+}
+fn is_launcher_url(url: &tauri::Url) -> bool {
+    url.port().is_none()
+        && url.username().is_empty()
+        && url.password().is_none()
+        && ((url.scheme() == "tauri" && url.host_str() == Some("localhost"))
+            || (["http", "https"].contains(&url.scheme())
+                && url.host_str() == Some("tauri.localhost")))
 }
 fn show_main(app: &tauri::AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
@@ -61,7 +71,7 @@ fn show_settings(app: &tauri::AppHandle) {
         )
         .data_directory(app.state::<Desktop>().root.join("webview"))
         .title("Prime Agent Studio · Application")
-        .inner_size(660.0, 670.0)
+        .inner_size(660.0, 760.0)
         .min_inner_size(560.0, 600.0)
         .build();
     }
@@ -85,7 +95,7 @@ fn desktop_state(
     native_only(&window)?;
     let prefs = state.prefs.lock().map_err(|e| e.to_string())?.clone();
     Ok(
-        serde_json::json!({"started":prefs.started,"legacyRoot":prefs.legacy_root,"imported":state.root.join("data").exists(),"autostart":app.autolaunch().is_enabled().map_err(|e| e.to_string())?}),
+        serde_json::json!({"version":app.package_info().version.to_string(),"started":prefs.started,"legacyRoot":prefs.legacy_root,"imported":state.root.join("data").exists(),"autostart":app.autolaunch().is_enabled().map_err(|e| e.to_string())?}),
     )
 }
 #[tauri::command]
@@ -205,7 +215,9 @@ async fn desktop_start(
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, args, _| {
-            if !args.iter().any(|arg| arg == "--background") {
+            if args.iter().any(|arg| arg == "--settings") {
+                show_settings(app);
+            } else if !args.iter().any(|arg| arg == "--background") {
                 show_main(app);
             }
         }))
@@ -214,12 +226,16 @@ fn main() {
             Some(vec!["--background"]),
         ))
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .manage(updates::Updates::default())
         .invoke_handler(tauri::generate_handler![
             desktop_state,
             desktop_autostart,
             desktop_choose_legacy,
             desktop_logs,
-            desktop_start
+            desktop_start,
+            updates::desktop_update_check,
+            updates::desktop_update_install
         ])
         .setup(|app| {
             let root = std::env::var_os("PRIME_STUDIO_DESKTOP_DATA_ROOT")
@@ -281,9 +297,7 @@ fn main() {
                 tauri::webview::NewWindowResponse::Deny
             })
             .on_navigation(move |url| {
-                let local = url.scheme() == "tauri" && url.host_str() == Some("localhost")
-                    || ["http", "https"].contains(&url.scheme())
-                        && url.host_str() == Some("tauri.localhost");
+                let local = is_launcher_url(url);
                 if local || url.origin().ascii_serialization() == origin {
                     return true;
                 }
@@ -356,6 +370,9 @@ fn main() {
                     }
                 })
                 .build(app)?;
+            if std::env::args().any(|arg| arg == "--settings") {
+                show_settings(app.handle());
+            }
             Ok(())
         })
         .on_window_event(|window, event| {

@@ -26,6 +26,8 @@ Browser appearance preferences and drafts are not copied: the Tauri window has i
 
 To reconnect to a stopped server, open **App settings → Open Studio**. This button reuses an existing instance and never stops agents.
 
+A Windows shortcut can use the `--settings` argument to open application settings directly, including when the app is already running in the background.
+
 ## Data and updates
 
 Data is stored in `%LOCALAPPDATA%\com.primeagent.studio`:
@@ -40,7 +42,11 @@ Data is stored in `%LOCALAPPDATA%\com.primeagent.studio`:
 
 An update installs the new application and prepares a new server copy when the next startup is needed. A running server remains in use: the new server version takes effect after you deliberately stop it when your runs have finished. Old copies are not automatically removed, preserving any processes still using them.
 
-Locally built installers are not digitally signed. Publishing a signed installer requires a Windows signing certificate; automatic updates are not configured in this first version.
+In the tray icon menu, open **App settings → Updates → Check for updates**. When a newer stable version is published on GitHub, its release notes and an **Install and restart** button appear. Download progress is displayed, then Tauri verifies the signature before starting installation. Installation requires this explicit click. The server and agents continue during the application restart.
+
+A network error, missing catalog or invalid signature is never reported as “up to date”. You can retry; technical details are in `desktop-update-error.log` in the data folder. The catalog becomes available with the first release containing `latest.json`. Checking is manual, with no periodic background polling.
+
+Updates carry a Tauri cryptographic signature. Installers do not yet carry a Windows Authenticode signature, which requires a separate Windows certificate.
 
 ## Build and verify
 
@@ -56,3 +62,13 @@ The installer is in `src-tauri/target/release/bundle/nsis`. `npm run desktop:dev
 `npm run test:desktop` tests the previously compiled debug executable: reusing a server with an active simulated agent, starting the bundled server, single instance behavior and server survival when the Tauri process closes. Pass another executable path after `--` to test a different build. `npm run test:desktop-ui` checks presentation changes in Chrome/Edge. Tests make no paid model calls.
 
 For isolated tests, `PRIME_STUDIO_DESKTOP_DATA_ROOT` and `PRIME_STUDIO_DESKTOP_PORT` override the data folder and port. Leave them unset for normal use. VBS remains available for source installations.
+
+`npm run test:desktop-updates` checks the panel states in French and English. `cargo test --manifest-path src-tauri/Cargo.toml --locked` tests the actual updater client against a local server: valid signature, tampered file, equal/older versions and invalid catalog. Tests never execute an installer.
+
+## Prepare an update release
+
+The private signing key stays outside the repository, in `%USERPROFILE%\.tauri\prime-agent-studio.key` on the release machine. Back it up securely: installed applications trust its embedded public key, and an incompatible replacement key would prevent updates. `desktop:build` uses this local key or `TAURI_SIGNING_PRIVATE_KEY` (path or content) and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. Without a key, `npm run desktop:build -- --no-bundle` builds only the executable.
+
+After a signed build, run `npm run desktop:manifest -- path/notes.md` (notes are optional). `.local/desktop-release/v<version>` contains the three files to attach together to stable release `v<version>`: the installer with a space-free name, its `.sig` signature and `latest.json`. Do not rename the installer afterward: the catalog contains its exact URL.
+
+The GitHub **Windows desktop release** workflow runs manually with an existing stable tag matching `package.json`. It tests, builds, signs and prepares a **draft release** containing these three files. Configure repository secrets `TAURI_SIGNING_PRIVATE_KEY` and, for an encrypted key, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. It refuses to overwrite a published release. Review the draft, then publish it as the latest stable release to make the update available. Do not subsequently publish a stable release without its catalog and installer.

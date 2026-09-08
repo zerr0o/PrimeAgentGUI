@@ -14,7 +14,7 @@ const messages = {
     progress: 'Préparation du Studio…',
     retry: 'Réessayer',
     logs: 'Ouvrir les journaux',
-    settingsTitle: 'À votre rythme.',
+    settingsTitle: 'Réglages de l’application.',
     settingsNote: 'Choisissez comment le Studio vous accompagne sur ce PC.',
     connectingTitle: 'Votre espace se prépare.',
     connectingNote: 'Nous retrouvons le serveur actif ou le démarrons pour vous.',
@@ -22,6 +22,24 @@ const messages = {
     noBridge: 'Ouvrez cette page dans l’application Prime Agent Studio.',
     selected: 'Installation sélectionnée : ',
     autostartError: 'Le démarrage avec Windows n’a pas pu être modifié.',
+    updates: 'Mises à jour',
+    updateIdle: 'Recherchez les nouvelles versions publiées sur GitHub.',
+    updateCheck: 'Vérifier les mises à jour',
+    updateChecking: 'Recherche d’une nouvelle version…',
+    updateCurrent: 'Vous utilisez la dernière version publiée.',
+    updateAvailable: 'La version {version} est disponible.',
+    updateInstall: 'Installer et relancer',
+    updateNotes: 'Nouveautés de cette version',
+    updateImpact:
+      'L’application se relancera. Vos agents continuent ; le serveur actif garde sa version jusqu’à son prochain démarrage.',
+    updateDownloading: 'Téléchargement',
+    updateVerifying: 'Vérification de la signature…',
+    updateInstalling: 'Installation et relance de l’application…',
+    updateCheckFailed:
+      'Impossible de consulter les mises à jour. Vérifiez votre connexion ou réessayez plus tard.',
+    updateDownloadFailed:
+      'Le téléchargement ou sa signature n’a pas pu être validé. Aucune mise à jour installée.',
+    updateInstallFailed: 'L’installation n’a pas pu démarrer. Vous pouvez réessayer.',
   },
   en: {
     eyebrow: 'YOUR DESKTOP APPLICATION',
@@ -37,7 +55,7 @@ const messages = {
     progress: 'Preparing Studio…',
     retry: 'Try again',
     logs: 'Open logs',
-    settingsTitle: 'At your own pace.',
+    settingsTitle: 'Application settings.',
     settingsNote: 'Choose how Studio accompanies you on this PC.',
     connectingTitle: 'Preparing your workspace.',
     connectingNote: 'We are finding the running server or starting it for you.',
@@ -45,6 +63,22 @@ const messages = {
     noBridge: 'Open this page in the Prime Agent Studio application.',
     selected: 'Selected installation: ',
     autostartError: 'Could not change the start with Windows setting.',
+    updates: 'Updates',
+    updateIdle: 'Check for new versions published on GitHub.',
+    updateCheck: 'Check for updates',
+    updateChecking: 'Checking for a new version…',
+    updateCurrent: 'You are using the latest published version.',
+    updateAvailable: 'Version {version} is available.',
+    updateInstall: 'Install and restart',
+    updateNotes: 'What’s new',
+    updateImpact:
+      'The app will restart. Your agents continue; the running server keeps its version until its next start.',
+    updateDownloading: 'Downloading',
+    updateVerifying: 'Verifying the signature…',
+    updateInstalling: 'Installing and restarting the app…',
+    updateCheckFailed: 'Could not check for updates. Check your connection or try again later.',
+    updateDownloadFailed: 'The download or its signature could not be verified. No update was installed.',
+    updateInstallFailed: 'The installer could not start. You can try again.',
   },
 };
 const language = navigator.language.toLowerCase().startsWith('fr') ? 'fr' : 'en',
@@ -52,6 +86,7 @@ const language = navigator.language.toLowerCase().startsWith('fr') ? 'fr' : 'en'
   $ = (id) => document.getElementById(id);
 document.documentElement.lang = language;
 const settings = new URLSearchParams(location.search).has('settings');
+document.body.classList.toggle('app-settings', settings);
 for (const [id, key] of Object.entries({
   eyebrow: 'eyebrow',
   title: settings ? 'settingsTitle' : 'title',
@@ -64,9 +99,77 @@ for (const [id, key] of Object.entries({
   footer: 'footer',
   'progress-text': 'progress',
   logs: 'logs',
+  'update-heading': 'updates',
+  'update-status': 'updateIdle',
+  'update-check': 'updateCheck',
+  'update-install': 'updateInstall',
+  'update-notes-label': 'updateNotes',
+  'update-impact': 'updateImpact',
 }))
   $(id).textContent = t[key];
 const invoke = window.__TAURI__?.core?.invoke;
+let updateBusy = false,
+  availableVersion;
+function updateStatus(message, error = false) {
+  $('update-status').textContent = message;
+  $('update-status').classList.toggle('failed', error);
+}
+$('update-check').onclick = async () => {
+  if (updateBusy) return;
+  updateBusy = true;
+  availableVersion = undefined;
+  $('update-check').disabled = true;
+  $('update-install').hidden = true;
+  $('update-notes').hidden = true;
+  $('update-impact').hidden = true;
+  updateStatus(t.updateChecking);
+  try {
+    const update = await invoke('desktop_update_check');
+    if (update.available) {
+      availableVersion = update.version;
+      updateStatus(t.updateAvailable.replace('{version}', update.version));
+      $('update-install').hidden = false;
+      $('update-impact').hidden = false;
+      $('update-notes-body').textContent = update.notes || '';
+      $('update-notes').hidden = !update.notes;
+    } else updateStatus(t.updateCurrent);
+  } catch {
+    updateStatus(t.updateCheckFailed, true);
+  } finally {
+    updateBusy = false;
+    $('update-check').disabled = false;
+  }
+};
+$('update-install').onclick = async () => {
+  if (updateBusy || !availableVersion) return;
+  updateBusy = true;
+  $('update-check').disabled = true;
+  $('update-install').disabled = true;
+  $('start').disabled = true;
+  $('update-progress').hidden = false;
+  $('update-progress').removeAttribute('value');
+  updateStatus(t.updateDownloading + '…');
+  try {
+    const onEvent = new window.__TAURI__.core.Channel();
+    onEvent.onmessage = ({ stage, percent }) => {
+      if (stage === 'downloading') {
+        updateStatus(t.updateDownloading + (percent == null ? '…' : ` · ${percent} %`));
+        if (percent != null) $('update-progress').value = percent;
+      } else {
+        updateStatus(stage === 'verifying' ? t.updateVerifying : t.updateInstalling);
+        $('update-progress').removeAttribute('value');
+      }
+    };
+    await invoke('desktop_update_install', { version: availableVersion, onEvent });
+  } catch (error) {
+    updateStatus(error === 'install_failed' ? t.updateInstallFailed : t.updateDownloadFailed, true);
+    $('update-progress').hidden = true;
+    $('update-check').disabled = false;
+    $('update-install').disabled = false;
+    $('start').disabled = false;
+    updateBusy = false;
+  }
+};
 let busy = false;
 function showError(value) {
   $('error').textContent = value;
@@ -143,6 +246,8 @@ $('import').onclick = async () => {
   }
   try {
     const state = await invoke('desktop_state');
+    $('app-version').textContent = `v${state.version}`;
+    $('updates').hidden = !settings;
     $('autostart').checked = state.autostart;
     $('start').disabled = false;
     if (state.imported) {

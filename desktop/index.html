@@ -29,6 +29,23 @@
           <p id="source" hidden></p>
         </div>
       </section>
+      <section id="updates" class="updates" aria-labelledby="update-heading" hidden>
+        <div class="update-heading">
+          <h2 id="update-heading"></h2>
+          <span id="app-version"></span>
+        </div>
+        <p id="update-status" role="status" aria-live="polite"></p>
+        <progress id="update-progress" max="100" hidden></progress>
+        <details id="update-notes" hidden>
+          <summary id="update-notes-label"></summary>
+          <p id="update-notes-body"></p>
+        </details>
+        <p id="update-impact" hidden></p>
+        <div class="update-actions">
+          <button id="update-check" class="text-button"></button
+          ><button id="update-install" class="primary" hidden></button>
+        </div>
+      </section>
       <div id="progress" role="status" hidden>
         <span class="pulse"></span><span id="progress-text"></span>
       </div>

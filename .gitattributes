@@ -1,0 +1,2 @@
+# Preserve the exact bytes covered by the updater test signature on Windows checkouts.
+/test/fixtures/updater/payload.txt -text

@@ -14,7 +14,11 @@
     "security": {
       "csp": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src ipc: http://ipc.localhost; object-src 'none'; base-uri 'none'",
       "capabilities": [
-        { "identifier": "launcher", "windows": ["main", "desktop-settings"], "permissions": ["core:default"] }
+        {
+          "identifier": "launcher",
+          "windows": ["main", "desktop-settings"],
+          "permissions": ["core:default"]
+        }
       ]
     }
   },
@@ -22,17 +26,32 @@
     "active": true,
     "targets": ["nsis"],
     "icon": ["icons/icon.ico", "icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png"],
-    "resources": { "../.desktop-build/": "backend/" },
+    "resources": {
+      "../.desktop-build/": "backend/"
+    },
     "publisher": "zerr0o",
     "copyright": "Copyright (c) zerr0o",
     "shortDescription": "Votre espace de travail pour Prime Agent",
     "windows": {
-      "webviewInstallMode": { "type": "downloadBootstrapper", "silent": true },
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      },
       "nsis": {
         "installMode": "currentUser",
         "languages": ["French", "English"],
         "displayLanguageSelector": true,
         "startMenuFolder": "Prime Agent Studio"
+      }
+    },
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": ["https://github.com/zerr0o/prime-agent-studio/releases/latest/download/latest.json"],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDFGNjdBNjFBMTM5MTlBRjMKUldUem1wRVRHcVpuSCs3NG5TeVNCYUpXVE9ldndiendudUtpbkEreGtRcGNkUDRxVXhlbmFsc0oK",
+      "windows": {
+        "installMode": "passive"
       }
     }
   }

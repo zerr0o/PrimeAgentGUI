@@ -1,0 +1,154 @@
+use std::{
+    io::{Read, Write},
+    net::TcpListener,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+    thread,
+    time::Duration,
+};
+use tauri_plugin_updater::UpdaterExt;
+
+#[test]
+fn only_bundled_origins_can_invoke_native_commands() {
+    for url in [
+        "tauri://localhost/index.html",
+        "http://tauri.localhost/index.html?settings",
+    ] {
+        assert!(super::is_launcher_url(&url.parse().unwrap()));
+    }
+    for url in [
+        "http://127.0.0.1:3088/",
+        "https://example.com",
+        "http://tauri.localhost:1234",
+        "http://user@tauri.localhost",
+        "https://tauri.localhost.evil.test",
+    ] {
+        assert!(!super::is_launcher_url(&url.parse().unwrap()));
+    }
+}
+
+struct Feed {
+    url: String,
+    stop: Arc<AtomicBool>,
+    thread: Option<thread::JoinHandle<()>>,
+}
+impl Feed {
+    fn new(version: &str, payload: Vec<u8>, malformed: bool) -> Self {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let url = format!("http://{}", listener.local_addr().unwrap());
+        let manifest = if malformed {
+            b"{}".to_vec()
+        } else {
+            serde_json::to_vec(&serde_json::json!({
+                "version":version, "platforms":{"windows-x86_64":{
+                    "url":format!("{url}/payload"),
+                    "signature":include_str!("../../test/fixtures/updater/payload.txt.sig").trim()
+                }}
+            }))
+            .unwrap()
+        };
+        let stop = Arc::new(AtomicBool::new(false));
+        let running = stop.clone();
+        let thread = thread::spawn(move || {
+            while !running.load(Ordering::Relaxed) {
+                if let Ok((mut stream, _)) = listener.accept() {
+                    stream
+                        .set_read_timeout(Some(Duration::from_secs(2)))
+                        .unwrap();
+                    let mut buffer = [0; 4096];
+                    let size = stream.read(&mut buffer).unwrap_or(0);
+                    let body =
+                        if String::from_utf8_lossy(&buffer[..size]).starts_with("GET /payload ") {
+                            &payload
+                        } else {
+                            &manifest
+                        };
+                    let _ = write!(
+                        stream,
+                        "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                        body.len()
+                    );
+                    let _ = stream.write_all(body);
+                } else {
+                    thread::sleep(Duration::from_millis(5));
+                }
+            }
+        });
+        Self {
+            url,
+            stop,
+            thread: Some(thread),
+        }
+    }
+}
+impl Drop for Feed {
+    fn drop(&mut self) {
+        self.stop.store(true, Ordering::Relaxed);
+        self.thread.take().unwrap().join().unwrap();
+    }
+}
+
+#[test]
+fn updater_verifies_signed_downloads_and_rejects_tampering() {
+    let config: serde_json::Value =
+        serde_json::from_str(include_str!("../tauri.conf.json")).unwrap();
+    let mut context = tauri::test::mock_context(tauri::test::noop_assets());
+    context.config_mut().plugins.0.insert(
+        "updater".into(),
+        serde_json::json!({
+            "pubkey":config["plugins"]["updater"]["pubkey"],
+            "endpoints":[], "dangerousInsecureTransportProtocol":true
+        }),
+    );
+    let app = tauri::test::mock_builder()
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .build(context)
+        .unwrap();
+    tauri::async_runtime::block_on(async {
+        for (version, tamper, malformed) in [
+            ("99.0.0", false, false),
+            ("99.0.0", true, false),
+            ("0.0.0", false, false),
+            ("0.1.0", false, false),
+            ("99.0.0", false, true),
+        ] {
+            let mut payload = include_bytes!("../../test/fixtures/updater/payload.txt").to_vec();
+            if tamper {
+                payload[0] ^= 1;
+            }
+            let feed = Feed::new(version, payload.clone(), malformed);
+            let updater = app
+                .updater_builder()
+                .endpoints(vec![format!("{}/latest", feed.url).parse().unwrap()])
+                .unwrap()
+                .timeout(Duration::from_secs(5))
+                .build()
+                .unwrap();
+            let result = updater.check().await;
+            if malformed {
+                assert!(result.is_err());
+                continue;
+            }
+            let update = result.unwrap();
+            if version.starts_with('0') {
+                assert!(
+                    update.is_none(),
+                    "Must not downgrade or reinstall the same version"
+                );
+                continue;
+            }
+            let bytes = update.unwrap().download(|_, _| {}, || {}).await;
+            if tamper {
+                assert!(matches!(
+                    bytes,
+                    Err(tauri_plugin_updater::Error::Minisign(_))
+                ));
+            } else {
+                assert_eq!(bytes.unwrap(), payload);
+            }
+        }
+    });
+}
