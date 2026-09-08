@@ -141,7 +141,11 @@ test('Tailscale HTTP gateway requires the code, allows control and SSE, rejects 
   const cookie = login.headers['set-cookie'][0].split(';')[0];
   const headers = { cookie, origin: `http://${authority}`, 'content-type': 'application/json' };
   const bootstrap = await http('/api/bootstrap', { headers });
-  assert.deepEqual(JSON.parse(bootstrap.body).preferences, { remote: true, readOnly: false });
+  assert.deepEqual(JSON.parse(bootstrap.body).preferences, {
+    remote: true,
+    readOnly: false,
+    directoryPicker: false,
+  });
   assert.equal(
     (await http('/api/runs', { method: 'POST', headers, body: '{"message":"demo"}' })).status,
     200,

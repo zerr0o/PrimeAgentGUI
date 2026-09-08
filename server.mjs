@@ -1,6 +1,6 @@
 import { formatMessage as tr, requestLanguage } from './public/i18n-core.js';
 import { createServer } from 'node:http';
-import { readFile, stat } from 'node:fs/promises';
+import { readFile, stat, mkdir } from 'node:fs/promises';
 import { dirname, join, resolve, extname, sep } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -14,6 +14,7 @@ import { createModelDefaultsStore } from './lib/model-defaults.mjs';
 import { createSubagentDefaultsStore } from './lib/subagent-defaults.mjs';
 import { validPolicy } from './runtime/subagent-policy.mjs';
 import { openDirectory } from './lib/open-directory.mjs';
+import { createDirectoryPicker } from './lib/pick-directory.mjs';
 import { createMcpService } from './lib/mcp-service.mjs';
 import { createProviderService } from './lib/provider-service.mjs';
 import { createCommandService, parseCommand, validateCommand } from './lib/commands.mjs';
@@ -26,7 +27,7 @@ import { openFile as openLocalFile, fileLaunchMode } from './lib/open-file.mjs';
 import { createSessionInspector } from './lib/session-inspector.mjs';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
-const VERSION = '2.5.0';
+const VERSION = '2.6.0';
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -98,6 +99,7 @@ export function createApp(options = {}) {
   const modelConfig = options.modelConfig || createModelConfigStore({ agentHome });
   const modelDefaults = options.modelDefaults || createModelDefaultsStore({ agentHome });
   const mcp = options.mcp || createMcpService({ agentHome });
+  const directoryPicker = options.directoryPicker || createDirectoryPicker();
   const runs = new Map(),
     sessionLocks = new Set();
   const providers =
@@ -403,7 +405,13 @@ export function createApp(options = {}) {
           version,
           models: catalog,
           runs: activeRuns(),
-          preferences: { attachments: true, inspector: true, nativeFileOpen: true, providers: true },
+          preferences: {
+            attachments: true,
+            inspector: true,
+            nativeFileOpen: true,
+            providers: true,
+            directoryPicker: process.platform === 'win32',
+          },
         });
       }
       if (method === 'GET' && path === '/api/version') return json(res, 200, await status());
@@ -500,6 +508,16 @@ export function createApp(options = {}) {
             sessionId: url.searchParams.get('sessionId') || undefined,
           }),
         );
+      if (path === '/api/commands/open-directory' && method === 'POST') {
+        const body = await readBody(req);
+        if (!['skill', 'prompt'].includes(body.source) || !['global', 'project'].includes(body.scope))
+          throw new HttpError(400, tr('folders.invalid_resource'));
+        const project = await store.findProject(body.cwd);
+        const base = body.scope === 'global' ? agentHome : join(project.cwd, '.prime', 'agent');
+        const folder = join(base, body.source === 'skill' ? 'skills' : 'prompts');
+        await mkdir(folder, { recursive: true });
+        return json(res, 200, await (options.openDirectory || openDirectory)(folder));
+      }
       if (path === '/api/mcp' && method === 'GET') return json(res, 200, await mcp.list());
       if (path === '/api/mcp' && method === 'POST')
         return json(res, 200, await mcp.upsert(await readBody(req)));
@@ -586,6 +604,17 @@ export function createApp(options = {}) {
           method === 'POST' ? 201 : 200,
           await store.project(await readBody(req), method === 'PATCH'),
         );
+      if (method === 'POST' && path === '/api/projects/pick-directory') {
+        const body = await readBody(req);
+        return json(
+          res,
+          200,
+          await directoryPicker.pick({
+            cwd: body.cwd,
+            title: tr('folders.choose', {}, requestLanguage(req.headers)),
+          }),
+        );
+      }
       if (method === 'POST' && path === '/api/projects/open') {
         const project = await store.findProject((await readBody(req)).cwd);
         return json(res, 200, await (options.openDirectory || openDirectory)(project.cwd));
@@ -674,6 +703,7 @@ export function createApp(options = {}) {
   server.requestTimeout = 30000;
   server.headersTimeout = 15000;
   async function close() {
+    directoryPicker.close?.();
     mcp.close?.();
     providers.close?.();
     commands.close?.();

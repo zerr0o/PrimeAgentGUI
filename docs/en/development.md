@@ -14,6 +14,8 @@ npm start
 
 There is no build step. Markdown libraries are served locally from `node_modules`, without a CDN. `npm start` keeps the server in your terminal; use the VBS launcher for fully silent startup.
 
+In the add-project dialog, **Choose folder** opens the Windows picker and fills in the path, without adding the project until you submit the form. The PowerShell helper stays hidden; PowerShell 7 provides the modern picker when installed, with Windows PowerShell as a fallback. The picker is available only in local Studio on Windows. `npm run test:folders` covers selection, cancellation, errors and late responses. For this test and `scripts/test-commands-ui.mjs`, set `PRIME_STUDIO_TEST_BROWSER=chrome` to use Chrome instead of Edge.
+
 On Windows, the Python engine is provisioned under `.local/kernel-venv/` to retain the workaround for Prime Agent’s POSIX `bin/python` path. Studio prepares the runtime, its libraries and enabled Python skills on the first message or through `npm run setup:runtime`. Initial installation requires Internet access. `scripts/native-skill-resources.mjs` shares native discovery with the command catalog: filters, project priority, configured packages and disabled MCP integrations are respected.
 
 `lib/kernel-skills.mjs` reads `pyproject.toml` files with a TOML parser and resolves local dependencies between sibling packages, including helpers without `SKILL.md`. The runtime and all local packages are passed by path in a single `uv pip install --python …` resolution. Packages with matching names on PyPI therefore do not replace local sources. Packages are installed normally, without modifying `sys.path` or creating editable links to an active session’s sources.

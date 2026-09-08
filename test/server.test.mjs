@@ -1,13 +1,70 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { request } from 'node:http';
-import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, readdir, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { createApp } from '../server.mjs';
 import { commandCatalog } from '../lib/commands.mjs';
 
 const delay = (milliseconds) => new Promise((done) => setTimeout(done, milliseconds));
+
+test('resource folders use the chosen scope and reject unknown sources, scopes and projects', async (t) => {
+  const opened = [];
+  const f = await fixture(t, {
+    openDirectory: async (path) => {
+      opened.push(path);
+      return { opened: true };
+    },
+  });
+  for (const source of ['skill', 'prompt'])
+    for (const scope of ['global', 'project']) {
+      const result = await f.api('/api/commands/open-directory', {
+        method: 'POST',
+        body: { cwd: f.cwd, source, scope, path: f.root },
+      });
+      assert.equal(result.status, 200, result.text);
+      const path = join(
+        scope === 'global' ? f.agentHome : join(f.cwd, '.prime', 'agent'),
+        source === 'skill' ? 'skills' : 'prompts',
+      );
+      assert.equal(opened.at(-1), path);
+      assert.deepEqual(await readdir(path), []);
+    }
+  for (const body of [
+    { cwd: f.cwd, source: '../secrets', scope: 'global' },
+    { cwd: f.cwd, source: 'skill', scope: '../other' },
+    { cwd: f.root, source: 'skill', scope: 'project' },
+  ])
+    assert.ok((await f.api('/api/commands/open-directory', { method: 'POST', body })).status >= 400);
+  assert.equal(opened.length, 4);
+});
+
+test('project picker returns a selection or cancellation without adding a project', async (t) => {
+  let selection = null,
+    picked;
+  const f = await fixture(t, {
+    directoryPicker: {
+      pick: async (input) => {
+        picked = input;
+        return { cwd: selection };
+      },
+    },
+  });
+  const before = await f.app.store.overview();
+  for (selection of [null, f.root]) {
+    const result = await f.api('/api/projects/pick-directory', {
+      method: 'POST',
+      body: { cwd: f.cwd },
+      headers: { 'Accept-Language': 'en' },
+    });
+    assert.equal(result.status, 200);
+    assert.deepEqual(result.json, { cwd: selection });
+    assert.equal(picked.cwd, f.cwd);
+    assert.equal(picked.title, 'Choose the project folder');
+  }
+  assert.deepEqual((await f.app.store.overview()).projects, before.projects);
+});
 async function until(check, timeout = 2000) {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {

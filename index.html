@@ -716,14 +716,20 @@
         <label for="project-cwd"
           ><span data-i18n="ui.dossier_du_projet">Dossier du projet </span
           ><span data-i18n="ui.obligatoire">obligatoire</span></label
-        ><input
-          id="project-cwd"
-          name="cwd"
-          autocomplete="off"
-          placeholder="C:\Users\vous\Projets\mon-projet"
-          data-i18n-placeholder="example.projectPath"
-          required
-        /><label for="project-name"
+        >
+        <div class="project-folder-field">
+          <input
+            id="project-cwd"
+            name="cwd"
+            autocomplete="off"
+            placeholder="C:\Users\vous\Projets\mon-projet"
+            data-i18n-placeholder="example.projectPath"
+            required
+          /><button id="project-browse" class="secondary-button" type="button" hidden>
+            <span data-icon="folder"></span><span data-i18n="folders.browse">Choisir un dossier</span>
+          </button>
+        </div>
+        <label for="project-name"
           ><span data-i18n="ui.nom_du_projet">Nom du projet </span
           ><span data-i18n="ui.facultatif">facultatif</span></label
         ><input

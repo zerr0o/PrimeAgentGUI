@@ -40,7 +40,14 @@
 
 Prime Agent Studio brings your **local Prime Agent sessions** together in a browser application. Follow streaming responses, find your projects and continue a conversation without opening a terminal. On Windows, agents and their tools run in the background, without unexpected PowerShell windows.
 
-**Version 2.5.0** — [Download the source code and read the release notes](https://github.com/zerr0o/PrimeAgentGUI/releases/latest). Studio supports French and English on desktop, mobile and in the PWA, with a single translation table and automatic French fallback.
+**Version 2.6.0** — [Download the source code and read the release notes](https://github.com/zerr0o/PrimeAgentGUI/releases/latest). Choose project folders with the Windows picker and open skill and prompt folders directly from Studio.
+
+## What’s new in version 2.6
+
+- **Project folder**: **Choose folder** in the add-project dialog opens the Windows picker and fills in the path. Your project name is preserved; cancelling leaves the form unchanged.
+- **Skills and prompts**: both tabs in **Commands and skills** offer **Global · All projects** or **Selected project**, followed by **Open folder**. A missing folder is created on demand.
+- **Desktop and remote access**: the Windows picker is available in local Studio. Resource folders can also be opened from a remote connection with full control, on the host PC.
+- **Bilingual documentation**: the README and guides are available in French and English.
 
 ## What’s new in version 2.5
 

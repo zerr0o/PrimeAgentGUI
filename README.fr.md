@@ -40,7 +40,14 @@
 
 Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une application accessible depuis le navigateur. Suivez les réponses en direct, retrouvez vos projets et continuez une conversation sans ouvrir de terminal. Sous Windows, les agents et leurs outils démarrent en arrière-plan, sans fenêtres PowerShell intempestives.
 
-**Version 2.5.0** — [Télécharger le code source et consulter les notes de version](https://github.com/zerr0o/PrimeAgentGUI/releases/latest). Le Studio parle français et anglais sur PC, mobile et dans la PWA, avec une table de traductions unique et un repli automatique en français.
+**Version 2.6.0** — [Télécharger le code source et consulter les notes de version](https://github.com/zerr0o/PrimeAgentGUI/releases/latest). Choisissez le dossier d’un projet avec le sélecteur Windows et ouvrez les dossiers de skills et prompts depuis le Studio.
+
+## Nouveautés de la version 2.6
+
+- **Dossier du projet** : dans **Un projet à explorer.**, **Choisir un dossier** ouvre le sélecteur Windows et remplit le chemin. Le nom saisi est conservé ; une annulation laisse le formulaire intact.
+- **Skills et prompts** : les deux onglets de **Commandes et skills** proposent **Global · Tous les projets** ou **Projet sélectionné**, puis **Ouvrir le dossier**. Un dossier absent est créé à la demande.
+- **Sur PC et à distance** : le sélecteur Windows est réservé au Studio local. L’ouverture des dossiers de ressources fonctionne aussi depuis un accès distant en contrôle complet et s’effectue sur le PC hôte.
+- **Documentation bilingue** : README et guides disponibles en français et en anglais.
 
 ## Nouveautés de la version 2.5
 

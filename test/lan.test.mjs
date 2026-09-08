@@ -510,6 +510,11 @@ test('LAN control can create, resume, stream and stop runs with the original JSO
   const bootstrap = await api('/api/bootstrap', { headers });
   assert.equal(bootstrap.json.preferences.readOnly, false);
   assert.equal(bootstrap.json.preferences.remote, true);
+  assert.equal(bootstrap.json.preferences.directoryPicker, false);
+  assert.equal(
+    (await api('/api/projects/pick-directory', { method: 'POST', headers, body: '{}' })).status,
+    404,
+  );
   const page = await api('/', { headers });
   assert.equal(page.headers['referrer-policy'], 'same-origin');
   for (const sessionId of [undefined, 'native-session']) {

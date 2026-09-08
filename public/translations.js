@@ -5,6 +5,42 @@ export const languages = [
   { id: 'en', label: 'English' },
 ];
 export const messages = {
+  'folders.browse': {
+    fr: 'Choisir un dossier',
+    en: 'Choose folder',
+  },
+  'folders.choose': {
+    fr: 'Choisir le dossier du projet',
+    en: 'Choose the project folder',
+  },
+  'folders.scope': {
+    fr: 'Emplacement des ressources',
+    en: 'Resource location',
+  },
+  'folders.global': {
+    fr: 'Global · Tous les projets',
+    en: 'Global · All projects',
+  },
+  'folders.project': {
+    fr: 'Projet sélectionné',
+    en: 'Selected project',
+  },
+  'folders.windows_only': {
+    fr: 'Le sélecteur de dossier est disponible sur le PC Windows.',
+    en: 'The folder picker is available on the Windows PC.',
+  },
+  'folders.already_open': {
+    fr: 'Un sélecteur est déjà ouvert sur le PC. Terminez la sélection ou annulez-la.',
+    en: 'A folder picker is already open on the PC. Finish or cancel that selection.',
+  },
+  'folders.picker_failed': {
+    fr: 'Impossible de sélectionner le dossier sur le PC. Réessayez ou saisissez son chemin.',
+    en: 'Could not select the folder on the PC. Try again or enter its path.',
+  },
+  'folders.invalid_resource': {
+    fr: 'Choisissez Skills ou Prompts et un emplacement global ou projet.',
+    en: 'Choose Skills or Prompts and a global or project location.',
+  },
   'login.title': {
     fr: 'Prime Agent Studio · Accès mobile',
     en: 'Prime Agent Studio · Mobile access',

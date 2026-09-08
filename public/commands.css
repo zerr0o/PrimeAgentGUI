@@ -150,6 +150,31 @@
   overscroll-behavior: contain;
   margin: 12px 0;
 }
+.command-folders {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.command-folders select {
+  min-height: 40px;
+  max-width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+}
+.command-folders button {
+  min-height: 40px;
+}
+.command-folder-status {
+  color: var(--muted);
+  font-size: 12px;
+}
 .command-item {
   display: flex;
   flex-direction: column;
@@ -253,6 +278,8 @@
     font-size: 18px;
   }
   .command-filters button,
+  .command-folders select,
+  .command-folders button,
   .command-heading button {
     min-height: 44px;
   }

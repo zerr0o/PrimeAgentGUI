@@ -43,6 +43,8 @@ Terminal-specific commands and interactive extension commands are visible in the
 
 ## Skills
 
+In the **Skills** and **Prompts** tabs, choose **Global · All projects** or **Selected project**, then **Open folder**. Studio opens the corresponding native folder: `~/.prime/agent/skills` or `prompts` globally, or `.prime/agent/skills` or `prompts` inside the project. A missing folder is created on demand. From a remote connection with full control, the folder opens on the PC hosting Studio.
+
 A skill contains instructions and, optionally, scripts or a Python module. To invoke one explicitly:
 
 ```text

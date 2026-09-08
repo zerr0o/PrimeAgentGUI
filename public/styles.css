@@ -1887,6 +1887,28 @@ kbd {
   justify-content: flex-end;
   margin-top: 15px;
 }
+.project-folder-field {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.modal .project-folder-field input {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+.project-folder-field button {
+  flex-shrink: 0;
+}
+@media (max-width: 600px) {
+  .project-folder-field {
+    flex-wrap: wrap;
+  }
+  .project-folder-field button {
+    min-height: 44px;
+  }
+}
 .primary-button,
 .secondary-button {
   display: inline-flex;

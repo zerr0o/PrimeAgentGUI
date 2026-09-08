@@ -43,6 +43,8 @@ Les commandes propres au terminal et les commandes d’extensions interactives s
 
 ## Skills
 
+Dans les onglets **Skills** et **Prompts**, choisissez **Global · Tous les projets** ou **Projet sélectionné**, puis **Ouvrir le dossier**. Le Studio ouvre le dossier natif correspondant : `~/.prime/agent/skills` ou `prompts` pour le global, `.prime/agent/skills` ou `prompts` dans le projet. Un dossier absent est créé à la demande. Depuis un accès distant en contrôle complet, l’ouverture a lieu sur le PC qui héberge le Studio.
+
 Un skill contient des instructions, et éventuellement des scripts ou un module Python. Pour l’invoquer explicitement :
 
 ```text

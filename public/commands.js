@@ -82,6 +82,27 @@ export function createCommands({ api, getContext, action, onChange, onError, has
   bindAttribute(search, 'placeholder', () => tr('ui.rechercher_un_nom_ou_une_description'));
   bindAttribute(search, 'aria-label', () => tr('ui.rechercher_une_commande_ou_un_skill'));
   const filters = node('div', 'command-filters');
+  const folders = node('div', 'command-folders');
+  folders.hidden = true;
+  const folderScope = node('select');
+  folderScope.id = 'command-folder-scope';
+  bindAttribute(folderScope, 'aria-label', () => tr('folders.scope'));
+  for (const [value, label] of [
+    ['global', 'folders.global'],
+    ['project', 'folders.project'],
+  ]) {
+    const option = node('option', '', () => tr(label));
+    option.value = value;
+    folderScope.append(option);
+  }
+  const openFolder = node('button', 'secondary-button', () =>
+    tr(getContext().remote ? 'ui.ouvrir_le_dossier_sur_le_pc' : 'ui.ouvrir_le_dossier'),
+  );
+  openFolder.id = 'command-open-folder';
+  openFolder.type = 'button';
+  const folderStatus = node('span', 'command-folder-status');
+  folderStatus.setAttribute('role', 'status');
+  folders.append(folderScope, openFolder, folderStatus);
   const filterButtons = new Map();
   const list = node('div', 'command-list');
   const more = node('button', 'command-more', () => tr('ui.afficher_la_suite'));
@@ -96,7 +117,7 @@ export function createCommands({ api, getContext, action, onChange, onError, has
     node('summary', '', () => tr('ui.comment_utiliser_les_skills')),
     node('p', '', () => tr('ui.un_skill_regroupe_des_instructions_et_parfois_des_scripts_skill_n')),
   );
-  dialog.append(header, intro, search, filters, note, list, help);
+  dialog.append(header, intro, search, filters, folders, note, list, help);
   document.body.append(popup, dialog);
   const cache = new Map();
   let catalog = null,
@@ -218,6 +239,7 @@ export function createCommands({ api, getContext, action, onChange, onError, has
       );
   }
   function renderList({ keepPage = false } = {}) {
+    folders.hidden = !['skill', 'prompt'].includes(filter) || getContext().readOnly;
     if (!keepPage) pageSize = 30;
     list.replaceChildren();
     const commands = available().filter((c) =>
@@ -299,6 +321,29 @@ export function createCommands({ api, getContext, action, onChange, onError, has
     void load({ force: true }).catch(() => {});
     renderList();
   };
+  openFolder.onclick = async () => {
+    if (getContext().readOnly || !['skill', 'prompt'].includes(filter)) return;
+    const source = filter,
+      scope = folderScope.value,
+      contextKey = key();
+    openFolder.disabled = true;
+    openFolder.setAttribute('aria-busy', 'true');
+    bindText(folderStatus, '');
+    try {
+      await api('/api/commands/open-directory', {
+        method: 'POST',
+        body: { cwd: getContext().cwd, source, scope },
+      });
+      if (dialog.open && key() === contextKey && filter === source && folderScope.value === scope)
+        bindText(folderStatus, () => tr('ui.dossier_ouvert_sur_le_pc'));
+    } catch (error) {
+      onError(error);
+    } finally {
+      openFolder.disabled = false;
+      openFolder.removeAttribute('aria-busy');
+    }
+  };
+  folderScope.onchange = () => bindText(folderStatus, '');
   for (const [value, label] of [
     ['all', tr('common.all')],
     ['skill', tr('commands.skills')],
@@ -309,6 +354,7 @@ export function createCommands({ api, getContext, action, onChange, onError, has
     b.type = 'button';
     b.onclick = () => {
       filter = value;
+      bindText(folderStatus, '');
       renderList();
     };
     filters.append(b);
@@ -319,6 +365,7 @@ export function createCommands({ api, getContext, action, onChange, onError, has
     update();
     hide();
     filter = selected;
+    bindText(folderStatus, '');
     search.value = '';
     dialog.showModal();
     search.focus();

@@ -27,6 +27,7 @@ await writeFile(
   '---\ndescription: Relire un fichier\n---\nReview $1',
 );
 const controls = [],
+  opened = [],
   errors = [],
   checks = [];
 const runtime = {
@@ -48,7 +49,17 @@ const runtime = {
     for (const h of controls) await h.cancel();
   },
 };
-const app = createApp({ initialCwd: cwd, agentHome, sessionDir, dataDir: join(root, 'data'), runtime });
+const app = createApp({
+  initialCwd: cwd,
+  agentHome,
+  sessionDir,
+  dataDir: join(root, 'data'),
+  runtime,
+  openDirectory: async (path) => {
+    opened.push(path);
+    return { opened: true };
+  },
+});
 await new Promise((done) => app.server.listen(0, '127.0.0.1', done));
 const salt = 'e54d6dd09bb15f7c347b38b671472aa9';
 const gateway = createLanGateway({
@@ -60,7 +71,10 @@ const gateway = createLanGateway({
 await new Promise((done) => gateway.listen(0, '127.0.0.1', done));
 let browser;
 try {
-  browser = await chromium.launch({ channel: 'msedge', headless: true });
+  browser = await chromium.launch({
+    channel: process.env.PRIME_STUDIO_TEST_BROWSER || 'msedge',
+    headless: true,
+  });
   for (const mobile of [false, true]) {
     const context = await browser.newContext({
       locale: 'fr-FR',
@@ -86,11 +100,24 @@ try {
     await page.locator('#model-dialog [data-close-dialog]').click();
     await page.locator('#open-commands').click();
     await expect(page.locator('#commands-dialog')).toBeVisible();
+    await expect(page.locator('#command-open-folder')).toBeHidden();
+    for (const source of ['Skills', 'Prompts']) {
+      await page.getByRole('button', { name: source, exact: true }).click();
+      for (const scope of ['global', 'project']) {
+        await page.locator('#command-folder-scope').selectOption(scope);
+        await page.locator('#command-open-folder').click();
+        await expect(page.locator('.command-folder-status')).toHaveText('Dossier ouvert sur le PC.');
+        expect(opened.at(-1)).toBe(
+          join(scope === 'global' ? agentHome : join(cwd, '.prime', 'agent'), source.toLowerCase()),
+        );
+      }
+    }
     await page.getByRole('button', { name: 'Skills', exact: true }).click();
-    await expect(page.locator('.command-item')).toHaveCount(1);
-    await expect(page.locator('.command-item')).toContainText('<script>untrusted()</script>');
+    const designSkill = page.locator('.command-item').filter({ hasText: '/skill:design' });
+    await expect(designSkill).toHaveCount(1);
+    await expect(designSkill).toContainText('<script>untrusted()</script>');
     expect(await page.locator('#commands-dialog script').count()).toBe(0);
-    await page.locator('.command-item').click();
+    await designSkill.click();
     await expect(page.locator('#composer-command-label')).toHaveText('/skill:design');
     await expect(page.locator('#composer')).toHaveValue('');
     await page.locator('#remove-command').click();
@@ -100,6 +127,7 @@ try {
     expect(controls).toHaveLength(0);
     await page.locator('#open-commands').click();
     await page.getByRole('button', { name: 'Terminal', exact: true }).click();
+    await expect(page.locator('#command-open-folder')).toBeHidden();
     await expect(page.locator('.command-item').filter({ hasText: '/share' })).toBeDisabled();
     await page.getByRole('button', { name: 'Terminé', exact: true }).click();
     await page.locator('#composer').fill('/skill:design Fais une page');
@@ -117,6 +145,14 @@ try {
     if (!mobile) {
       await page.locator('#open-commands').click();
       await page.getByRole('button', { name: 'Skills', exact: true }).click();
+      await expect(page.getByRole('button', { name: 'Skills', exact: true })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      await expect(page.getByRole('button', { name: 'Terminal', exact: true })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      );
       await page.screenshot({ path: join(process.cwd(), '.local', 'commands-desktop.png') });
       await page.getByRole('button', { name: 'Terminé', exact: true }).click();
     } else {

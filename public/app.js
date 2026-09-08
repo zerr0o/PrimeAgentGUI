@@ -1967,6 +1967,7 @@ async function bootstrap() {
     state.inspectorAvailable = data.preferences?.inspector === true;
     state.nativeFileOpen = data.preferences?.nativeFileOpen === true;
     state.providersAvailable = data.preferences?.providers === true;
+    state.directoryPickerAvailable = data.preferences?.directoryPicker === true && !data.preferences?.remote;
     state.readOnly = data.preferences?.readOnly === true;
     state.remote = data.preferences?.remote === true || state.readOnly;
     applyAccessMode();
@@ -2015,8 +2016,38 @@ function openProjectDialog() {
   if (state.readOnly) return;
   $('project-form').reset();
   $('project-error').hidden = true;
+  $('project-browse').hidden = !state.directoryPickerAvailable;
   $('project-dialog').showModal();
   $('project-cwd').focus();
+}
+let projectPickerGeneration = 0;
+async function browseProjectDirectory() {
+  if (state.readOnly || !state.directoryPickerAvailable) return;
+  const generation = ++projectPickerGeneration;
+  const button = $('project-browse');
+  button.disabled = true;
+  button.setAttribute('aria-busy', 'true');
+  $('project-submit').disabled = true;
+  $('project-error').hidden = true;
+  try {
+    const result = await api('/api/projects/pick-directory', {
+      method: 'POST',
+      body: { cwd: $('project-cwd').value.trim() },
+    });
+    if (generation === projectPickerGeneration && $('project-dialog').open && result.cwd) {
+      $('project-cwd').value = result.cwd;
+      $('project-cwd').focus();
+    }
+  } catch (error) {
+    if (generation === projectPickerGeneration && $('project-dialog').open) {
+      bindText($('project-error'), () => translateKnown(error.message));
+      $('project-error').hidden = false;
+    }
+  } finally {
+    button.disabled = false;
+    button.removeAttribute('aria-busy');
+    $('project-submit').disabled = false;
+  }
 }
 async function addProject(e) {
   e.preventDefault();
@@ -2308,6 +2339,7 @@ commandsUI = createCommands({
     running: isRunning(activeRun()),
     readOnly: state.readOnly,
     loading: state.loading || state.projectOverview,
+    remote: state.remote,
   }),
   hasAttachments: () => imageComposer.hasImages(),
   onChange: () => {
@@ -2432,6 +2464,8 @@ $('project-show-archived').onclick = () => {
 };
 $('add-project').onclick = openProjectDialog;
 $('project-form').onsubmit = addProject;
+$('project-browse').onclick = browseProjectDirectory;
+$('project-dialog').addEventListener('close', () => projectPickerGeneration++);
 $('rename-form').onsubmit = renameSession;
 $('composer-form').onsubmit = sendMessage;
 $('stop-button').onclick = stopRun;

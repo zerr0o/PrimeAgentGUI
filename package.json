@@ -1,6 +1,6 @@
 {
   "name": "prime-agent-studio",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "private": true,
   "author": "zerr0o",
   "license": "MIT",
@@ -33,6 +33,7 @@
     "test:reasoning": "node scripts/test-reasoning-ui.mjs",
     "test:remote-access": "node scripts/test-remote-access-ui.mjs",
     "test:explorer": "node scripts/test-open-directory.mjs",
+    "test:folders": "node scripts/test-folder-ui.mjs",
     "test:layout": "node scripts/test-mobile-layout.mjs",
     "test:attachments": "node scripts/test-attachments-ui.mjs",
     "check": "node --check server.mjs && node --check public/app.js && node scripts/check-translations.mjs && node scripts/check-docs.mjs",
