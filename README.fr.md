@@ -41,10 +41,11 @@
 
 Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une application Windows et une interface accessible depuis le navigateur. Suivez les réponses en direct, retrouvez vos projets et continuez une conversation sans ouvrir de terminal. Sous Windows, les agents et leurs outils démarrent en arrière-plan, sans fenêtres PowerShell intempestives.
 
-**Version 2.9.0** — [Télécharger l’installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.9.0/Prime-Agent-Studio_2.9.0_x64-setup.exe) · [Notes de version et code source](https://github.com/zerr0o/prime-agent-studio/releases/tag/v2.9.0).
+**Version 2.9.1** — [Télécharger l’installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.9.1/Prime-Agent-Studio_2.9.1_x64-setup.exe) · [Notes de version et code source](https://github.com/zerr0o/prime-agent-studio/releases/tag/v2.9.1).
 
 ## Nouveautés de la version 2.9
 
+- **Correctif 2.9.1** : les préférences système et le diagnostic lisent la version dans les métadonnées du serveur empaqueté. La version 2.9.0 affichait à tort 2.8.1 même lorsque son nouveau serveur fonctionnait. Un ancien serveur toujours actif continue d’indiquer sa propre version jusqu’à son redémarrage.
 - **Messages d’agents** : cartes dédiées et lisibles, nom de l’expéditeur et détails de transmission repliés. Les messages automatiques en attente sont clairement identifiés et protégés contre la modification ou la suppression.
 - **Ordre des projets** : déplacez les projets depuis leur menu, avec un ordre conservé entre les appareils.
 - **Non-lus partagés** : lire une réponse sur PC efface son indicateur sur le téléphone et inversement, y compris en accès distant en consultation.

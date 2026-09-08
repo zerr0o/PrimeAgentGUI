@@ -1,6 +1,6 @@
 // Exercise the shipped modules and real Prime Agent workers in an isolated project, with no model call.
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -45,7 +45,27 @@ await writeFile(
 );
 const catalog = createCommandService({ agentHome });
 const providers = createProviderService({ agentHome });
+let serverApp;
 try {
+  const { version } = JSON.parse(await readFile(join(studio, 'package.json'), 'utf8'));
+  const { createApp } = await load('server.mjs');
+  serverApp = createApp({
+    agentHome,
+    sessionDir: join(root, 'sessions'),
+    dataDir: join(root, 'data'),
+    initialCwd: cwd,
+    runtime: {
+      getStatus: async () => ({ available: true, version: 'fixture' }),
+      getModels: async () => ({ models: [] }),
+      close: async () => {},
+    },
+  });
+  await new Promise((done) => serverApp.server.listen(0, '127.0.0.1', done));
+  const url = `http://127.0.0.1:${serverApp.server.address().port}`;
+  const health = await (await fetch(url + '/api/health')).json();
+  const system = await (await fetch(url + '/api/system')).json();
+  assert.equal(health.version, version, 'Health must report the packaged server version');
+  assert.equal(system.studio, version, 'System settings must report the packaged server version');
   const commands = await catalog.list({ cwd });
   assert.ok(commands.commands.some((command) => command.name === 'skill:packaged-check'));
   assert.ok(commands.commands.some((command) => command.name === 'packaged-prompt'));
@@ -62,9 +82,10 @@ try {
   const list = await providers.list();
   assert.ok(list.providers.length > 0, 'Provider worker must return the native catalog');
   console.log(
-    `Packaged runtime passed: ${commands.commands.length} commands, Python skill, ${list.providers.length} providers, Windows/MCP helper closure.`,
+    `Packaged runtime passed: server version ${version}, ${commands.commands.length} commands, Python skill, ${list.providers.length} providers, Windows/MCP helper closure.`,
   );
 } finally {
+  await serverApp?.close();
   catalog.close();
   providers.close();
   assert.equal(dirname(root), resolve(tmpdir()));
