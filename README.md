@@ -29,7 +29,8 @@
   <a href="docs/en/commands.md">Commands and skills</a> ·
   <a href="docs/en/inspector.md">Agents and files</a> ·
   <a href="docs/en/lan.md">Mobile access</a> ·
-  <a href="docs/en/pwa.md">Install the app</a> ·
+  <a href="docs/en/desktop.md">Windows application</a> ·
+  <a href="docs/en/pwa.md">Mobile PWA</a> ·
   <a href="docs/en/translations.md">Languages</a> ·
   <a href="docs/en/development.md">Development</a>
 </p>
@@ -38,11 +39,18 @@
 
 <p align="center"><em>The real interface with demonstration data. This repository’s screenshots contain no personal conversations. Sample conversations and documents retain their original language.</em></p>
 
-Prime Agent Studio brings your **local Prime Agent sessions** together in a browser application. Follow streaming responses, find your projects and continue a conversation without opening a terminal. On Windows, agents and their tools run in the background, without unexpected PowerShell windows.
+Prime Agent Studio brings your **local Prime Agent sessions** together in a Windows application and a browser interface. Follow streaming responses, find your projects and continue a conversation without opening a terminal. On Windows, agents and their tools run in the background, without unexpected PowerShell windows.
 
-**Version 2.7.0** — [Download the source code and read the release notes](https://github.com/zerr0o/prime-agent-studio/releases/latest). Browse preferences by category and enable LAN, Tailscale or HTTPS from the panel, with links and QR codes for your phone.
+**Version 2.8.0** — [Download the Windows x64 installer](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.8.0/Prime-Agent-Studio_2.8.0_x64-setup.exe) · [Release notes and source code](https://github.com/zerr0o/prime-agent-studio/releases/tag/v2.8.0).
 
-**Tauri 2 Windows application (2.8.0)** — A dedicated window, shortcut, silent startup and tray icon. Node.js is included in the installer; agents keep working when the window closes. [Installation, data migration and building](docs/en/desktop.md).
+## What’s new in version 2.8
+
+- **Tauri 2 Windows application**: per-user installer, desktop and Start menu shortcuts, bundled Node.js and a crisp icon sized for Windows displays.
+- **Background work**: the shortcut starts the server or reuses the active instance. Closing or quitting the application lets agents keep working. Start with Windows is optional and disabled by default.
+- **Updates from the application**: in **App settings → Updates**, check for new versions and release notes, then choose **Install and restart**. The signature is verified before installation; the running server keeps its version until its next start.
+- **Migration and remote access**: reuse projects and settings from an existing installation. LAN, Tailscale, HTTPS, QR codes and the mobile PWA remain available.
+
+[Installation, migration and updates](docs/en/desktop.md).
 
 ## What’s new in version 2.6
 
@@ -83,7 +91,7 @@ Translations live in **one table**, with French and English side by side for eac
 | **Manage providers**        | On the PC, connect an account, save an API key and remove credentials with confirmation.                                 |
 | **Work in parallel**        | Run several sessions and switch between them.                                                                            |
 | **Use Studio on mobile**    | Control the PC from a phone over Wi-Fi or Tailscale, protected by an access code.                                        |
-| **Install Studio**          | Add a home-screen icon and open Studio in its own window over HTTPS.                                                     |
+| **Install Studio**          | Install the Windows application with shortcuts, or add the mobile PWA to your home screen over HTTPS.                    |
 
 Runs continue when you switch sessions, reload the page or close the tab. The server must stay running.
 
@@ -123,7 +131,15 @@ Connection tests discover tools without executing them. New settings apply to ne
 
 ## Quick start
 
-**Requirements:** Windows, **Node.js 22.8 or later**, and **Prime Agent 0.9.2** installed. Configure a provider before the first message, through the CLI or Studio’s desktop **Providers** panel. This version’s integration, including subagent settings, has been verified with **0.9.2**.
+### Windows application
+
+Download the [Windows x64 installer](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.8.0/Prime-Agent-Studio_2.8.0_x64-setup.exe), install it, then open **Prime Agent Studio** from your desktop or Start menu. Node.js is included; **Prime Agent and uv** must be installed, with a configured provider. If you used the VBS launcher, select **Use an existing installation** before the first startup. [Full guide](docs/en/desktop.md).
+
+Updates are signed for Tauri; the installer does not yet carry a Windows Authenticode signature.
+
+### From source
+
+**Requirements:** Windows, **Node.js 22.8 or later**, **uv**, and **Prime Agent** installed. Configure a provider before the first message, through the CLI or Studio’s desktop **Providers** panel. Subagent settings integration has been verified with **Prime Agent 0.9.2**.
 
 Download **Source code (zip)** from the [latest release](https://github.com/zerr0o/prime-agent-studio/releases/latest) and extract it, or clone this repository. Open a terminal in the extracted folder:
 

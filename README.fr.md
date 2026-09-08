@@ -29,7 +29,8 @@
   <a href="docs/commands.md">Commandes et skills</a> ·
   <a href="docs/inspector.md">Agents et fichiers</a> ·
   <a href="docs/lan.md">Accès mobile</a> ·
-  <a href="docs/pwa.md">Installer l’app</a> ·
+  <a href="docs/desktop.md">Application Windows</a> ·
+  <a href="docs/pwa.md">PWA mobile</a> ·
   <a href="docs/translations.md">Langues</a> ·
   <a href="docs/development.md">Développement</a>
 </p>
@@ -38,11 +39,18 @@
 
 <p align="center"><em>L’interface réelle, avec des données de démonstration. Les captures de ce dépôt ne contiennent aucune conversation personnelle. Les exemples de conversations et de documents conservent leur langue d’origine.</em></p>
 
-Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une application accessible depuis le navigateur. Suivez les réponses en direct, retrouvez vos projets et continuez une conversation sans ouvrir de terminal. Sous Windows, les agents et leurs outils démarrent en arrière-plan, sans fenêtres PowerShell intempestives.
+Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une application Windows et une interface accessible depuis le navigateur. Suivez les réponses en direct, retrouvez vos projets et continuez une conversation sans ouvrir de terminal. Sous Windows, les agents et leurs outils démarrent en arrière-plan, sans fenêtres PowerShell intempestives.
 
-**Version 2.7.0** — [Télécharger le code source et consulter les notes de version](https://github.com/zerr0o/prime-agent-studio/releases/latest). Retrouvez les préférences par catégorie et activez le LAN, Tailscale ou HTTPS depuis le panneau, avec liens et QR codes pour votre téléphone.
+**Version 2.8.0** — [Télécharger l’installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.8.0/Prime-Agent-Studio_2.8.0_x64-setup.exe) · [Notes de version et code source](https://github.com/zerr0o/prime-agent-studio/releases/tag/v2.8.0).
 
-**Application Windows Tauri 2 (2.8.0)** — Une fenêtre dédiée, un raccourci, un démarrage silencieux et une icône près de l’horloge. Node.js est inclus dans l’installateur ; les agents continuent quand la fenêtre se ferme. [Installation, reprise des données et compilation](docs/desktop.md).
+## Nouveautés de la version 2.8
+
+- **Application Windows Tauri 2** : installateur pour votre utilisateur, raccourcis Bureau et Démarrer, Node.js inclus et icône nette adaptée à l’affichage Windows.
+- **Travail en arrière-plan** : le raccourci démarre le serveur ou retrouve celui déjà actif. Fermer ou quitter l’application laisse les agents travailler. Le démarrage avec Windows est facultatif et désactivé par défaut.
+- **Mises à jour depuis l’application** : dans **Réglages de l’application → Mises à jour**, consultez les nouvelles versions et leurs nouveautés, puis choisissez **Installer et relancer**. La signature est vérifiée avant installation ; le serveur actif conserve sa version jusqu’à son prochain démarrage.
+- **Reprise et accès distant** : reprenez les projets et réglages d’une installation existante. Le LAN, Tailscale, HTTPS, les QR codes et la PWA mobile restent disponibles.
+
+[Installation, reprise des données et mises à jour](docs/desktop.md).
 
 ## Nouveautés de la version 2.6
 
@@ -83,7 +91,7 @@ Les traductions sont réunies dans **une table unique**, avec le français et l�
 | **Gérer les fournisseurs**         | Sur le PC, connecter un compte, enregistrer une clé API et retirer des identifiants avec confirmation.                            |
 | **Travailler en parallèle**        | Lancer des exécutions dans plusieurs sessions et passer de l’une à l’autre.                                                       |
 | **Retrouver le Studio sur mobile** | Piloter le PC depuis un téléphone en Wi-Fi ou via Tailscale, avec un code d’accès.                                                |
-| **Installer le Studio**            | Ajouter une icône sur l’écran d’accueil et ouvrir le Studio dans sa propre fenêtre, via HTTPS.                                    |
+| **Installer le Studio**            | Installer l’application Windows avec ses raccourcis, ou ajouter la PWA mobile à l’écran d’accueil via HTTPS.                       |
 
 Les exécutions continuent lorsque vous changez de session, rechargez la page ou fermez l’onglet. Le serveur doit rester en marche.
 
@@ -123,7 +131,15 @@ Les tests découvrent les outils sans en exécuter. Les nouveaux réglages s’a
 
 ## Démarrage rapide
 
-**Prérequis :** Windows, **Node.js 22.8 ou ultérieur** et **Prime Agent 0.9.2** installé. Un fournisseur doit être configuré avant le premier message, depuis le CLI ou le panneau **Fournisseurs** du Studio sur le PC. L’intégration de cette version, notamment les réglages des sous-agents, a été vérifiée avec **0.9.2**.
+### Application Windows
+
+Téléchargez l’[installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.8.0/Prime-Agent-Studio_2.8.0_x64-setup.exe), installez-le, puis ouvrez **Prime Agent Studio** depuis le Bureau ou le menu Démarrer. Node.js est inclus ; **Prime Agent et uv** doivent être installés, avec un fournisseur configuré. Si vous utilisiez le VBS, choisissez **Reprendre une installation existante** avant le premier démarrage. [Guide complet](docs/desktop.md).
+
+Les mises à jour sont signées pour Tauri ; l’installateur ne possède pas encore de signature Windows Authenticode.
+
+### Depuis le code source
+
+**Prérequis :** Windows, **Node.js 22.8 ou ultérieur**, **uv** et **Prime Agent** installé. Un fournisseur doit être configuré avant le premier message, depuis le CLI ou le panneau **Fournisseurs** du Studio sur le PC. L’intégration des réglages des sous-agents a été vérifiée avec **Prime Agent 0.9.2**.
 
 Téléchargez **Source code (zip)** depuis la [dernière release](https://github.com/zerr0o/prime-agent-studio/releases/latest) et extrayez l’archive, ou clonez ce dépôt. Ouvrez ensuite un terminal dans le dossier extrait :
 
