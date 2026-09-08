@@ -7,8 +7,8 @@
 <p align="center"><a href="README.md" lang="en">English</a> · <strong>Français</strong></p>
 
 <p align="center">
-  <a href="https://github.com/zerr0o/PrimeAgentGUI/releases/latest"><img src="https://img.shields.io/github/v/release/zerr0o/PrimeAgentGUI?logo=github&amp;label=release" alt="Dernière release GitHub"></a>
-  <a href="https://github.com/zerr0o/PrimeAgentGUI/stargazers"><img src="https://img.shields.io/github/stars/zerr0o/PrimeAgentGUI?logo=github&amp;label=stars" alt="Étoiles GitHub"></a>
+  <a href="https://github.com/zerr0o/prime-agent-studio/releases/latest"><img src="https://img.shields.io/github/v/release/zerr0o/prime-agent-studio?logo=github&amp;label=release" alt="Dernière release GitHub"></a>
+  <a href="https://github.com/zerr0o/prime-agent-studio/stargazers"><img src="https://img.shields.io/github/stars/zerr0o/prime-agent-studio?logo=github&amp;label=stars" alt="Étoiles GitHub"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="Licence MIT"></a>
   <a href="#démarrage-rapide"><img src="https://img.shields.io/badge/Node.js-%3E%3D22.8-339933?logo=nodedotjs&amp;logoColor=white" alt="Node.js 22.8 ou ultérieur"></a>
   <a href="#démarrage-rapide"><img src="https://img.shields.io/badge/platform-Windows-0078D4" alt="Plateforme Windows"></a>
@@ -40,7 +40,7 @@
 
 Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une application accessible depuis le navigateur. Suivez les réponses en direct, retrouvez vos projets et continuez une conversation sans ouvrir de terminal. Sous Windows, les agents et leurs outils démarrent en arrière-plan, sans fenêtres PowerShell intempestives.
 
-**Version 2.7.0** — [Télécharger le code source et consulter les notes de version](https://github.com/zerr0o/PrimeAgentGUI/releases/latest). Retrouvez les préférences par catégorie et activez le LAN, Tailscale ou HTTPS depuis le panneau, avec liens et QR codes pour votre téléphone.
+**Version 2.7.0** — [Télécharger le code source et consulter les notes de version](https://github.com/zerr0o/prime-agent-studio/releases/latest). Retrouvez les préférences par catégorie et activez le LAN, Tailscale ou HTTPS depuis le panneau, avec liens et QR codes pour votre téléphone.
 
 ## Nouveautés de la version 2.6
 
@@ -123,7 +123,7 @@ Les tests découvrent les outils sans en exécuter. Les nouveaux réglages s’a
 
 **Prérequis :** Windows, **Node.js 22.8 ou ultérieur** et **Prime Agent 0.9.2** installé. Un fournisseur doit être configuré avant le premier message, depuis le CLI ou le panneau **Fournisseurs** du Studio sur le PC. L’intégration de cette version, notamment les réglages des sous-agents, a été vérifiée avec **0.9.2**.
 
-Téléchargez **Source code (zip)** depuis la [dernière release](https://github.com/zerr0o/PrimeAgentGUI/releases/latest) et extrayez l’archive, ou clonez ce dépôt. Ouvrez ensuite un terminal dans le dossier extrait :
+Téléchargez **Source code (zip)** depuis la [dernière release](https://github.com/zerr0o/prime-agent-studio/releases/latest) et extrayez l’archive, ou clonez ce dépôt. Ouvrez ensuite un terminal dans le dossier extrait :
 
 ```powershell
 npm ci

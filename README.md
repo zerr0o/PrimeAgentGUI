@@ -7,8 +7,8 @@
 <p align="center"><strong>English</strong> · <a href="README.fr.md" lang="fr">Français</a></p>
 
 <p align="center">
-  <a href="https://github.com/zerr0o/PrimeAgentGUI/releases/latest"><img src="https://img.shields.io/github/v/release/zerr0o/PrimeAgentGUI?logo=github&amp;label=release" alt="Latest GitHub release"></a>
-  <a href="https://github.com/zerr0o/PrimeAgentGUI/stargazers"><img src="https://img.shields.io/github/stars/zerr0o/PrimeAgentGUI?logo=github&amp;label=stars" alt="GitHub stars"></a>
+  <a href="https://github.com/zerr0o/prime-agent-studio/releases/latest"><img src="https://img.shields.io/github/v/release/zerr0o/prime-agent-studio?logo=github&amp;label=release" alt="Latest GitHub release"></a>
+  <a href="https://github.com/zerr0o/prime-agent-studio/stargazers"><img src="https://img.shields.io/github/stars/zerr0o/prime-agent-studio?logo=github&amp;label=stars" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
   <a href="#quick-start"><img src="https://img.shields.io/badge/Node.js-%3E%3D22.8-339933?logo=nodedotjs&amp;logoColor=white" alt="Node.js 22.8 or later"></a>
   <a href="#quick-start"><img src="https://img.shields.io/badge/platform-Windows-0078D4" alt="Windows platform"></a>
@@ -40,7 +40,7 @@
 
 Prime Agent Studio brings your **local Prime Agent sessions** together in a browser application. Follow streaming responses, find your projects and continue a conversation without opening a terminal. On Windows, agents and their tools run in the background, without unexpected PowerShell windows.
 
-**Version 2.7.0** — [Download the source code and read the release notes](https://github.com/zerr0o/PrimeAgentGUI/releases/latest). Browse preferences by category and enable LAN, Tailscale or HTTPS from the panel, with links and QR codes for your phone.
+**Version 2.7.0** — [Download the source code and read the release notes](https://github.com/zerr0o/prime-agent-studio/releases/latest). Browse preferences by category and enable LAN, Tailscale or HTTPS from the panel, with links and QR codes for your phone.
 
 ## What’s new in version 2.6
 
@@ -123,7 +123,7 @@ Connection tests discover tools without executing them. New settings apply to ne
 
 **Requirements:** Windows, **Node.js 22.8 or later**, and **Prime Agent 0.9.2** installed. Configure a provider before the first message, through the CLI or Studio’s desktop **Providers** panel. This version’s integration, including subagent settings, has been verified with **0.9.2**.
 
-Download **Source code (zip)** from the [latest release](https://github.com/zerr0o/PrimeAgentGUI/releases/latest) and extract it, or clone this repository. Open a terminal in the extracted folder:
+Download **Source code (zip)** from the [latest release](https://github.com/zerr0o/prime-agent-studio/releases/latest) and extract it, or clone this repository. Open a terminal in the extracted folder:
 
 ```powershell
 npm ci
