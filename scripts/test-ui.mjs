@@ -351,7 +351,10 @@ const url = `http://127.0.0.1:${app.server.address().port}`;
 let browser;
 const report = [];
 try {
-  browser = await chromium.launch({ channel: 'msedge', headless: true });
+  browser = await chromium.launch({
+    channel: process.env.PRIME_STUDIO_TEST_BROWSER || 'msedge',
+    headless: true,
+  });
   const context = await browser.newContext({
     locale: 'fr-FR',
     viewport: { width: 1512, height: 982 },
@@ -525,8 +528,12 @@ try {
   await page.reload();
   await expect(page.locator('#composer')).toHaveValue('Brouillon conservé');
   report.push('Recherche, validation des dossiers, ajout de projet et brouillons');
-  await page.locator('#open-settings').click();
+  if (!(await page.locator('#settings-dialog').isVisible())) await page.locator('#open-settings').click();
+  await page.locator('#settings-tab-models').click();
+
   await expect(page.locator('#model-config-settings')).toBeVisible();
+  await page.locator('#settings-tab-models').click();
+
   await page.locator('#open-model-config').click();
   await expect(page.locator('#model-config-dialog')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Ajouter Muse 1.3' })).toHaveCount(0);
@@ -568,6 +575,15 @@ try {
   await expect(page.locator('#save-default-model')).toBeEnabled();
   await page.locator('#save-default-model').click();
   await expect(page.locator('#save-default-model')).toBeDisabled();
+  await expect
+    .poll(async () => {
+      try {
+        return JSON.parse(await readFile(join(agentHome, 'settings.json'), 'utf8')).defaultModel;
+      } catch {
+        return null;
+      }
+    })
+    .toBe('muse-spark-1.3-contributor-free');
   const nativeSettings = JSON.parse(await readFile(join(agentHome, 'settings.json'), 'utf8'));
   expect(nativeSettings.defaultProvider).toBe('opencode');
   expect(nativeSettings.defaultModel).toBe('muse-spark-1.3-contributor-free');
@@ -581,13 +597,17 @@ try {
   await expect(page.locator('#default-main-model')).toHaveAttribute('value', '');
   await expect(page.locator('#save-default-model')).toBeEnabled();
   await page.locator('#model-config-dialog [data-close-dialog]').click();
+  await expect(page.locator('#settings-dialog')).toBeVisible();
+  await page.locator('#settings-dialog .settings-actions [data-close-dialog]').click();
   await expect(page.locator('#model-picker-button')).toContainText('Muse Spark 1.3 Free');
   await page.locator('#model-picker-button').click();
   await page.locator('#model-search').fill('Muse Spark 1.3');
   await expect(page.locator('#model-list .model-row')).toHaveCount(1);
   await page.locator('#model-dialog [data-close-dialog]').click();
 
-  await page.locator('#open-settings').click();
+  if (!(await page.locator('#settings-dialog').isVisible())) await page.locator('#open-settings').click();
+  await page.locator('#settings-tab-models').click();
+
   await page.locator('#open-model-config').click();
   await expect(page.locator('#custom-model-list')).toContainText('Muse Spark 1.3 Free');
   await page.locator('#custom-model-list [data-edit-model="0"]').click();
@@ -598,6 +618,8 @@ try {
   await expect(page.locator('#model-config-list-view')).toBeVisible();
   await expect(page.locator('#custom-model-list')).toContainText('Muse Spark 1.3 Free configuré');
   await page.locator('#model-config-dialog [data-close-dialog]').click();
+  await expect(page.locator('#settings-dialog')).toBeVisible();
+  await page.locator('#settings-dialog .settings-actions [data-close-dialog]').click();
   await expect(page.locator('#model-picker-button')).toContainText('Muse Spark 1.3 Free configuré');
   report.push('Configurateur générique, modèle principal natif et héritage fidèle des sous-agents');
 
@@ -627,7 +649,8 @@ try {
     'Nouvelles conversations et Ctrl+N utilisent le modèle configuré, sans modifier celui des historiques',
   );
 
-  await page.locator('#open-settings').click();
+  if (!(await page.locator('#settings-dialog').isVisible())) await page.locator('#open-settings').click();
+  await page.locator('#settings-tab-appearance').click();
   await page.locator('[data-theme-choice="light"]').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   await page.locator('#settings-dialog').getByRole('button', { name: 'Terminé' }).click();

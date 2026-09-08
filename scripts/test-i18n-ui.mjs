@@ -119,7 +119,10 @@ const gateway = createLanGateway({
 });
 await new Promise((resolve) => gateway.listen(0, '127.0.0.1', resolve));
 const remoteUrl = `http://127.0.0.1:${gateway.address().port}`;
-const browser = await chromium.launch({ channel: 'msedge', headless: true });
+const browser = await chromium.launch({
+  channel: process.env.PRIME_STUDIO_TEST_BROWSER || 'msedge',
+  headless: true,
+});
 try {
   const context = await browser.newContext({ locale: 'en-US', viewport: { width: 1440, height: 1000 } });
   const page = await context.newPage();
@@ -127,11 +130,15 @@ try {
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(url);
   await expect(page.locator('#connection-label')).toHaveText('Engine connected');
-  await page.locator('#open-settings').click();
+  if (!(await page.locator('#settings-dialog').isVisible())) await page.locator('#open-settings').click();
   await expect(page.locator('#language-select')).toHaveValue('auto');
+  await page.locator('#settings-tab-appearance').click();
+
   await page.locator('#language-select').selectOption('fr');
   await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
   await expect(page.locator('#connection-label')).toHaveText('Moteur connecté');
+  await page.locator('#settings-tab-appearance').click();
+
   await page.locator('#language-select').selectOption('en');
   await expect(page.locator('#connection-label')).toHaveText('Engine connected');
   await expect(page.locator('#open-model-config')).toHaveText('Configure');
@@ -146,7 +153,9 @@ try {
   await expect(page.locator('.assistant-text')).toContainText('Texte externe à préserver');
   await expect(page.locator('.assistant-text .markdown-body [data-i18n]')).toHaveCount(0);
   await page.locator('#composer').fill('Mon brouillon /goal reste en français');
-  await page.locator('#open-settings').click();
+  if (!(await page.locator('#settings-dialog').isVisible())) await page.locator('#open-settings').click();
+  await page.locator('#settings-tab-appearance').click();
+
   await page.locator('#language-select').selectOption('fr');
   await page.locator('#settings-dialog [data-close-dialog]').first().click();
   await expect(page.locator('#composer')).toHaveValue('Mon brouillon /goal reste en français');
@@ -160,8 +169,10 @@ try {
   const peer = await context.newPage();
   peer.on('pageerror', (error) => errors.push(error.message));
   await peer.goto(url);
-  await peer.locator('#open-settings').click();
-  await page.locator('#open-settings').click();
+  if (!(await peer.locator('#settings-dialog').isVisible())) await peer.locator('#open-settings').click();
+  if (!(await page.locator('#settings-dialog').isVisible())) await page.locator('#open-settings').click();
+  await page.locator('#settings-tab-models').click();
+
   await page.locator('#open-provider-settings').click();
   await page.getByRole('button', { name: 'Ajouter une clé API', exact: true }).click();
   const secret = page.locator('.provider-form input[type=password]');
@@ -169,23 +180,32 @@ try {
   await secret.evaluate((node) => {
     window.savedCredentialInput = node;
   });
+  await peer.locator('#settings-tab-appearance').click();
+
   await peer.locator('#language-select').selectOption('en');
   await expect(page.locator('#providers-dialog')).toContainText('API key');
   await expect(secret).toHaveValue('draft-placeholder-not-a-secret');
   expect(await secret.evaluate((node) => node === window.savedCredentialInput)).toBe(true);
   await page.locator('#providers-done').click();
+  await page.locator('#settings-tab-tools').click();
+
   await page.locator('#open-mcp-settings').click();
   await page.locator('#mcp-add').click();
   await page.locator('#mcp-name').fill('mon-service');
   await page.locator('#mcp-url').fill('https://example.com/mcp');
+  await peer.locator('#settings-tab-appearance').click();
+
   await peer.locator('#language-select').selectOption('fr');
   await expect(page.locator('#mcp-form-title')).toHaveText('Ajouter un MCP');
   await expect(page.locator('#mcp-name')).toHaveValue('mon-service');
   await expect(page.locator('#mcp-url')).toHaveValue('https://example.com/mcp');
+  await peer.locator('#settings-tab-appearance').click();
+
   await peer.locator('#language-select').selectOption('en');
   await expect(page.locator('#mcp-form-title')).toHaveText('Add an MCP');
   await page.locator('#mcp-close').click();
-  await page.locator('#open-settings').click();
+  await expect(page.locator('#settings-dialog')).toBeVisible();
+  if (!(await page.locator('#settings-dialog').isVisible())) await page.locator('#open-settings').click();
   await page.screenshot({ path: join(temp, 'preferences-en.png'), fullPage: true });
   await page.locator('#settings-dialog [data-close-dialog]').first().click();
   await expect(page.locator('.activity-count')).toHaveText('1 tool call · 1 reflection');
@@ -199,10 +219,14 @@ try {
     .setInputFiles({ name: 'note.txt', mimeType: 'text/plain', buffer: Buffer.from('Document original') });
   await expect(page.locator('#image-draft-tray')).toContainText('note.txt');
   const activeBefore = await (await context.request.get(url + '/api/runs')).json();
+  await peer.locator('#settings-tab-appearance').click();
+
   await peer.locator('#language-select').selectOption('fr');
   await expect(page.locator('#run-status')).toContainText('L’agent travaille');
   await expect(page.locator('#composer')).toHaveValue('Suite du brouillon');
   await expect(page.locator('#image-draft-tray')).toContainText('note.txt');
+  await peer.locator('#settings-tab-appearance').click();
+
   await peer.locator('#language-select').selectOption('en');
   await expect(page.locator('#run-status')).toContainText('The agent is working');
   streamInput.onEvent({ kind: 'text', delta: 'La réponse continue après le changement de langue.' });
@@ -234,12 +258,16 @@ try {
   await mobile.getByRole('button', { name: 'Open Studio', exact: true }).click();
   await expect(mobile.locator('#connection-label')).toHaveText('Engine connected');
   await mobile.locator('#toggle-sidebar').click();
-  await mobile.locator('#open-settings').click();
+  if (!(await mobile.locator('#settings-dialog').isVisible())) await mobile.locator('#open-settings').click();
   await expect(mobile.locator('#logout-button')).toHaveText('Sign out');
   await mobile.screenshot({ path: join(temp, 'mobile-preferences-en.png'), fullPage: true });
   expect(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await mobile.locator('#settings-tab-appearance').click();
+
   await mobile.locator('#language-select').selectOption('fr');
   await expect(mobile.locator('#logout-button')).toHaveText('Se déconnecter');
+  await mobile.locator('#settings-tab-appearance').click();
+
   await mobile.locator('#language-select').selectOption('en');
   await mobile.locator('#logout-button').click();
   await expect(mobile.locator('[data-i18n="login.heading"]')).toHaveText('Your studio, within reach.');

@@ -7,7 +7,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { createStore, HttpError, validateDirectory, cwdKey, validId } from './lib/store.mjs';
 import { createAgentRuntime } from './lib/agent.mjs';
-import { createLanGateway } from './lib/lan.mjs';
+import { createRemoteNetwork } from './lib/remote-network.mjs';
 import { createRemoteAccess } from './lib/remote-access.mjs';
 import { createModelConfigStore } from './lib/model-config.mjs';
 import { createModelDefaultsStore } from './lib/model-defaults.mjs';
@@ -87,6 +87,11 @@ export function createApp(options = {}) {
   const store = options.store || createStore({ sessionDir, dataDir, initialCwd: options.initialCwd || ROOT });
   const fileStore = createFileStore(join(dataDir, 'attachments'));
   const remoteAccess = createRemoteAccess({ dataDir });
+  const remoteNetwork = createRemoteNetwork({
+    access: remoteAccess,
+    upstreamPort: () => server.address()?.port,
+    ...options.networkOptions,
+  });
   const subagentDefaults = createSubagentDefaultsStore({ dataDir });
   const runtime =
     options.runtime ||
@@ -415,6 +420,27 @@ export function createApp(options = {}) {
         });
       }
       if (method === 'GET' && path === '/api/version') return json(res, 200, await status());
+      if (path === '/api/system' && method === 'GET')
+        return json(res, 200, {
+          studio: VERSION,
+          node: process.versions.node,
+          platform: process.platform,
+          runtime: await status(),
+          activeRuns: activeRuns().length,
+        });
+      if (path === '/api/system/logs' && method === 'POST') {
+        await readBody(req);
+        const logs = join(dataDir, 'logs');
+        await mkdir(logs, { recursive: true });
+        await (options.openDirectory || openDirectory)(logs);
+        return json(res, 200, { opened: true });
+      }
+      if (path === '/api/remote-access/network' && method === 'GET')
+        return json(res, 200, await remoteNetwork.get());
+      if (path === '/api/remote-access/network' && method === 'POST')
+        return json(res, 200, await remoteNetwork.configure(await readBody(req)));
+      if (path === '/api/remote-access/qr' && method === 'GET')
+        return json(res, 200, await remoteNetwork.qr(url.searchParams.get('channel')));
       if (path === '/api/remote-access' && method === 'GET') return json(res, 200, await remoteAccess.get());
       if (path === '/api/remote-access/code' && method === 'POST')
         return json(res, 200, await remoteAccess.changeCode(await readBody(req)));
@@ -703,6 +729,7 @@ export function createApp(options = {}) {
   server.requestTimeout = 30000;
   server.headersTimeout = 15000;
   async function close() {
+    remoteNetwork.close();
     directoryPicker.close?.();
     mcp.close?.();
     providers.close?.();
@@ -714,7 +741,7 @@ export function createApp(options = {}) {
     server.closeAllConnections();
     if (server.listening) await new Promise((resolve) => server.close(resolve));
   }
-  return { server, store, runtime, modelConfig, modelDefaults, remoteAccess, runs, close };
+  return { server, store, runtime, modelConfig, modelDefaults, remoteAccess, remoteNetwork, runs, close };
 }
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
@@ -722,64 +749,16 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.m
   if (!Number.isInteger(port) || port < 1 || port > 65535)
     throw new Error(tr('server.port_doit_etre_compris_entre_1_et_65535'));
   const app = createApp();
-  const remoteServers = [];
-  let shuttingDown = false;
-  async function startLan() {
+  async function startNetwork() {
     try {
-      const access = await app.remoteAccess.readConfig();
-      if (!access) return;
-      const { config } = access;
-      if (shuttingDown) return;
-      if (!Number.isInteger(config.port) || config.port < 1024 || config.port > 65535 || config.port === port)
-        throw new Error(tr('server.port_mobile_invalide'));
-      const endpoints = [
-        ...(config.enabled === true ? [{ host: config.host, name: 'LAN', listenPort: config.port }] : []),
-        ...(config.tailscale?.enabled === true
-          ? [{ host: config.tailscale.host, name: 'Tailscale', listenPort: config.port }]
-          : []),
-        ...(config.tailscale?.https?.enabled === true
-          ? [
-              {
-                host: '127.0.0.1',
-                name: 'PWA HTTPS',
-                listenPort: config.tailscale.https.port,
-                publicOrigin: config.tailscale.https.origin,
-              },
-            ]
-          : []),
-      ];
-      for (const { host, name, listenPort, publicOrigin } of endpoints) {
-        try {
-          if (
-            !Number.isInteger(listenPort) ||
-            listenPort < 1024 ||
-            listenPort > 65535 ||
-            listenPort === port ||
-            (publicOrigin && listenPort === config.port)
-          )
-            throw new Error(tr('server.port_de_passerelle_invalide'));
-          const gateway = createLanGateway({ host, upstreamPort: port, config, publicOrigin });
-          await app.remoteAccess.registerGateway(gateway);
-          if (shuttingDown) {
-            gateway.close();
-            return;
-          }
-          remoteServers.push(gateway);
-          gateway.on('error', (error) =>
-            console.error(tr('server.acces_indisponible', { value1: name, value2: error.message })),
-          );
-          gateway.listen(listenPort, host, () =>
-            console.log(
-              tr('server.acces', { value1: name, value2: publicOrigin || `http://${host}:${listenPort}` }),
-            ),
-          );
-        } catch (error) {
-          console.error(tr('server.acces_indisponible', { value1: name, value2: error.message }));
-        }
+      await app.remoteNetwork.start();
+      for (const channel of (await app.remoteNetwork.get()).channels) {
+        if (channel.url) console.log(tr('server.acces', { value1: channel.kind, value2: channel.url }));
+        else if (channel.enabled)
+          console.error(tr('server.acces_indisponible', { value1: channel.kind, value2: channel.error }));
       }
     } catch (error) {
-      if (error.code !== 'ENOENT')
-        console.error(tr('server.acces_mobile_indisponible', { value1: error.message }));
+      console.error(tr('server.acces_mobile_indisponible', { value1: error.message }));
     }
   }
   app.server.on('error', (error) => {
@@ -795,15 +774,10 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.m
   });
   app.server.listen(port, '127.0.0.1', () => {
     console.log(`Prime Agent Studio ${VERSION} — http://127.0.0.1:${port}`);
-    void startLan();
+    void startNetwork();
   });
   for (const signal of ['SIGINT', 'SIGTERM'])
     process.once(signal, () => {
-      shuttingDown = true;
-      for (const gateway of remoteServers) {
-        gateway.closeAllConnections();
-        gateway.close();
-      }
       const timer = setTimeout(() => process.exit(1), 10000);
       timer.unref();
       app.close().then(() => process.exit(0));

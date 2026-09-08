@@ -47,7 +47,10 @@ const gateway = createLanGateway({ host: '127.0.0.1', upstreamPort: app.server.a
 await app.remoteAccess.registerGateway(gateway);
 await new Promise((done) => gateway.listen(0, '127.0.0.1', done));
 const remote = `http://127.0.0.1:${gateway.address().port}`;
-const browser = await chromium.launch({ channel: 'msedge', headless: true });
+const browser = await chromium.launch({
+  channel: process.env.PRIME_STUDIO_TEST_BROWSER || 'msedge',
+  headless: true,
+});
 const pc = await browser.newPage({ locale: 'fr-FR', viewport: { width: 1440, height: 1000 } });
 const phone = await browser.newPage({
   locale: 'fr-FR',
@@ -66,7 +69,9 @@ const post = async (body) =>
     })
   ).json();
 async function open() {
-  await pc.locator('#open-settings').click();
+  if (!(await pc.locator('#settings-dialog').isVisible())) await pc.locator('#open-settings').click();
+  await pc.locator('#settings-tab-remote').click();
+
   await pc.locator('#open-remote-access').click();
   await expect(pc.locator('#remote-code')).toBeEnabled();
 }
@@ -117,6 +122,7 @@ try {
   await pc.locator('#save-remote-code').click();
   await expect(pc.locator('#remote-code-error')).toContainText('autre fenêtre');
   await pc.locator('#remote-access-dialog').getByRole('button', { name: 'Annuler' }).click();
+  await expect(pc.locator('#settings-dialog')).toBeVisible();
   await open();
   await expect(pc.locator('#remote-code')).toHaveValue('');
   await pc.locator('#remote-code').fill(code);

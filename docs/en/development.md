@@ -48,6 +48,14 @@ The local `runtime/headless-loader.mjs` loader enables native waiting for subage
 
 Closing a tab does not kill the agent. **Stop** closes the run and its descendants. Closing or restarting the server interrupts active runs; already-recorded messages remain readable and the conversation can be resumed.
 
+## Developing preferences without interruptions
+
+Studio serves repository files directly. Use a separate worktree when sessions are active: editing the served checkout could change their interface. `node scripts/preview-preferences.mjs --serve` starts a preview with temporary directories, a simulated runtime and loopback listeners only; displayed network addresses are examples. It starts no agents and changes no real accounts or access settings.
+
+`lib/remote-network.mjs` owns the gateways and their lifecycle separately. Network changes and PIN rotation share a write queue and configuration revision. A new listener must bind before persistence and replacement of the old listener; failure rolls back staged listeners. Closing a gateway destroys its proxy connections without invoking agent cancellation. The remote gateway never forwards network or system configuration routes.
+
+`npm run test:settings` checks navigation, focus, network changes, QR codes, languages and 390/320 px widths. `test/remote-network.test.mjs` checks PIN preservation, failures, concurrent revisions, permissions and agents remaining active. Tests use only temporary data and loopback ports. Set `PRIME_STUDIO_TEST_BROWSER=chrome` to use Chrome instead of Edge in the relevant UI tests.
+
 ## Checks
 
 ```powershell

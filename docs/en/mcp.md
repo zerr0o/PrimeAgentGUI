@@ -2,7 +2,7 @@
 
 **English** · [Français](../mcp.md) · [← Back to README](../../README.md)
 
-Open **Preferences → MCP connections → Manage MCPs** on the PC or in remote Studio with full control. The manager uses **Prime Agent 0.9.1** native configuration: connections are shared across projects on the PC.
+Open **Preferences → Tools → Manage MCPs** on the PC or in remote Studio with full control. The manager uses **Prime Agent 0.9.1** native configuration: connections are shared across projects on the PC.
 
 ## Add a connection
 

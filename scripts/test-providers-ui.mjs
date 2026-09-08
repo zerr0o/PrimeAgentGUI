@@ -56,14 +56,19 @@ const remote = `http://127.0.0.1:${gateway.address().port}`;
 let browser;
 const errors = [];
 try {
-  browser = await chromium.launch({ channel: 'msedge', headless: true });
+  browser = await chromium.launch({
+    channel: process.env.PRIME_STUDIO_TEST_BROWSER || 'msedge',
+    headless: true,
+  });
   const page = await browser.newPage({ locale: 'fr-FR', viewport: { width: 1440, height: 960 } });
   page.setDefaultTimeout(15000);
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto(url);
   await page.locator('#new-session').click();
   await page.locator('#composer').fill('Brouillon conservé pendant la connexion');
-  await page.locator('#open-settings').click();
+  if (!(await page.locator('#settings-dialog').isVisible())) await page.locator('#open-settings').click();
+  await page.locator('#settings-tab-models').click();
+
   await page.locator('#open-provider-settings').click();
   await expect(page.locator('.provider-card')).not.toHaveCount(0);
   await expect(page.locator('[data-provider="openai"]')).toContainText('Configuré');
@@ -88,6 +93,8 @@ try {
   await page.getByLabel('Clé API', { exact: true }).fill('discard-this-draft');
   await page.locator('#providers-close').click();
   await expect(page.locator('#open-provider-settings')).toBeFocused();
+  await page.locator('#settings-tab-models').click();
+
   await page.locator('#open-provider-settings').click();
   await expect(page.locator('[data-provider="deepseek"]')).toBeVisible();
   assert.doesNotMatch(await page.locator('#providers-dialog').innerHTML(), /discard-this-draft/);
@@ -153,7 +160,8 @@ try {
     await mobile.getByRole('button', { name: 'Ouvrir le studio' }).click();
     await expect(mobile.locator('#connection-label')).toContainText('connecté');
     if (viewport.width < 700) await mobile.locator('#toggle-sidebar').click();
-    await mobile.locator('#open-settings').click();
+    if (!(await mobile.locator('#settings-dialog').isVisible()))
+      await mobile.locator('#open-settings').click();
     await expect(mobile.locator('#provider-settings')).toBeHidden();
     for (const [path, method] of [
       ['/api/providers', 'GET'],

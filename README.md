@@ -58,12 +58,12 @@ Prime Agent Studio brings your **local Prime Agent sessions** together in a brow
 - **More languages can be added**: the [translation guide](docs/en/translations.md) explains how to extend the table and check the interface.
 
 <p align="center">
-  <img src="docs/screenshots/en/desktop-language.png" width="480" alt="Studio preferences in English, with the language selector and interface settings.">
+  <img src="docs/screenshots/en/desktop-language.png" width="900" alt="Studio preferences in English, with the language selector and interface settings.">
 </p>
 
 ## What you can do
 
-**Français or English**: open **Preferences → Language** on desktop or mobile. **Automatic** follows the browser’s language. Changes apply immediately, preserve forms, drafts and attachments, and let agents keep working. The mobile sign-in page has its own selector; the PWA’s offline screen uses the selected language.
+**Français or English**: open **Preferences → Appearance → Language** on desktop or mobile. **Automatic** follows the browser’s language. Changes apply immediately, preserve forms, drafts and attachments, and let agents keep working. The mobile sign-in page has its own selector; the PWA’s offline screen uses the selected language.
 
 Translations live in **one table**, with French and English side by side for each message. Missing translations use French, and project checks detect absent entries and inconsistent parameters. [Add a language or translation](docs/en/translations.md).
 
@@ -91,7 +91,7 @@ In the project list, the folder becomes a **green dot** while a session is worki
 
 In remote Studio, **Preferences → Sign out** closes this browser’s access and returns to the access-code screen. Agents and other connected devices keep running.
 
-On the PC, **Preferences → Mobile access → Change code** changes the eight-digit PIN for Wi-Fi, Tailscale and the PWA. Devices must sign in again with the new code; agents continue without restarting Studio.
+On the PC, **Preferences → Remote access → Change code** changes the eight-digit PIN for Wi-Fi, Tailscale and the PWA. Devices must sign in again with the new code; agents continue without restarting Studio.
 
 ## Commands and skills within reach
 
@@ -111,7 +111,7 @@ Files open read-only, with Markdown rendering, indented JSON and a **Preview / S
 
 ## Your MCP tools and services
 
-**Preferences → MCP connections → Manage MCPs** lets you add, edit, test, enable or remove native Prime Agent connections. **HTTP** and **stdio** servers are supported, along with **OAuth**, variables and tool restrictions. Linear and Notion are offered as native integrations.
+**Preferences → Tools → Manage MCPs** lets you add, edit, test, enable or remove native Prime Agent connections. **HTTP** and **stdio** servers are supported, along with **OAuth**, variables and tool restrictions. Linear and Notion are offered as native integrations.
 
 Connection tests discover tools without executing them. New settings apply to new sessions; existing sessions continue with their current configuration. See the [MCP guide](docs/en/mcp.md), including how to complete OAuth from a phone.
 
@@ -196,7 +196,7 @@ You can combine images and files, up to **8 attachments in total**. These featur
 
 ## Your models within reach
 
-On the PC, **Preferences → Providers → Manage connections** lets you connect accounts supported by Prime Agent, add or replace an API key, and remove credentials with confirmation. Search shows configuration status and credential sources. This panel is restricted to the PC’s local address; its routes are blocked remotely. The [provider guide](docs/en/providers.md) explains sign-in flows and behavior during active sessions.
+On the PC, **Preferences → Models & agents → Manage connections** lets you connect accounts supported by Prime Agent, add or replace an API key, and remove credentials with confirmation. Search shows configuration status and credential sources. This panel is restricted to the PC’s local address; its routes are blocked remotely. The [provider guide](docs/en/providers.md) explains sign-in flows and behavior during active sessions.
 
 ![Desktop provider management: search, connection status, accounts and API keys. Demonstration data.](docs/screenshots/en/desktop-providers.png)
 
@@ -206,7 +206,7 @@ Find a model by **name, provider or ID**. Favorites stay at the top of the selec
   <img src="docs/screenshots/en/desktop-models.png" width="560" alt="Desktop model selector with search, two favorites and Prime Agent automatic selection.">
 </p>
 
-On the PC, **Preferences → Models and defaults → Configure** lets you choose and save the default main model using the same selector, search and favorites as conversations. This panel also manages custom model definitions. **New session** and **Ctrl+N** use this default model, independently of the last model selected in a conversation.
+On the PC, **Preferences → Models & agents → Configure** lets you choose and save the default main model using the same selector, search and favorites as conversations. This panel also manages custom model definitions. **New session** and **Ctrl+N** use this default model, independently of the last model selected in a conversation.
 
 With Prime Agent **0.9.2**, the **Subagents** area in preferences sets global defaults. For a specific project, select **This project** at the top of a conversation’s **Agents** tab, even before the first message, to show its selectors: changes save immediately. **Global** hides the selectors and restores shared defaults. Model selection uses the same catalog, integrated search and favorites as conversations. Each value can inherit from the parent. Studio adds these choices to the instructions and fills omitted arguments in future delegations; explicit choices and already-created subagents are preserved.
 
@@ -226,25 +226,15 @@ Studio titles, pins and archives are stored separately from native Prime Agent c
 
 ## Also on your phone
 
-Enable local network access:
+On the PC, open **Preferences → Remote access** and enable **Local network**. Changes apply immediately without restarting or interrupting agents. On first activation, save the eight-digit PIN shown once.
 
-```powershell
-npm run lan:enable
-```
-
-The command displays the address to open and an eight-digit code. **Wait for active runs to finish, then restart Studio** to apply the configuration. Connect the phone to the same network as the PC.
+Connect the phone to the same network as the PC, then use **Copy link** or **QR code**. The QR contains only the address; the PIN is requested at sign-in. Later activations preserve the PIN.
 
 You can create or resume a session, send messages and follow progress live. The PC runs the agents and must stay on. The model configurator remains desktop-only.
 
 Access uses HTTP on the local network with code authentication. Studio is a personal local application: it is not intended for exposure to the public Internet.
 
-To use Studio **outside Wi-Fi, over 4G/5G**, connect the PC and phone to Tailscale, then run on the PC:
-
-```powershell
-npm run tailscale:enable
-```
-
-The command displays the Tailscale address and preserves LAN access and the existing code. Restart Studio after runs finish, then open this address on the phone with Tailscale enabled.
+To use Studio **outside Wi-Fi, over 4G/5G**, connect the PC and phone to Tailscale, then enable **Tailscale** in the same category. Its link and QR are available immediately; LAN and the existing PIN are preserved. Network interfaces, the shared port and permissions are managed in the panel. The npm commands remain available for terminal configuration.
 
 [Configure LAN, Tailscale, the code and read-only mode →](docs/en/lan.md)
 

@@ -58,12 +58,12 @@ Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une 
 - **De nouvelles langues à ajouter** : [le guide de traduction](docs/translations.md) explique comment compléter la table et vérifier l’interface.
 
 <p align="center">
-  <img src="docs/screenshots/desktop-language.png" width="480" alt="Préférences du Studio en anglais, avec le sélecteur de langue et les réglages de l’interface.">
+  <img src="docs/screenshots/desktop-language.png" width="900" alt="Préférences organisées par catégorie, avec le sélecteur de langue et les réglages de l’apparence.">
 </p>
 
 ## Ce que vous pouvez faire
 
-**Français ou English** : choisissez **Préférences → Langue** sur PC ou mobile. Le mode **Automatique** suit la langue du navigateur. Le changement est immédiat, conserve les formulaires, brouillons et pièces jointes, et laisse les agents continuer leur travail. La page de connexion mobile possède aussi son sélecteur ; l’écran hors connexion de la PWA utilise la langue choisie.
+**Français ou English** : choisissez **Préférences → Apparence → Langue** sur PC ou mobile. Le mode **Automatique** suit la langue du navigateur. Le changement est immédiat, conserve les formulaires, brouillons et pièces jointes, et laisse les agents continuer leur travail. La page de connexion mobile possède aussi son sélecteur ; l’écran hors connexion de la PWA utilise la langue choisie.
 
 Les traductions sont réunies dans **une table unique**, avec le français et l’anglais côte à côte pour chaque texte. Une traduction manquante utilise le français, et la vérification du projet détecte les cases absentes et les paramètres incohérents. [Ajouter une langue ou une traduction](docs/translations.md).
 
@@ -91,7 +91,7 @@ Dans la liste des projets, le dossier devient un **point vert** lorsqu’une ses
 
 Dans le Studio distant, **Préférences → Se déconnecter** ferme l’accès de ce navigateur et revient au code d’accès. Les agents et les autres appareils connectés continuent de fonctionner.
 
-Sur le PC, **Préférences → Accès mobile → Changer le code** modifie le PIN à huit chiffres du Wi-Fi, de Tailscale et de la PWA. Les appareils doivent se reconnecter avec le nouveau code ; les agents continuent, sans redémarrage du Studio.
+Sur le PC, **Préférences → Accès distant → Changer le code** modifie le PIN à huit chiffres du Wi-Fi, de Tailscale et de la PWA. Les appareils doivent se reconnecter avec le nouveau code ; les agents continuent, sans redémarrage du Studio.
 
 ## Commandes et skills à portée de main
 
@@ -111,7 +111,7 @@ Les fichiers s’affichent en lecture seule, avec un rendu Markdown, du JSON ind
 
 ## Vos outils et services MCP
 
-**Préférences → Connexions MCP → Gérer les MCP** permet d’ajouter, modifier, tester, activer ou supprimer des connexions natives de Prime Agent. Les serveurs **HTTP** et **stdio** sont pris en charge, avec les connexions **OAuth**, les variables d’environnement et les restrictions d’outils. Linear et Notion sont proposés comme intégrations natives.
+**Préférences → Outils → Gérer les MCP** permet d’ajouter, modifier, tester, activer ou supprimer des connexions natives de Prime Agent. Les serveurs **HTTP** et **stdio** sont pris en charge, avec les connexions **OAuth**, les variables d’environnement et les restrictions d’outils. Linear et Notion sont proposés comme intégrations natives.
 
 Les tests découvrent les outils sans en exécuter. Les nouveaux réglages s’appliquent aux nouvelles sessions ; les sessions déjà en cours continuent avec leur configuration actuelle. Consultez le [guide MCP](docs/mcp.md), notamment pour effectuer une connexion OAuth depuis un téléphone.
 
@@ -196,7 +196,7 @@ Vous pouvez combiner images et fichiers, dans la limite de **8 pièces jointes a
 
 ## Vos modèles à portée de main
 
-Sur le PC, **Préférences → Fournisseurs → Gérer les connexions** permet de connecter les comptes pris en charge par Prime Agent, d’ajouter ou remplacer une clé API et de retirer des identifiants avec confirmation. La recherche affiche l’état de configuration et la provenance des identifiants. Ce panneau reste réservé à l’adresse locale du PC ; les routes correspondantes sont bloquées à distance. Le [guide des fournisseurs](docs/providers.md) détaille les parcours de connexion et le comportement pendant les sessions actives.
+Sur le PC, **Préférences → Modèles et agents → Gérer les connexions** permet de connecter les comptes pris en charge par Prime Agent, d’ajouter ou remplacer une clé API et de retirer des identifiants avec confirmation. La recherche affiche l’état de configuration et la provenance des identifiants. Ce panneau reste réservé à l’adresse locale du PC ; les routes correspondantes sont bloquées à distance. Le [guide des fournisseurs](docs/providers.md) détaille les parcours de connexion et le comportement pendant les sessions actives.
 
 ![Gestion des fournisseurs sur PC : recherche, état des connexions, comptes et clés API. Données de démonstration.](docs/screenshots/desktop-providers.png)
 
@@ -206,7 +206,7 @@ Recherchez un modèle par son **nom, son fournisseur ou son identifiant**. Les f
   <img src="docs/screenshots/desktop-models.png" width="560" alt="Sélecteur de modèles sur PC avec recherche, deux favoris et choix automatique de Prime Agent.">
 </p>
 
-Sur le PC, **Préférences → Modèles et valeurs par défaut → Configurer** permet de choisir le modèle principal par défaut avec le même sélecteur, la recherche et les favoris que les conversations, puis de l’enregistrer. Ce panneau permet aussi de gérer les définitions de modèles personnalisés. **Nouvelle session** et **Ctrl+N** reprennent ce modèle par défaut, indépendamment du dernier modèle choisi dans une conversation.
+Sur le PC, **Préférences → Modèles et agents → Configurer** permet de choisir le modèle principal par défaut avec le même sélecteur, la recherche et les favoris que les conversations, puis de l’enregistrer. Ce panneau permet aussi de gérer les définitions de modèles personnalisés. **Nouvelle session** et **Ctrl+N** reprennent ce modèle par défaut, indépendamment du dernier modèle choisi dans une conversation.
 
 Avec Prime Agent **0.9.2**, la zone **Sous-agents** des préférences définit les valeurs globales. Pour un projet précis, choisissez **Ce projet** en haut de l’onglet **Agents** d’une conversation, même avant le premier message, pour afficher ses sélecteurs : les choix sont enregistrés immédiatement. **Globaux** masque les sélecteurs et rétablit les valeurs communes. Le modèle se choisit avec le même catalogue, la recherche intégrée et les favoris que dans les conversations. Chaque valeur peut hériter du parent. Le Studio ajoute ces choix aux instructions et les applique aux arguments omis lors des prochaines délégations ; les choix explicites et les sous-agents déjà créés sont conservés.
 
@@ -226,25 +226,15 @@ Les titres, épingles et archives du Studio sont conservés séparément des con
 
 ## Aussi depuis votre téléphone
 
-Activez l’accès au réseau local :
+Sur le PC, ouvrez **Préférences → Accès distant** et activez **Réseau local**. Le changement s’applique immédiatement, sans redémarrer ni interrompre les agents. À la première activation, notez le PIN à huit chiffres affiché une seule fois.
 
-```powershell
-npm run lan:enable
-```
-
-La commande affiche l’adresse à ouvrir et un code à huit chiffres. **Attendez la fin des exécutions, puis redémarrez le Studio** pour appliquer la configuration. Connectez le téléphone au même réseau que le PC.
+Connectez le téléphone au même réseau que le PC, puis utilisez **Copier le lien** ou **QR code**. Le QR contient uniquement l’adresse ; le PIN est demandé à la connexion. Les activations suivantes conservent le PIN.
 
 Vous pouvez créer ou reprendre une session, envoyer des messages et suivre le travail en direct. Le PC exécute les agents et doit rester allumé. Le configurateur de modèles reste réservé au PC.
 
 L’accès utilise HTTP sur le réseau local, avec authentification par code. Le Studio est une application personnelle locale : il n’est pas destiné à être exposé sur Internet.
 
-Pour accéder au Studio **hors du Wi-Fi, en 4G/5G**, connectez le PC et le téléphone à Tailscale, puis lancez sur le PC :
-
-```powershell
-npm run tailscale:enable
-```
-
-La commande affiche l’adresse Tailscale et conserve l’accès LAN ainsi que le code existant. Redémarrez le Studio après la fin des exécutions, puis ouvrez cette adresse sur le téléphone avec Tailscale activé.
+Pour accéder au Studio **hors du Wi-Fi, en 4G/5G**, connectez le PC et le téléphone à Tailscale, puis activez **Tailscale** dans la même rubrique. Son lien et son QR sont disponibles immédiatement ; le LAN et le PIN existant sont conservés. Les interfaces, le port partagé et les autorisations se règlent dans le panneau. Les commandes npm restent disponibles pour une configuration en terminal.
 
 [Configurer le LAN, Tailscale, le code et le mode lecture seule →](docs/lan.md)
 

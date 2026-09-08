@@ -13,6 +13,7 @@ import { createConversationRenderer } from './conversation.js';
 import { reasoningMode } from './reasoning.js';
 import { createSubagentSettings } from './subagent-settings.js';
 import { createRemoteAccessSettings } from './remote-access.js';
+import { createSettings } from './settings.js';
 import { createLiveMessages } from './live-messages.js';
 import { createImageComposer, renderImages } from './images.js';
 import { createMcpSettings } from './mcp.js';
@@ -2749,5 +2750,17 @@ createProviderSettings({
     const catalog = await api('/api/models');
     updateModelsAfterConfiguration({ catalog });
   },
+});
+createSettings({
+  api,
+  getContext: () => ({
+    remote: state.remote,
+    readOnly: state.readOnly,
+    projectCwd: state.projectCwd,
+    version: state.version,
+  }),
+  openResources: (source) => commandsUI.open(source),
+  copyText,
+  toast,
 });
 void bootstrap();

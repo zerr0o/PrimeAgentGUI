@@ -5,6 +5,189 @@ export const languages = [
   { id: 'en', label: 'English' },
 ];
 export const messages = {
+  'settings.qr_scan_lan': {
+    fr: 'Scannez avec votre téléphone connecté au même réseau local.',
+    en: 'Scan with your phone connected to the same local network.',
+  },
+  'settings.qr_scan_tailscale': {
+    fr: 'Scannez avec votre téléphone connecté à Tailscale.',
+    en: 'Scan with your phone connected to Tailscale.',
+  },
+  'settings.title': { fr: 'Préférences', en: 'Preferences' },
+  'settings.categories': { fr: 'Catégories', en: 'Categories' },
+  'settings.appearance': { fr: 'Apparence', en: 'Appearance' },
+  'settings.models': { fr: 'Modèles et agents', en: 'Models & agents' },
+  'settings.tools': { fr: 'Outils', en: 'Tools' },
+  'settings.remote': { fr: 'Accès distant', en: 'Remote access' },
+  'settings.system': { fr: 'Système', en: 'System' },
+  'settings.scope_browser': {
+    fr: 'Pour ce navigateur · Apparence et conversation',
+    en: 'This browser · Appearance and conversation',
+  },
+  'settings.scope_agent': {
+    fr: 'Prime Agent sur ce PC · Configuration partagée',
+    en: 'Prime Agent on this PC · Shared configuration',
+  },
+  'settings.scope_tools': {
+    fr: 'Prime Agent sur ce PC · Outils et ressources',
+    en: 'Prime Agent on this PC · Tools and resources',
+  },
+  'settings.scope_pc': {
+    fr: 'Ce PC · Connexion de vos autres appareils',
+    en: 'This PC · Connect your other devices',
+  },
+  'settings.scope_studio': {
+    fr: 'Le Studio auquel vous êtes connecté',
+    en: 'The Studio you are connected to',
+  },
+  'settings.resources': { fr: 'Skills et prompts', en: 'Skills and prompts' },
+  'settings.resources_note': {
+    fr: 'Retrouvez vos ressources et ouvrez leurs dossiers.',
+    en: 'Browse your resources and open their folders.',
+  },
+  'settings.resources_scope': {
+    fr: 'Ressources globales et ressources du projet sélectionné. Leur emplacement est indiqué dans le catalogue.',
+    en: 'Global resources and resources for the selected project. The catalog shows their location.',
+  },
+  'settings.choose_project': {
+    fr: 'Sélectionnez un projet pour consulter ses ressources.',
+    en: 'Select a project to browse its resources.',
+  },
+  'settings.models_note': {
+    fr: 'Les valeurs par défaut concernent les nouvelles sessions et délégations. Les sous-agents peuvent aussi être réglés par projet. Le modèle de la conversation se choisit près du message.',
+    en: 'Defaults apply to new sessions and delegations. Subagents can also be configured per project. Choose the conversation model beside the message.',
+  },
+  'settings.remote_intro': {
+    fr: 'Activez une connexion sans interrompre les agents.',
+    en: 'Enable a connection without interrupting agents.',
+  },
+  'settings.refresh': { fr: 'Actualiser', en: 'Refresh' },
+  'settings.loading': { fr: 'Chargement…', en: 'Loading…' },
+  'settings.lan': { fr: 'Réseau local', en: 'Local network' },
+  'settings.tailscale': { fr: 'Tailscale', en: 'Tailscale' },
+  'settings.https': { fr: 'Tailscale HTTPS', en: 'Tailscale HTTPS' },
+  'settings.lan_note': {
+    fr: 'Sur le même Wi-Fi ou réseau Ethernet.',
+    en: 'On the same Wi-Fi or Ethernet network.',
+  },
+  'settings.tailscale_note': {
+    fr: 'Entre vos appareils connectés à Tailscale.',
+    en: 'Between your devices connected to Tailscale.',
+  },
+  'settings.https_note': {
+    fr: 'Connexion HTTPS déjà configurée pour la PWA.',
+    en: 'HTTPS connection already configured for the PWA.',
+  },
+  'settings.lan_missing': {
+    fr: 'Aucune adresse locale détectée. Connectez ce PC au Wi-Fi ou à Ethernet, puis actualisez.',
+    en: 'No local address detected. Connect this PC to Wi-Fi or Ethernet, then refresh.',
+  },
+  'settings.tailscale_missing': {
+    fr: 'Connectez Tailscale sur ce PC, puis actualisez.',
+    en: 'Connect Tailscale on this PC, then refresh.',
+  },
+  'settings.status_active': { fr: 'Actif', en: 'Active' },
+  'settings.status_disabled': { fr: 'Désactivé', en: 'Off' },
+  'settings.status_error': { fr: 'Indisponible', en: 'Unavailable' },
+  'settings.connection_options': { fr: 'Options de connexion', en: 'Connection options' },
+  'settings.interface': { fr: 'Interface réseau', en: 'Network interface' },
+  'settings.port': { fr: 'Port', en: 'Port' },
+  'settings.port_note': {
+    fr: 'Port commun au LAN et à Tailscale. Après un changement, utilisez le nouveau lien sur vos appareils.',
+    en: 'Shared by LAN and Tailscale. After changing it, use the new link on your devices.',
+  },
+  'settings.apply': { fr: 'Appliquer', en: 'Apply' },
+  'settings.copy_link': { fr: 'Copier le lien', en: 'Copy link' },
+  'settings.qr': { fr: 'QR code', en: 'QR code' },
+  'settings.qr_title': { fr: 'Connecter un appareil', en: 'Connect a device' },
+  'settings.qr_scan': {
+    fr: 'Scannez avec votre téléphone connecté à {network}.',
+    en: 'Scan with your phone connected to {network}.',
+  },
+  'settings.qr_note': {
+    fr: 'Le QR code contient uniquement le lien. Votre code PIN sera demandé à la connexion.',
+    en: 'The QR code contains only the link. Your PIN will be requested when connecting.',
+  },
+  'settings.new_code': { fr: 'Votre code d’accès', en: 'Your access code' },
+  'settings.new_code_note': {
+    fr: 'Notez ce PIN avant de fermer cet encart. Il ne pourra pas être réaffiché.',
+    en: 'Save this PIN before dismissing this notice. It cannot be shown again.',
+  },
+  'settings.copy_code': { fr: 'Copier le code', en: 'Copy code' },
+  'settings.code_saved': { fr: 'J’ai noté le code', en: 'I saved the code' },
+  'settings.permissions': { fr: 'Autorisations à distance', en: 'Remote permissions' },
+  'settings.permissions_note': {
+    fr: 'Un changement déconnecte les appareils distants. Les agents continuent.',
+    en: 'Changing this signs out remote devices. Agents keep running.',
+  },
+  'settings.full_access': { fr: 'Contrôle complet', en: 'Full control' },
+  'settings.read_only': { fr: 'Lecture seule', en: 'Read only' },
+  'settings.pin': { fr: 'Code PIN', en: 'PIN code' },
+  'settings.pin_note': {
+    fr: 'Commun au LAN, à Tailscale et à la PWA.',
+    en: 'Shared by LAN, Tailscale and the PWA.',
+  },
+  'settings.network_saved': {
+    fr: 'Accès réseau mis à jour. Les agents continuent.',
+    en: 'Network access updated. Agents keep running.',
+  },
+  'settings.permissions_saved': {
+    fr: 'Autorisations mises à jour. Reconnectez vos appareils.',
+    en: 'Permissions updated. Reconnect your devices.',
+  },
+  'settings.diagnostics': { fr: 'Diagnostic', en: 'Diagnostics' },
+  'settings.diagnostics_note': {
+    fr: 'Versions et état du moteur, sans clés ni conversations.',
+    en: 'Versions and engine status, without keys or conversations.',
+  },
+  'settings.copy': { fr: 'Copier', en: 'Copy' },
+  'settings.logs': { fr: 'Journaux du Studio', en: 'Studio logs' },
+  'settings.logs_note': {
+    fr: 'Pour consulter les erreurs de lancement et du serveur.',
+    en: 'Inspect launcher and server errors.',
+  },
+  'settings.open_folder': { fr: 'Ouvrir le dossier', en: 'Open folder' },
+  'settings.studio_version': { fr: 'Version du Studio', en: 'Studio version' },
+  'settings.engine': { fr: 'Moteur Prime Agent', en: 'Prime Agent engine' },
+  'settings.engine_version': { fr: 'Version de Prime Agent', en: 'Prime Agent version' },
+  'settings.running': { fr: 'Agents en cours', en: 'Running agents' },
+  'settings.node': { fr: 'Node.js', en: 'Node.js' },
+  'settings.available': { fr: 'Disponible', en: 'Available' },
+  'settings.unavailable': { fr: 'Indisponible', en: 'Unavailable' },
+  'network.closed': { fr: 'Le Studio est en cours de fermeture.', en: 'Studio is shutting down.' },
+  'network.invalid_port': {
+    fr: 'Choisissez un port libre entre 1024 et 65535, différent de celui du Studio et de la PWA.',
+    en: 'Choose a free port between 1024 and 65535, different from the Studio and PWA ports.',
+  },
+  'network.invalid_address': {
+    fr: 'Cette adresse réseau n’est pas disponible sur ce PC. Actualisez les interfaces.',
+    en: 'This network address is not available on this PC. Refresh the interfaces.',
+  },
+  'network.port_busy': {
+    fr: 'Ce port est déjà utilisé. Choisissez-en un autre dans les options de connexion.',
+    en: 'This port is in use. Choose another one in connection options.',
+  },
+  'network.bind_failed': {
+    fr: 'Impossible d’ouvrir cette connexion. Vérifiez l’interface réseau et le port.',
+    en: 'Could not open this connection. Check the network interface and port.',
+  },
+  'network.address_lost': {
+    fr: 'Cette adresse n’est plus disponible. Actualisez et choisissez une interface connectée.',
+    en: 'This address is no longer available. Refresh and choose a connected interface.',
+  },
+  'network.not_listening': {
+    fr: 'Cette connexion est configurée mais n’écoute pas. Réappliquez les options de connexion.',
+    en: 'This connection is configured but not listening. Reapply connection options.',
+  },
+  'network.invalid_config': { fr: 'Les paramètres réseau sont invalides.', en: 'Invalid network settings.' },
+  'network.enable_first': {
+    fr: 'Activez d’abord un accès réseau sur ce PC.',
+    en: 'Enable network access on this PC first.',
+  },
+  'network.qr_unavailable': {
+    fr: 'Activez cette connexion avant de générer son QR code.',
+    en: 'Enable this connection before generating its QR code.',
+  },
   'folders.browse': {
     fr: 'Choisir un dossier',
     en: 'Choose folder',

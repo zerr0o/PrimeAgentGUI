@@ -106,7 +106,7 @@ const url = `http://127.0.0.1:${gateway.address().port}`;
 let browser, page;
 async function settings() {
   await page.locator('#toggle-sidebar').click();
-  await page.locator('#open-settings').click();
+  if (!(await page.locator('#settings-dialog').isVisible())) await page.locator('#open-settings').click();
   await expect(page.locator('#settings-dialog')).toBeVisible();
 }
 async function boxInside(selector, width, height) {
@@ -118,7 +118,10 @@ async function boxInside(selector, width, height) {
   return box;
 }
 try {
-  browser = await chromium.launch({ channel: 'msedge', headless: true });
+  browser = await chromium.launch({
+    channel: process.env.PRIME_STUDIO_TEST_BROWSER || 'msedge',
+    headless: true,
+  });
   page = await browser.newPage({
     locale: 'fr-FR',
     viewport: { width: 390, height: 844 },
@@ -184,6 +187,8 @@ try {
   expect(logout.x + logout.width).toBeLessThan(done.x);
   expect(Math.abs(logout.y - done.y)).toBeLessThan(14);
   await expect(page.locator('#logout-button')).toHaveCSS('color', 'rgb(232, 162, 162)');
+  await page.locator('#settings-tab-tools').click();
+
   await page.locator('#open-mcp-settings').click();
   await expect(page.locator('.mcp-card')).toHaveCount(2);
   await expect(page.locator('#mcp-search')).toHaveCSS('font-size', '16px');
@@ -238,6 +243,8 @@ try {
     'Gestion MCP sur mobile/PC : ajout, édition, secrets masqués, outils, recherche, activation et suppression confirmée',
   );
   await page.locator('#mcp-close').click();
+  await expect(page.locator('#settings-dialog')).toBeVisible();
+  await page.locator('#settings-dialog .settings-actions [data-close-dialog]').click();
   await page.locator('#project-list .project-row').filter({ hasText: 'Atelier' }).click({ button: 'right' });
   await expect(page.locator('#project-menu')).toBeVisible();
   await page.keyboard.press('Escape');

@@ -2,7 +2,7 @@
 
 [English](en/translations.md) · **Français** · [← Retour au README](../README.fr.md)
 
-Le Studio propose le français et l’anglais sur PC, mobile et dans la PWA. Le sélecteur **Préférences → Langue** change l’interface immédiatement. Le choix est conservé par navigateur et par adresse d’accès ; les onglets de la même adresse se synchronisent. Les sessions et les saisies continuent sans rechargement.
+Le Studio propose le français et l’anglais sur PC, mobile et dans la PWA. Le sélecteur **Préférences → Apparence → Langue** change l’interface immédiatement. Le choix est conservé par navigateur et par adresse d’accès ; les onglets de la même adresse se synchronisent. Les sessions et les saisies continuent sans rechargement.
 
 ## Une seule table
 

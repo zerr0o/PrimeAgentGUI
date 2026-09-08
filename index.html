@@ -29,6 +29,7 @@
     <link rel="stylesheet" href="/public/providers.css" />
     <link rel="stylesheet" href="/public/commands.css" />
     <link rel="stylesheet" href="/public/inspector.css" />
+    <link rel="stylesheet" href="/public/settings.css" />
   </head>
   <body>
     <a class="skip-link" href="#composer" data-i18n="ui.aller_au_message">Aller au message</a>
@@ -827,9 +828,9 @@
         data-i18n-aria-label="ui.modeles_disponibles"
       ></div>
     </dialog>
-    <dialog id="settings-dialog" class="modal settings-modal">
+    <dialog id="settings-dialog" class="modal settings-modal" aria-labelledby="settings-title">
       <div class="modal-heading">
-        <h2 data-i18n="ui.faites_comme_chez_vous">Faites comme chez vous.</h2>
+        <h2 id="settings-title" data-i18n="settings.title">Préférences</h2>
         <button
           class="icon-button"
           type="button"
@@ -839,121 +840,327 @@
           data-icon="x"
         ></button>
       </div>
-      <p data-i18n="ui.personnalisez_votre_espace_de_travail">Personnalisez votre espace de travail.</p>
-      <div class="settings-row language-settings">
-        <div>
-          <label for="language-select" data-i18n="language.label">Langue</label>
-          <p data-i18n="language.note">Ce choix s’applique à cet appareil.</p>
-        </div>
-        <select
-          id="language-select"
-          data-language-select
-          aria-label="Langue"
-          data-i18n-aria-label="language.label"
-        ></select>
-      </div>
-      <div class="settings-group">
-        <label data-i18n="ui.apparence">Apparence</label>
-        <div class="theme-options">
-          <button data-theme-choice="dark">
-            <span data-icon="moon"></span><span data-i18n="ui.sombre">Sombre</span></button
-          ><button data-theme-choice="light">
-            <span data-icon="sun"></span><span data-i18n="ui.clair">Clair</span></button
-          ><button data-theme-choice="system">
-            <span data-icon="monitor"></span><span data-i18n="ui.systeme">Système</span>
-          </button>
-        </div>
-      </div>
-      <div class="settings-row">
-        <div>
-          <label for="enter-to-send" data-i18n="ui.entree_pour_envoyer">Entrée pour envoyer</label>
-          <p data-i18n="ui.sinon_utilisez_ctrl_entree">Sinon, utilisez Ctrl + Entrée.</p>
-        </div>
-        <input id="enter-to-send" class="switch" type="checkbox" role="switch" checked />
-      </div>
-      <div class="settings-row reasoning-settings">
-        <div>
-          <label id="reasoning-label" data-i18n="ui.raisonnement_de_l_agent">Raisonnement de l’agent</label>
-          <p data-i18n="ui.un_apercu_de_la_derniere_reflexion_meme_lorsque_l_activite_est_re">
-            Un aperçu de la dernière réflexion, même lorsque l’activité est repliée.
-          </p>
-        </div>
-        <div class="reasoning-selector" role="radiogroup" aria-labelledby="reasoning-label">
-          <label
-            ><input type="radio" name="reasoning-mode" value="hidden" /><span data-i18n="ui.masque"
-              >Masqué</span
-            ></label
-          >
-          <label
-            ><input type="radio" name="reasoning-mode" value="preview" /><span data-i18n="ui.apercu"
-              >Aperçu</span
-            ></label
-          >
-          <label
-            ><input type="radio" name="reasoning-mode" value="expanded" /><span data-i18n="ui.detaille"
-              >Détaillé</span
-            ></label
-          >
-        </div>
-      </div>
-      <div id="model-config-settings" class="settings-row">
-        <div>
-          <label for="open-model-config" data-i18n="ui.modeles_et_valeurs_par_defaut"
-            >Modèles et valeurs par défaut</label
-          >
-          <p data-i18n="ui.choisissez_le_modele_principal_et_gerez_les_definitions_personnal">
-            Choisissez le modèle principal et gérez les définitions personnalisées.
-          </p>
-        </div>
-        <button id="open-model-config" class="secondary-button" type="button">
-          <span data-icon="model"></span><span data-i18n="ui.configurer">Configurer</span>
-        </button>
-      </div>
-      <div id="provider-settings" class="settings-row" hidden>
-        <div>
-          <label for="open-provider-settings" data-i18n="ui.fournisseurs">Fournisseurs</label>
-          <p data-i18n="ui.connectez_vos_comptes_et_gerez_les_cles_api_de_prime_agent">
-            Connectez vos comptes et gérez les clés API de Prime Agent.
-          </p>
-        </div>
-        <button
-          id="open-provider-settings"
-          type="button"
-          class="secondary-button"
-          data-i18n="ui.gerer_les_connexions"
+      <div class="settings-layout">
+        <nav
+          class="settings-nav"
+          role="tablist"
+          aria-orientation="vertical"
+          aria-label="Catégories"
+          data-i18n-aria-label="settings.categories"
         >
-          Gérer les connexions
-        </button>
-      </div>
-      <div id="mcp-settings" class="settings-row">
-        <div>
-          <label for="open-mcp-settings" data-i18n="ui.connexions_mcp">Connexions MCP</label>
-          <p data-i18n="ui.connectez_des_outils_et_services_a_prime_agent">
-            Connectez des outils et services à Prime Agent.
-          </p>
-        </div>
-        <button id="open-mcp-settings" type="button" class="secondary-button" data-i18n="ui.gerer_les_mcp">
-          Gérer les MCP
-        </button>
-      </div>
-      <div id="remote-access-settings" class="settings-row" hidden>
-        <div>
-          <label for="open-remote-access" data-i18n="ui.acces_mobile">Accès mobile</label>
-          <p data-i18n="ui.modifiez_le_code_pin_de_connexion_a_distance">
-            Modifiez le code PIN de connexion à distance.
-          </p>
-        </div>
-        <button id="open-remote-access" type="button" class="secondary-button" data-i18n="ui.changer_le_code">
-          Changer le code
-        </button>
-      </div>
-      <div class="settings-about">
-        <span class="status-dot"></span>
-        <div>
-          <strong>Prime Agent Studio</strong>
-          <p id="settings-runtime" data-i18n="ui.interface_locale_pour_prime_agent">
-            Interface locale pour Prime Agent
-          </p>
+          <button
+            id="settings-tab-appearance"
+            role="tab"
+            aria-selected="true"
+            aria-controls="settings-panel-appearance"
+            tabindex="0"
+            data-settings-tab="appearance"
+          >
+            <span data-icon="sun"></span><span data-i18n="settings.appearance">Apparence</span>
+          </button>
+          <button
+            id="settings-tab-models"
+            role="tab"
+            aria-selected="false"
+            aria-controls="settings-panel-models"
+            tabindex="-1"
+            data-settings-tab="models"
+          >
+            <span data-icon="model"></span><span data-i18n="settings.models">Modèles et agents</span>
+          </button>
+          <button
+            id="settings-tab-tools"
+            role="tab"
+            aria-selected="false"
+            aria-controls="settings-panel-tools"
+            tabindex="-1"
+            data-settings-tab="tools"
+          >
+            <span data-icon="tool"></span><span data-i18n="settings.tools">Outils</span>
+          </button>
+          <button
+            id="settings-tab-remote"
+            role="tab"
+            aria-selected="false"
+            aria-controls="settings-panel-remote"
+            tabindex="-1"
+            data-settings-tab="remote"
+          >
+            <span data-icon="shield"></span><span data-i18n="settings.remote">Accès distant</span>
+          </button>
+          <button
+            id="settings-tab-system"
+            role="tab"
+            aria-selected="false"
+            aria-controls="settings-panel-system"
+            tabindex="-1"
+            data-settings-tab="system"
+          >
+            <span data-icon="monitor"></span><span data-i18n="settings.system">Système</span>
+          </button>
+        </nav>
+        <div class="settings-panels">
+          <section
+            id="settings-panel-appearance"
+            class="settings-panel"
+            role="tabpanel"
+            tabindex="0"
+            aria-labelledby="settings-tab-appearance"
+          >
+            <div class="settings-section-heading">
+              <h3 data-i18n="settings.appearance">Apparence</h3>
+              <p class="settings-scope" data-i18n="settings.scope_browser"></p>
+            </div>
+            <div class="settings-row language-settings">
+              <div>
+                <label for="language-select" data-i18n="language.label">Langue</label>
+                <p data-i18n="language.note">Ce choix s’applique à cet appareil.</p>
+              </div>
+              <select
+                id="language-select"
+                data-language-select
+                aria-label="Langue"
+                data-i18n-aria-label="language.label"
+              ></select>
+            </div>
+            <div class="settings-group">
+              <label data-i18n="ui.apparence">Apparence</label>
+              <div class="theme-options">
+                <button data-theme-choice="dark">
+                  <span data-icon="moon"></span><span data-i18n="ui.sombre">Sombre</span></button
+                ><button data-theme-choice="light">
+                  <span data-icon="sun"></span><span data-i18n="ui.clair">Clair</span></button
+                ><button data-theme-choice="system">
+                  <span data-icon="monitor"></span><span data-i18n="ui.systeme">Système</span>
+                </button>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div>
+                <label for="enter-to-send" data-i18n="ui.entree_pour_envoyer">Entrée pour envoyer</label>
+                <p data-i18n="ui.sinon_utilisez_ctrl_entree">Sinon, utilisez Ctrl + Entrée.</p>
+              </div>
+              <input id="enter-to-send" class="switch" type="checkbox" role="switch" checked />
+            </div>
+            <div class="settings-row reasoning-settings">
+              <div>
+                <label id="reasoning-label" data-i18n="ui.raisonnement_de_l_agent"
+                  >Raisonnement de l’agent</label
+                >
+                <p data-i18n="ui.un_apercu_de_la_derniere_reflexion_meme_lorsque_l_activite_est_re">
+                  Un aperçu de la dernière réflexion, même lorsque l’activité est repliée.
+                </p>
+              </div>
+              <div class="reasoning-selector" role="radiogroup" aria-labelledby="reasoning-label">
+                <label
+                  ><input type="radio" name="reasoning-mode" value="hidden" /><span data-i18n="ui.masque"
+                    >Masqué</span
+                  ></label
+                >
+                <label
+                  ><input type="radio" name="reasoning-mode" value="preview" /><span data-i18n="ui.apercu"
+                    >Aperçu</span
+                  ></label
+                >
+                <label
+                  ><input type="radio" name="reasoning-mode" value="expanded" /><span data-i18n="ui.detaille"
+                    >Détaillé</span
+                  ></label
+                >
+              </div>
+            </div>
+          </section>
+          <section
+            id="settings-panel-models"
+            class="settings-panel"
+            role="tabpanel"
+            tabindex="0"
+            aria-labelledby="settings-tab-models"
+            hidden
+          >
+            <div class="settings-section-heading">
+              <h3 data-i18n="settings.models">Modèles et agents</h3>
+              <p class="settings-scope" data-i18n="settings.scope_agent"></p>
+            </div>
+            <div id="model-config-settings" class="settings-row">
+              <div>
+                <label for="open-model-config" data-i18n="ui.modeles_et_valeurs_par_defaut"
+                  >Modèles et valeurs par défaut</label
+                >
+                <p data-i18n="ui.choisissez_le_modele_principal_et_gerez_les_definitions_personnal">
+                  Choisissez le modèle principal et gérez les définitions personnalisées.
+                </p>
+              </div>
+              <button id="open-model-config" class="secondary-button" type="button">
+                <span data-icon="model"></span><span data-i18n="ui.configurer">Configurer</span>
+              </button>
+            </div>
+            <div id="provider-settings" class="settings-row" hidden>
+              <div>
+                <label for="open-provider-settings" data-i18n="ui.fournisseurs">Fournisseurs</label>
+                <p data-i18n="ui.connectez_vos_comptes_et_gerez_les_cles_api_de_prime_agent">
+                  Connectez vos comptes et gérez les clés API de Prime Agent.
+                </p>
+              </div>
+              <button
+                id="open-provider-settings"
+                type="button"
+                class="secondary-button"
+                data-i18n="ui.gerer_les_connexions"
+              >
+                Gérer les connexions
+              </button>
+            </div>
+            <p class="settings-footnote" data-i18n="settings.models_note"></p>
+          </section>
+          <section
+            id="settings-panel-tools"
+            class="settings-panel"
+            role="tabpanel"
+            tabindex="0"
+            aria-labelledby="settings-tab-tools"
+            hidden
+          >
+            <div class="settings-section-heading">
+              <h3 data-i18n="settings.tools">Outils</h3>
+              <p class="settings-scope" data-i18n="settings.scope_tools"></p>
+            </div>
+            <div id="mcp-settings" class="settings-row">
+              <div>
+                <label for="open-mcp-settings" data-i18n="ui.connexions_mcp">Connexions MCP</label>
+                <p data-i18n="ui.connectez_des_outils_et_services_a_prime_agent">
+                  Connectez des outils et services à Prime Agent.
+                </p>
+              </div>
+              <button
+                id="open-mcp-settings"
+                type="button"
+                class="secondary-button"
+                data-i18n="ui.gerer_les_mcp"
+              >
+                Gérer les MCP
+              </button>
+            </div>
+            <div class="settings-row">
+              <div>
+                <label data-i18n="settings.resources">Skills et prompts</label>
+                <p data-i18n="settings.resources_note">Retrouvez vos ressources et leurs dossiers.</p>
+              </div>
+              <div class="settings-resource-actions">
+                <button id="settings-skills" class="secondary-button">Skills</button
+                ><button id="settings-prompts" class="secondary-button">Prompts</button>
+              </div>
+            </div>
+            <p id="settings-resource-note" class="settings-footnote" data-i18n="settings.resources_scope"></p>
+          </section>
+          <section
+            id="settings-panel-remote"
+            class="settings-panel"
+            role="tabpanel"
+            tabindex="0"
+            aria-labelledby="settings-tab-remote"
+            hidden
+          >
+            <div class="settings-section-heading">
+              <h3 data-i18n="settings.remote">Accès distant</h3>
+              <p class="settings-scope" data-i18n="settings.scope_pc"></p>
+            </div>
+            <div id="remote-access-settings">
+              <div class="settings-toolbar">
+                <p data-i18n="settings.remote_intro"></p>
+                <button id="network-refresh" class="text-button" data-i18n="settings.refresh">
+                  Actualiser
+                </button>
+              </div>
+              <p id="network-error" class="form-error" role="alert" hidden></p>
+              <div id="network-content" aria-busy="true">
+                <p class="settings-footnote" data-i18n="settings.loading">Chargement…</p>
+              </div>
+              <div id="network-new-code" class="network-new-code" hidden>
+                <strong data-i18n="settings.new_code">Votre code d’accès</strong>
+                <p data-i18n="settings.new_code_note"></p>
+                <div>
+                  <output id="network-generated-code"></output
+                  ><button id="network-copy-code" class="secondary-button" data-i18n="settings.copy_code">
+                    Copier le code</button
+                  ><button id="network-dismiss-code" class="text-button" data-i18n="settings.code_saved">
+                    J’ai noté le code
+                  </button>
+                </div>
+              </div>
+              <div id="network-security" hidden>
+                <div class="settings-row">
+                  <div>
+                    <label for="network-read-only" data-i18n="settings.permissions"
+                      >Autorisations à distance</label
+                    >
+                    <p data-i18n="settings.permissions_note"></p>
+                  </div>
+                  <select id="network-read-only">
+                    <option value="false" data-i18n="settings.full_access">Contrôle complet</option>
+                    <option value="true" data-i18n="settings.read_only">Lecture seule</option>
+                  </select>
+                </div>
+                <div class="settings-row">
+                  <div>
+                    <label for="open-remote-access" data-i18n="settings.pin">Code PIN</label>
+                    <p data-i18n="settings.pin_note">Commun au LAN et à Tailscale.</p>
+                  </div>
+                  <button
+                    id="open-remote-access"
+                    type="button"
+                    class="secondary-button"
+                    data-i18n="ui.changer_le_code"
+                  >
+                    Changer le code
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section
+            id="settings-panel-system"
+            class="settings-panel"
+            role="tabpanel"
+            tabindex="0"
+            aria-labelledby="settings-tab-system"
+            hidden
+          >
+            <div class="settings-section-heading">
+              <h3 data-i18n="settings.system">Système</h3>
+              <p class="settings-scope" data-i18n="settings.scope_studio"></p>
+            </div>
+            <div class="settings-about">
+              <span class="status-dot"></span>
+              <div>
+                <strong>Prime Agent Studio</strong>
+                <p id="settings-runtime" data-i18n="ui.interface_locale_pour_prime_agent">
+                  Interface locale pour Prime Agent
+                </p>
+              </div>
+            </div>
+            <dl id="settings-system-info" class="settings-system-info"></dl>
+            <p id="settings-system-error" class="form-error" role="alert" hidden></p>
+            <div class="settings-row">
+              <div>
+                <label data-i18n="settings.diagnostics">Diagnostic</label>
+                <p data-i18n="settings.diagnostics_note"></p>
+              </div>
+              <button id="settings-copy-diagnostics" class="secondary-button" data-i18n="settings.copy">
+                Copier
+              </button>
+            </div>
+            <div class="settings-row" id="settings-logs-row">
+              <div>
+                <label data-i18n="settings.logs">Journaux du Studio</label>
+                <p data-i18n="settings.logs_note"></p>
+              </div>
+              <button id="settings-open-logs" class="secondary-button">
+                <span data-icon="folder"></span
+                ><span data-i18n="settings.open_folder">Ouvrir le dossier</span>
+              </button>
+            </div>
+          </section>
         </div>
       </div>
       <div class="modal-actions settings-actions">

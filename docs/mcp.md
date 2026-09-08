@@ -2,7 +2,7 @@
 
 [English](en/mcp.md) · **Français** · [← Retour au README](../README.fr.md)
 
-Ouvrez **Préférences → Connexions MCP → Gérer les MCP**, sur le PC ou dans le Studio distant en contrôle complet. Le gestionnaire utilise la configuration native de **Prime Agent 0.9.1** : les connexions sont communes aux projets du PC.
+Ouvrez **Préférences → Outils → Gérer les MCP**, sur le PC ou dans le Studio distant en contrôle complet. Le gestionnaire utilise la configuration native de **Prime Agent 0.9.1** : les connexions sont communes aux projets du PC.
 
 ## Ajouter une connexion
 

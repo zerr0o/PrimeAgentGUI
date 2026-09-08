@@ -2,7 +2,7 @@
 
 **English** · [Français](../translations.md) · [← Back to README](../../README.md)
 
-Studio offers French and English on desktop, mobile and in the PWA. **Preferences → Language** changes the interface immediately. The choice is saved per browser and access address; tabs at the same address synchronize. Sessions and input continue without reloading.
+Studio offers French and English on desktop, mobile and in the PWA. **Preferences → Appearance → Language** changes the interface immediately. The choice is saved per browser and access address; tabs at the same address synchronize. Sessions and input continue without reloading.
 
 ## One table
 

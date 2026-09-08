@@ -2,7 +2,7 @@
 
 **English** · [Français](../providers.md) · [← Back to README](../../README.md)
 
-On the PC running Studio, open **http://127.0.0.1:3088 → Preferences → Providers → Manage connections**. This panel is restricted to local PC access: it is unavailable over LAN, Tailscale or the remote PWA, even with full control.
+On the PC running Studio, open **http://127.0.0.1:3088 → Preferences → Models & agents → Manage connections**. This panel is restricted to local PC access: it is unavailable over LAN, Tailscale or the remote PWA, even with full control.
 
 ## Accounts and API keys
 

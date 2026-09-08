@@ -112,7 +112,10 @@ const app = createApp({
 });
 await new Promise((done) => app.server.listen(0, '127.0.0.1', done));
 const url = `http://127.0.0.1:${app.server.address().port}`;
-const browser = await chromium.launch({ channel: 'msedge', headless: true });
+const browser = await chromium.launch({
+  channel: process.env.PRIME_STUDIO_TEST_BROWSER || 'msedge',
+  headless: true,
+});
 const context = await browser.newContext({
   locale: 'fr-FR',
   viewport: { width: 1440, height: 1000 },
@@ -127,7 +130,8 @@ async function mode(label) {
     !(await page.locator('#sidebar').evaluate((n) => n.classList.contains('mobile-open')))
   )
     await page.locator('#toggle-sidebar').click();
-  await page.locator('#open-settings').click();
+  if (!(await page.locator('#settings-dialog').isVisible())) await page.locator('#open-settings').click();
+  await page.locator('#settings-tab-appearance').click();
   await page.locator('.reasoning-selector').getByText(label, { exact: true }).click();
   await page.locator('#settings-dialog').getByRole('button', { name: 'Terminé' }).click();
 }
@@ -206,7 +210,9 @@ try {
   await page.locator('#inspector-tab-agents').click();
   await expect(page.locator('.inspector-agent-thinking')).toContainText('Très élevée');
 
-  await page.locator('#open-settings').click();
+  if (!(await page.locator('#settings-dialog').isVisible())) await page.locator('#open-settings').click();
+  await page.locator('#settings-tab-models').click();
+
   await page.locator('#open-model-config').click();
   await expect(page.locator('#save-subagent-defaults')).toBeEnabled();
   await expect(page.locator('#subagent-model-search, #subagent-scope')).toHaveCount(0);
@@ -229,6 +235,8 @@ try {
     .poll(async () => (await (await fetch(`${url}/api/subagent-defaults`)).json()).global)
     .toEqual({ model: 'fixture/child', thinking: 'high' });
   await page.locator('#model-config-dialog [data-close-dialog]').click();
+  await expect(page.locator('#settings-dialog')).toBeVisible();
+  await page.locator('#settings-dialog .settings-actions [data-close-dialog]').click();
   await expect(page.locator('#model-select')).toHaveValue(mainModel);
   await page.locator('#model-picker-button').click();
   expect(

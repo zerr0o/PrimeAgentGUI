@@ -37,7 +37,8 @@
     "test:layout": "node scripts/test-mobile-layout.mjs",
     "test:attachments": "node scripts/test-attachments-ui.mjs",
     "check": "node --check server.mjs && node --check public/app.js && node scripts/check-translations.mjs && node scripts/check-docs.mjs",
-    "format": "prettier --write --ignore-unknown server.mjs lib public scripts test index.html README.md package.json"
+    "format": "prettier --write --ignore-unknown server.mjs lib public scripts test index.html README.md package.json",
+    "test:settings": "node scripts/test-settings-ui.mjs"
   },
   "engines": {
     "node": ">=22.8.0"
@@ -45,6 +46,7 @@
   "dependencies": {
     "dompurify": "3.4.14",
     "marked": "18.0.11",
+    "qrcode": "1.5.4",
     "smol-toml": "1.8.0"
   },
   "devDependencies": {

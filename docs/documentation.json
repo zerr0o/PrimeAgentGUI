@@ -7,8 +7,8 @@
       "fr": "README.fr.md",
       "en": "README.md",
       "reviewed": {
-        "fr": "ff6ac638b2e0ad7f448cb981a7be69ebc3528e1a67cfe4635190f71311c1a5d7",
-        "en": "d0e54150da3b95589f94a0648b63179c58cdce5d57b23b3097ead83aef7bf2d9"
+        "fr": "d424a11e53faeea99e056f8ff59c43d80e989313d259c9d4bbde881e25ddbb9b",
+        "en": "36fe644cfbd5aa559650c6a840cb2c87af2ee87598eda7d822896eff7e114434"
       }
     },
     {
@@ -25,8 +25,8 @@
       "fr": "docs/configuration.md",
       "en": "docs/en/configuration.md",
       "reviewed": {
-        "fr": "bb2cc09233945be7b49356ee17c446276a3c5eec87aee1c8083ed4d0971cb2dd",
-        "en": "2773d2a864bf82d7e8fc096269bddfbc600f48845b1015b015025468c82defe8"
+        "fr": "76e77b70d770572ad4456d75ec4297eb4217dfccd9158d8df6e1072ab15fd154",
+        "en": "7d6cfffac538635e8f098e7eb1528e6fc726eeda1dcde4c8b8e91d04c6d8d654"
       }
     },
     {
@@ -34,8 +34,8 @@
       "fr": "docs/development.md",
       "en": "docs/en/development.md",
       "reviewed": {
-        "fr": "5cce025f1383e2d85e19087b3e58ade8845f01f31dacc136e20cd165b001e3ff",
-        "en": "8b88e3e2947f8780d8482262b28f59a4e127497c2c524a5d2f63377ea0ac4f05"
+        "fr": "cd51fdb2c8dc90bef92ee9621454efc0dbdf62b786d007e53e33e39018f74855",
+        "en": "6cf18d80a52b368505b4fcbfa068d71f42e9160349786f02e7f96e6546cf0156"
       }
     },
     {
@@ -52,8 +52,8 @@
       "fr": "docs/lan.md",
       "en": "docs/en/lan.md",
       "reviewed": {
-        "fr": "05464d588e903fb8111b14e6a1825c650303d6ef3ca4418a3fc5182d204388d8",
-        "en": "ed14f85d9a83d940f1fe9819ce281985a22281bdaecc80619ced44b916651f4d"
+        "fr": "5229c0c366f3e164e68459a09ab5636eed92e81ca37337ab930a017ceea7149b",
+        "en": "71fd18e4aff008d20720e22793b7e92639cbb11747b3727fa8f3c640acb9c743"
       }
     },
     {
@@ -61,8 +61,8 @@
       "fr": "docs/mcp.md",
       "en": "docs/en/mcp.md",
       "reviewed": {
-        "fr": "f1affbf2b5b4a1b3cb615b207ba883a6b26c35dd7fbfce9f2d5b4491c5d8d776",
-        "en": "cacb800d38b101234ea66a7ec90056c9b30f92ebe8b53c0fe40c134c5207022b"
+        "fr": "05457ba6f47dcba3329eee0ae13f73de52007ef91bb0b62816fb0ba488cc0b89",
+        "en": "ccb441fb62aff593c7052bff204a2cbe05c6c8d91ee9061985d1988edd8575c2"
       }
     },
     {
@@ -70,8 +70,8 @@
       "fr": "docs/providers.md",
       "en": "docs/en/providers.md",
       "reviewed": {
-        "fr": "5431e1a91eb4a221cb62c5750e4c2b350066b7cb4eb1a73b9bef4382430b655a",
-        "en": "8d0fcf2d6beb5a71ef9d9014c390fe297c8cb71f70481de67bd38479d154617b"
+        "fr": "b979f280eed49e08ffbca332e8e5976776134f88ecc57fe0e4e3c737b041e1ed",
+        "en": "1e337f3f4712604ddfd8f17c40a894f82a8dc1abf2d6c1f452fb023f1444aba6"
       }
     },
     {
@@ -88,8 +88,8 @@
       "fr": "docs/translations.md",
       "en": "docs/en/translations.md",
       "reviewed": {
-        "fr": "bab8e2e18d392f97f383867c38b69e6104f8ee6c3d7729570b7944775c915349",
-        "en": "f1c7a2f84cf93aef086f2df275a54c4d9a69c65df9adf9ab25be649e7b574f40"
+        "fr": "ee401ba46a9194e2a2a22d9a38b9ab04f3bcc177c932e02e8939ef27887f475a",
+        "en": "d69f2f6b82cb2f1873d6a80ee83225ec0063ea25f17a9fdfc9f22ff29320881d"
       }
     }
   ]

@@ -2,9 +2,17 @@
 
 **English** · [Français](../configuration.md) · [← Back to README](../../README.md)
 
+## Preferences and setting scope
+
+**Preferences** organizes settings into five categories: **Appearance**, **Models & agents**, **Tools**, **Remote access** and **System**. Navigation works on small screens and with the keyboard. Closing a manager opened from preferences returns to its category.
+
+A note below each title explains scope without adding controls: appearance and typing preferences apply to this browser and address; accounts, MCP and model defaults apply to Prime Agent on this PC. Studio subagent defaults can be overridden for a project. The conversation model remains separate from the default model.
+
+**Tools** opens MCP and Skills/Prompts catalogs, with their global and selected-project folders. **Remote access**, restricted to the PC, enables LAN and Tailscale without interrupting agents and provides links and QR codes: see [the mobile guide](lan.md). **System** shows versions, engine availability and the running agent count; copied diagnostics exclude keys and conversations. Opening logs is restricted to the PC.
+
 ## Interface language
 
-**Preferences → Language** offers **Automatic**, **Français** and **English** on desktop and mobile. Automatic mode uses browser languages, with French as the fallback. The choice is stored in `prime-studio.language` for this browser and access address. Tabs at the same address synchronize; other devices keep their own choice.
+**Preferences → Appearance → Language** offers **Automatic**, **Français** and **English** on desktop and mobile. Automatic mode uses browser languages, with French as the fallback. The choice is stored in `prime-studio.language` for this browser and access address. Tabs at the same address synchronize; other devices keep their own choice.
 
 Changing language does not reload the page, send a message or stop an agent. Open forms, drafts, attachments, model selections and reasoning levels are preserved. Conversations, reasoning, files, model names and command identifiers keep their original contents. External resource descriptions and diagnostics received directly from a provider remain in their original language when Studio has no translation for them.
 
@@ -14,7 +22,7 @@ The [translation documentation](translations.md) describes the single table, fal
 
 ## Configure models
 
-Open **Preferences → Models and defaults → Configure** on the PC. The first area chooses the main agent’s default model with the conversation selector, its integrated search and shared favorites. Click **Save** to apply the choice. This area writes only the native `defaultProvider` and `defaultModel` fields in `~/.prime/agent/settings.json`, as in Prime Agent 0.9.1. The choice applies to Studio’s selector and future launches. **Prime Agent automatic selection** removes these two fields. **New session**, **Ctrl+N** and opening an empty conversation use this default model even if a different model was selected in the previous conversation. Existing conversations restore the model from their history.
+Open **Preferences → Models & agents → Configure** on the PC. The first area chooses the main agent’s default model with the conversation selector, its integrated search and shared favorites. Click **Save** to apply the choice. This area writes only the native `defaultProvider` and `defaultModel` fields in `~/.prime/agent/settings.json`, as in Prime Agent 0.9.1. The choice applies to Studio’s selector and future launches. **Prime Agent automatic selection** removes these two fields. **New session**, **Ctrl+N** and opening an empty conversation use this default model even if a different model was selected in the previous conversation. Existing conversations restore the model from their history.
 
 The **Subagents** area, verified with Prime Agent **0.9.2**, defines the default model and reasoning level for all projects. The model button opens the same selector as conversations: identical catalog, integrated search by name, provider or ID, and shared favorites. Available levels depend on the selected model. **Parent model** and **Parent level** preserve Prime Agent’s native behavior.
 
