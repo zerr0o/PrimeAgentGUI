@@ -41,10 +41,11 @@
 
 Prime Agent Studio brings your **local Prime Agent sessions** together in a Windows application and a browser interface. Follow streaming responses, find your projects and continue a conversation without opening a terminal. On Windows, agents and their tools run in the background, without unexpected PowerShell windows.
 
-**Version 2.8.0** — [Download the Windows x64 installer](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.8.0/Prime-Agent-Studio_2.8.0_x64-setup.exe) · [Release notes and source code](https://github.com/zerr0o/prime-agent-studio/releases/tag/v2.8.0).
+**Version 2.8.1** — [Download the Windows x64 installer](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.8.1/Prime-Agent-Studio_2.8.1_x64-setup.exe) · [Release notes and source code](https://github.com/zerr0o/prime-agent-studio/releases/tag/v2.8.1).
 
 ## What’s new in version 2.8
 
+- **2.8.1 packaging fix**: the Windows installer now includes the workers used by messages, skills, providers and MCP, plus the folder/file helpers. Updating also restores the missing files in the original 2.8.0 server cache without restarting its agents.
 - **Tauri 2 Windows application**: per-user installer, desktop and Start menu shortcuts, bundled Node.js and a crisp icon sized for Windows displays.
 - **Background work**: the shortcut starts the server or reuses the active instance. Closing or quitting the application lets agents keep working. Start with Windows is optional and disabled by default.
 - **Updates from the application**: in **App settings → Updates**, check for new versions and release notes, then choose **Install and restart**. The signature is verified before installation; the running server keeps its version until its next start.
@@ -133,7 +134,7 @@ Connection tests discover tools without executing them. New settings apply to ne
 
 ### Windows application
 
-Download the [Windows x64 installer](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.8.0/Prime-Agent-Studio_2.8.0_x64-setup.exe), install it, then open **Prime Agent Studio** from your desktop or Start menu. Node.js is included; **Prime Agent and uv** must be installed, with a configured provider. If you used the VBS launcher, select **Use an existing installation** before the first startup. [Full guide](docs/en/desktop.md).
+Download the [Windows x64 installer](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.8.1/Prime-Agent-Studio_2.8.1_x64-setup.exe), install it, then open **Prime Agent Studio** from your desktop or Start menu. Node.js is included; **Prime Agent and uv** must be installed, with a configured provider. If you used the VBS launcher, select **Use an existing installation** before the first startup. [Full guide](docs/en/desktop.md).
 
 Updates are signed for Tauri; the installer does not yet carry a Windows Authenticode signature.
 

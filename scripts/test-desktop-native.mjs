@@ -1,7 +1,7 @@
 // Tests the real executable and detached server lifecycle; no UI automation or paid model calls.
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, readdir, rm } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
@@ -98,6 +98,30 @@ try {
   assert.equal(cold.ready.reused, false);
   const before = await probeHealth(port);
   assert.equal(before.state, 'ready');
+  // Exercise resources extracted by the actual executable, not the source checkout.
+  const generations = await readdir(join(dataRoot, 'versions'));
+  assert.equal(generations.length, 1);
+  const generation = join(dataRoot, 'versions', generations[0]);
+  const studio = join(generation, 'studio');
+  for (const script of ['test-desktop-runtime.mjs', 'test-commands-native.mjs']) {
+    const check = spawn(join(generation, 'node.exe'), [resolve('scripts', script), studio], {
+      windowsHide: true,
+      stdio: 'inherit',
+      env: { ...process.env, PRIME_STUDIO_TEST_RUNTIME_ROOT: studio },
+    });
+    children.push(check);
+    const code = await new Promise((resolve, reject) => {
+      check.once('error', reject);
+      check.once('exit', resolve);
+    });
+    assert.equal(code, 0, `Extracted runtime failed ${script}`);
+  }
+  const providers = await fetch(`http://127.0.0.1:${port}/api/providers`);
+  assert.equal(providers.status, 200);
+  assert.ok((await providers.json()).providers.length > 0);
+  const commands = await fetch(`http://127.0.0.1:${port}/api/commands?cwd=${encodeURIComponent(temp)}`);
+  assert.equal(commands.status, 200);
+  assert.ok((await commands.json()).commands.length > 0);
   const second = spawn(exe, ['--background'], {
     windowsHide: true,
     stdio: 'ignore',
@@ -119,7 +143,7 @@ try {
   await quit(reopened.child);
   assert.equal((await probeHealth(port)).health.instanceId, before.health.instanceId);
   console.log(
-    'Native executable passed: existing active run preserved; cold detached startup; single instance; app exit and relaunch preserve server PID/instance.',
+    'Native executable passed: extracted workers, message and Python execution; provider/command HTTP endpoints; existing active run preserved; cold detached startup; single instance; app exit and relaunch preserve server PID/instance.',
   );
 } finally {
   for (const child of children) await quit(child).catch(() => {});

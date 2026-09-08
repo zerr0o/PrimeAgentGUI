@@ -41,10 +41,11 @@
 
 Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une application Windows et une interface accessible depuis le navigateur. Suivez les réponses en direct, retrouvez vos projets et continuez une conversation sans ouvrir de terminal. Sous Windows, les agents et leurs outils démarrent en arrière-plan, sans fenêtres PowerShell intempestives.
 
-**Version 2.8.0** — [Télécharger l’installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.8.0/Prime-Agent-Studio_2.8.0_x64-setup.exe) · [Notes de version et code source](https://github.com/zerr0o/prime-agent-studio/releases/tag/v2.8.0).
+**Version 2.8.1** — [Télécharger l’installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.8.1/Prime-Agent-Studio_2.8.1_x64-setup.exe) · [Notes de version et code source](https://github.com/zerr0o/prime-agent-studio/releases/tag/v2.8.1).
 
 ## Nouveautés de la version 2.8
 
+- **Correctif 2.8.1** : l’installateur Windows inclut désormais les workers des messages, skills, fournisseurs et MCP, ainsi que les assistants de dossiers et fichiers. La mise à jour restaure aussi les fichiers absents du cache serveur 2.8.0 d’origine sans redémarrer ses agents.
 - **Application Windows Tauri 2** : installateur pour votre utilisateur, raccourcis Bureau et Démarrer, Node.js inclus et icône nette adaptée à l’affichage Windows.
 - **Travail en arrière-plan** : le raccourci démarre le serveur ou retrouve celui déjà actif. Fermer ou quitter l’application laisse les agents travailler. Le démarrage avec Windows est facultatif et désactivé par défaut.
 - **Mises à jour depuis l’application** : dans **Réglages de l’application → Mises à jour**, consultez les nouvelles versions et leurs nouveautés, puis choisissez **Installer et relancer**. La signature est vérifiée avant installation ; le serveur actif conserve sa version jusqu’à son prochain démarrage.
@@ -91,7 +92,7 @@ Les traductions sont réunies dans **une table unique**, avec le français et l�
 | **Gérer les fournisseurs**         | Sur le PC, connecter un compte, enregistrer une clé API et retirer des identifiants avec confirmation.                            |
 | **Travailler en parallèle**        | Lancer des exécutions dans plusieurs sessions et passer de l’une à l’autre.                                                       |
 | **Retrouver le Studio sur mobile** | Piloter le PC depuis un téléphone en Wi-Fi ou via Tailscale, avec un code d’accès.                                                |
-| **Installer le Studio**            | Installer l’application Windows avec ses raccourcis, ou ajouter la PWA mobile à l’écran d’accueil via HTTPS.                       |
+| **Installer le Studio**            | Installer l’application Windows avec ses raccourcis, ou ajouter la PWA mobile à l’écran d’accueil via HTTPS.                      |
 
 Les exécutions continuent lorsque vous changez de session, rechargez la page ou fermez l’onglet. Le serveur doit rester en marche.
 
@@ -133,7 +134,7 @@ Les tests découvrent les outils sans en exécuter. Les nouveaux réglages s’a
 
 ### Application Windows
 
-Téléchargez l’[installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.8.0/Prime-Agent-Studio_2.8.0_x64-setup.exe), installez-le, puis ouvrez **Prime Agent Studio** depuis le Bureau ou le menu Démarrer. Node.js est inclus ; **Prime Agent et uv** doivent être installés, avec un fournisseur configuré. Si vous utilisiez le VBS, choisissez **Reprendre une installation existante** avant le premier démarrage. [Guide complet](docs/desktop.md).
+Téléchargez l’[installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.8.1/Prime-Agent-Studio_2.8.1_x64-setup.exe), installez-le, puis ouvrez **Prime Agent Studio** depuis le Bureau ou le menu Démarrer. Node.js est inclus ; **Prime Agent et uv** doivent être installés, avec un fournisseur configuré. Si vous utilisiez le VBS, choisissez **Reprendre une installation existante** avant le premier démarrage. [Guide complet](docs/desktop.md).
 
 Les mises à jour sont signées pour Tauri ; l’installateur ne possède pas encore de signature Windows Authenticode.
 

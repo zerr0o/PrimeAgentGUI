@@ -4,11 +4,19 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { mkdir, mkdtemp, writeFile, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { createAgentRuntime } from '../lib/agent.mjs';
-import { createLiveSessionClient } from '../lib/live-session-client.mjs';
-import { createCommandService } from '../lib/commands.mjs';
-import { createStore } from '../lib/store.mjs';
+import { join, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+const runtimeRoot = resolve(
+  process.env.PRIME_STUDIO_TEST_RUNTIME_ROOT || fileURLToPath(new URL('..', import.meta.url)),
+);
+const load = (name) => import(pathToFileURL(join(runtimeRoot, 'lib', name)).href);
+const [{ createAgentRuntime }, { createLiveSessionClient }, { createCommandService }, { createStore }] =
+  await Promise.all([
+    load('agent.mjs'),
+    load('live-session-client.mjs'),
+    load('commands.mjs'),
+    load('store.mjs'),
+  ]);
 const root = await mkdtemp(join(tmpdir(), 'prime-command-native-'));
 const cwd = join(root, 'project'),
   agentHome = join(root, 'agent'),
@@ -123,6 +131,7 @@ await writeFile(
 const runtime = createAgentRuntime({
   agentHome,
   sessionDir,
+  kernelRoot: root,
   env: { ...process.env, PRIME_AGENT_TELEMETRY: '0' },
 });
 const store = createStore({ sessionDir, dataDir: join(root, 'data') });

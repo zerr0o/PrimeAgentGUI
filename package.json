@@ -1,6 +1,6 @@
 {
   "name": "prime-agent-studio",
-  "version": "2.8.0",
+  "version": "2.8.1",
   "private": true,
   "author": "zerr0o",
   "license": "MIT",
@@ -47,7 +47,8 @@
     "desktop:icons": "node scripts/generate-desktop-icons.mjs",
     "test:desktop": "node scripts/test-desktop-native.mjs",
     "test:desktop-ui": "node scripts/test-desktop-ui.mjs",
-    "test:desktop-updates": "node scripts/test-desktop-updates-ui.mjs"
+    "test:desktop-updates": "node scripts/test-desktop-updates-ui.mjs",
+    "test:desktop-runtime": "node scripts/test-desktop-runtime.mjs"
   },
   "engines": {
     "node": ">=22.8.0"

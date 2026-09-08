@@ -3,6 +3,7 @@ import { join, resolve, dirname, relative } from 'node:path';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { desktopRuntimeScripts, verifyDesktopRuntimeResources } from './desktop-runtime-resources.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const output = join(root, '.desktop-build'),
@@ -27,8 +28,9 @@ for (const name of [
     filter: (path) => !path.includes('__pycache__') && !path.endsWith('.pyc'),
   });
 await mkdir(join(studio, 'scripts'));
-for (const name of ['start-server.mjs', 'launcher-common.mjs', 'desktop-start.mjs'])
+for (const name of desktopRuntimeScripts)
   await cp(join(root, 'scripts', name), join(studio, 'scripts', name));
+await verifyDesktopRuntimeResources(studio);
 const npmCli = join(dirname(process.execPath), 'node_modules/npm/bin/npm-cli.js');
 execFileSync(process.execPath, [npmCli, 'ci', '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund'], {
   cwd: studio,

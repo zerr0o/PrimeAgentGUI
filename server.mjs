@@ -29,7 +29,7 @@ import { openFile as openLocalFile, fileLaunchMode } from './lib/open-file.mjs';
 import { createSessionInspector } from './lib/session-inspector.mjs';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
-const VERSION = '2.8.0';
+const VERSION = '2.8.1';
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',

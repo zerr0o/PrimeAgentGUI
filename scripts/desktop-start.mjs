@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { startServer } from './start-server.mjs';
 import { acquireLock, probeHealth, parsePort, isDirectInvocation } from './launcher-common.mjs';
+import { repairDesktop280Resources } from './desktop-runtime-resources.mjs';
 
 const resources = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const importedFiles = ['workspace.json', 'subagent-defaults.json', 'lan-access.json', 'attachments'];
@@ -49,6 +50,7 @@ export async function startDesktop(
 ) {
   port = parsePort(port);
   dataRoot = resolve(dataRoot);
+  await repairDesktop280Resources(resourceDir, dataRoot);
   const probe = deps.probe || probeHealth;
   const initial = await probe(port);
   // Reuse even a source-launched Studio: no import, restart, or configuration write while it is active.
