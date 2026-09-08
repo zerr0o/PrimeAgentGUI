@@ -41,13 +41,13 @@
 
 Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une application Windows et une interface accessible depuis le navigateur. Suivez les réponses en direct, retrouvez vos projets et continuez une conversation sans ouvrir de terminal. Sous Windows, les agents et leurs outils démarrent en arrière-plan, sans fenêtres PowerShell intempestives.
 
-**Version 2.9.1** — [Télécharger l’installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.9.1/Prime-Agent-Studio_2.9.1_x64-setup.exe) · [Notes de version et code source](https://github.com/zerr0o/prime-agent-studio/releases/tag/v2.9.1).
+**Version 2.9.2** — [Télécharger l’installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.9.2/Prime-Agent-Studio_2.9.2_x64-setup.exe) · [Notes de version et code source](https://github.com/zerr0o/prime-agent-studio/releases/tag/v2.9.2).
 
 ## Nouveautés de la version 2.9
 
-- **Correctif 2.9.1** : les préférences système et le diagnostic lisent la version dans les métadonnées du serveur empaqueté. La version 2.9.0 affichait à tort 2.8.1 même lorsque son nouveau serveur fonctionnait. Un ancien serveur toujours actif continue d’indiquer sa propre version jusqu’à son redémarrage.
-- **Messages d’agents** : cartes dédiées et lisibles, nom de l’expéditeur et détails de transmission repliés. Les messages automatiques en attente sont clairement identifiés et protégés contre la modification ou la suppression.
-- **Ordre des projets** : déplacez les projets depuis leur menu, avec un ordre conservé entre les appareils.
+- **Correctif 2.9.2** : les préférences système et le diagnostic lisent la version dans les métadonnées du serveur empaqueté. La version 2.9.0 affichait à tort 2.8.1 même lorsque son nouveau serveur fonctionnait. Un ancien serveur toujours actif continue d’indiquer sa propre version jusqu’à son redémarrage.
+- **Messages d’agents** : aperçus compacts et repliés, avec le nom de l’expéditeur. Un clic ouvre le message complet et ses détails de transmission. Les messages automatiques en attente sont clairement identifiés et protégés contre la modification ou la suppression.
+- **Ordre des projets** : glissez les projets directement dans la liste à la souris, ou utilisez la poignée sur écran tactile. L’ordre est conservé entre les appareils.
 - **Non-lus partagés** : lire une réponse sur PC efface son indicateur sur le téléphone et inversement, y compris en accès distant en consultation.
 - **Sessions Codex longues** : renouvellement des connexions WebSocket anciennes et inactives entre les requêtes, et suppression des états d’échec transitoires après une reprise native réussie. Les requêtes actives sont préservées.
 - **Présentation sobre** : texte lisible et libellés discrets, sans liserés colorés. Rendu vérifié sur PC/mobile, en français/anglais et dans les thèmes clair/sombre.
@@ -109,7 +109,7 @@ Le menu **⋯** de chaque projet fonctionne aussi sur mobile ; le clic droit est
 
 Dans la liste des projets, le dossier devient un **point vert** lorsqu’une session travaille, ou un **point bleu** lorsqu’une réponse terminée reste à lire. Le vert est prioritaire. La session concernée porte aussi un point bleu : consultez sa dernière réponse pour l’effacer. La lecture est enregistrée sur le PC serveur et partagée entre les navigateurs, le téléphone et l’application Windows, y compris en mode consultation. Les appareils ouverts se synchronisent au prochain rafraîchissement (au plus 10 secondes), ou dès leur retour au premier plan. À la première activation de ce suivi partagé, les réponses déjà présentes constituent le point de départ commun.
 
-Le menu **…** d’un projet propose **Monter le projet** et **Descendre le projet**. L’ordre est enregistré sur le serveur et partagé entre appareils ; les projets épinglés restent en tête de liste.
+Glissez un projet vers sa nouvelle position dans la liste. Sur écran tactile, utilisez sa poignée ; le reste de la liste reste disponible pour défiler. Au clavier, placez le focus sur la poignée puis utilisez les flèches haut/bas. Le menu **…** conserve aussi ces actions. L’ordre est enregistré sur le serveur et partagé entre appareils ; les projets épinglés restent en tête et se réordonnent dans leur groupe.
 
 Dans le Studio distant, **Préférences → Se déconnecter** ferme l’accès de ce navigateur et revient au code d’accès. Les agents et les autres appareils connectés continuent de fonctionner.
 

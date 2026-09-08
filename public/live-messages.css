@@ -248,10 +248,77 @@
     font-size: 16px;
   }
 }
-.message.system.agent-message .agent-message-body {
-  font-size: 14px;
-  line-height: 1.65;
+.message.system.agent-message {
+  margin: 0 0 16px 34px;
+  color: var(--muted);
+}
+.agent-message-summary {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  column-gap: 8px;
+  row-gap: 3px;
+  padding: 8px 0;
+  cursor: pointer;
+  list-style: none;
+  border-radius: 3px;
+}
+.agent-message-summary::-webkit-details-marker {
+  display: none;
+}
+.agent-message-summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+.agent-message-chevron {
+  grid-row: 1 / 3;
+  padding-top: 2px;
+}
+.agent-message-chevron svg {
+  width: 12px;
+  height: 12px;
+}
+.agent-message-disclosure[open] > summary .agent-message-chevron svg {
+  transform: rotate(90deg);
+}
+.agent-message-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.agent-message-author {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.agent-message-summary:hover .agent-message-author {
   color: var(--text);
+}
+.agent-message-preview {
+  grid-column: 2;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.agent-message-disclosure[open] > summary .agent-message-preview {
+  display: none;
+}
+.agent-message-body {
+  padding: 4px 0 4px 22px;
+  font-size: 13px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.agent-message-body p:first-child {
+  margin-top: 0;
+}
+.agent-message-body p:last-child {
+  margin-bottom: 0;
 }
 .agent-message-badge {
   font-size: 11px;
@@ -259,11 +326,8 @@
   color: var(--muted, #a2a2ad);
   white-space: nowrap;
 }
-.agent-message .message-author {
-  overflow-wrap: anywhere;
-}
 .agent-message-details {
-  margin-top: 16px;
+  margin-top: 12px;
   font-size: 12px;
   color: var(--muted, #a2a2ad);
 }
@@ -295,8 +359,11 @@
   color: var(--muted, #a2a2ad);
 }
 @media (max-width: 600px) {
-  .agent-message .message-heading {
-    flex-wrap: wrap;
+  .message.system.agent-message {
+    margin-left: 0;
+  }
+  .agent-message-heading .message-time {
+    flex-shrink: 0;
   }
   .live-queue-agent-heading {
     align-items: flex-start;

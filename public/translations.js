@@ -18,6 +18,11 @@ export const messages = {
   'agents.recipient': { fr: 'Destinataire', en: 'Recipient' },
   'agents.identifier': { fr: 'Identifiant', en: 'Identifier' },
   'projects.move_up': { fr: 'Monter le projet', en: 'Move project up' },
+  'projects.drag': { fr: 'Déplacer {name}', en: 'Reorder {name}' },
+  'projects.drag_hint': {
+    fr: 'Glisser pour déplacer · Au clavier : flèches haut et bas. Les projets épinglés restent en tête.',
+    en: 'Drag to reorder · Keyboard: up and down arrows. Pinned projects stay at the top.',
+  },
   'projects.move_down': { fr: 'Descendre le projet', en: 'Move project down' },
   'projects.invalid_order': {
     fr: 'L’ordre des projets a changé. Actualisez la liste.',

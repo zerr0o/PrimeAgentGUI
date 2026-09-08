@@ -109,6 +109,32 @@ test('manual project order persists without changing native session files', asyn
   assert.equal(await readFile(f.file, 'utf8'), original);
 });
 
+test('project drop uses a destination, persists and rejects missing or differently pinned targets', async (t) => {
+  const f = await fixture(t),
+    beta = join(f.root, 'Beta'),
+    zed = join(f.root, 'Zed');
+  await Promise.all([beta, zed].map((p) => mkdir(p)));
+  await f.store.project({ cwd: beta });
+  await f.store.project({ cwd: zed });
+  await f.store.moveProject({ cwd: zed, targetCwd: f.options.initialCwd, position: 'before' });
+  const names = async () => (await createStore(f.options).overview()).projects.map((p) => p.name);
+  assert.deepEqual(await names(), ['Zed', 'Alpha', 'Beta']);
+  await f.store.moveProject({ cwd: zed, targetCwd: beta, position: 'after' });
+  assert.deepEqual(await names(), ['Alpha', 'Beta', 'Zed']);
+  await assert.rejects(
+    f.store.moveProject({ cwd: zed, targetCwd: join(f.root, 'missing'), position: 'before' }),
+    { status: 409 },
+  );
+  await assert.rejects(f.store.moveProject({ cwd: zed, targetCwd: beta, position: 'invalid' }), {
+    status: 400,
+  });
+  await f.store.project({ cwd: beta, pinned: false }, true);
+  await assert.rejects(f.store.moveProject({ cwd: zed, targetCwd: beta, position: 'after' }), {
+    status: 409,
+  });
+  assert.deepEqual(await names(), ['Alpha', 'Zed', 'Beta']);
+});
+
 test('late receipt acknowledgements preserve newer history and stale histories still advance receipts', async () => {
   const values = new Map();
   let acknowledge;

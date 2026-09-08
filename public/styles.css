@@ -362,6 +362,58 @@ kbd {
   align-items: center;
   min-width: 0;
   gap: 2px;
+  position: relative;
+}
+.project-drag-handle {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  align-self: stretch;
+  flex: 0 0 16px;
+  color: var(--muted);
+  cursor: grab;
+  touch-action: none;
+  opacity: 0;
+}
+.project-drag-handle svg {
+  width: 14px;
+  height: 18px;
+  stroke-width: 3;
+}
+.project-entry:hover .project-drag-handle,
+.project-drag-handle:focus-visible {
+  opacity: 1;
+}
+.project-sorting,
+.project-sorting * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+.project-dragging {
+  opacity: 0.45;
+}
+.project-entry[data-drop]::after {
+  content: '';
+  position: absolute;
+  left: 18px;
+  right: 2px;
+  height: 2px;
+  background: var(--muted);
+  pointer-events: none;
+}
+.project-entry[data-drop='before']::after {
+  top: 0;
+}
+.project-entry[data-drop='after']::after {
+  bottom: 0;
+}
+@media (pointer: coarse) {
+  .project-drag-handle {
+    opacity: 1;
+    width: 32px;
+    flex-basis: 32px;
+    min-height: 44px;
+  }
 }
 .project-entry .project-row {
   flex: 1;
@@ -2299,7 +2351,7 @@ kbd {
 }
 @media (max-width: 760px) {
   :root {
-    --sidebar-width: 250px;
+    --sidebar-width: min(300px, calc(100vw - 40px));
   }
   .project-overview {
     padding: 28px 19px 32px;

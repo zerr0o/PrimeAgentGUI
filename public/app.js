@@ -24,7 +24,9 @@ import { createInspector } from './inspector.js';
 import { fileLinkRenderer, bindFileLinks } from './file-links.js';
 import { createSessionActivity } from './session-activity.js';
 import { parseAgentEnvelope } from './agent-messages.js';
+import { createProjectSorting } from './project-sorting.js';
 let imageComposer;
+let projectSorting;
 let liveMessagesUI;
 let commandsUI;
 let inspectorUI;
@@ -40,6 +42,7 @@ const icons = {
     'm10 3-.5 2-2 .9-1.8-.6-2 3.4L5.2 10v2l-1.5 1.3 2 3.4 1.8-.6 2 .9.5 2h4l.5-2 2-.9 1.8.6 2-3.4-1.5-1.3v-2l1.5-1.3-2-3.4-1.8.6-2-.9L14 3h-4ZM15 11a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
   menu: 'M4 6h16M4 12h16M4 18h16',
   more: 'M5 12h.01M12 12h.01M19 12h.01',
+  grip: 'M9 5h.01M15 5h.01M9 12h.01M15 12h.01M9 19h.01M15 19h.01',
   panel: 'M3 4h18v16H3V4Zm12 0v16',
   compass: 'M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0ZM16 8l-2 6-6 2 2-6 6-2Z',
   code: 'm8 6-6 6 6 6m8-12 6 6-6 6M14 4l-4 16',
@@ -580,11 +583,14 @@ function updateComposer() {
   liveMessagesUI?.update();
 }
 function renderProjects() {
+  if (projectSorting?.active) return;
   const root = $('project-list');
   root.replaceChildren();
   const items = [...state.projects].sort((a, b) => Number(b.pinned) - Number(a.pinned));
   for (const p of items) {
     const entry = el('div', 'project-entry');
+    entry.dataset.cwd = p.cwd;
+    entry.dataset.pinned = String(!!p.pinned);
     const b = el('button', `project-row${samePath(p.cwd, state.projectCwd) ? ' active' : ''}`);
     bindAttribute(b, 'title', () => p.cwd);
     b.setAttribute('aria-pressed', String(samePath(p.cwd, state.projectCwd)));
@@ -611,6 +617,15 @@ function renderProjects() {
         openProjectMenu(p.cwd, b);
       }
     };
+    if (!state.readOnly && items.length > 1) {
+      const handle = el('button', 'project-drag-handle');
+      handle.type = 'button';
+      bindAttribute(handle, 'aria-label', () => tr('projects.drag', { name: p.name }));
+      bindAttribute(handle, 'title', () => tr('projects.drag_hint'));
+      handle.setAttribute('aria-keyshortcuts', 'ArrowUp ArrowDown');
+      handle.append(icon('grip'));
+      entry.append(handle);
+    }
     entry.append(b);
     if (!state.readOnly) {
       const more = el('button', 'project-more');
@@ -1109,12 +1124,11 @@ function renderMessage(m, index) {
   if (agent) {
     const card = el('article', 'message system agent-message');
     card.dataset.messageId = id;
-    const header = el('div', 'message-heading');
-    const avatar = el('span', 'message-avatar');
-    avatar.append(icon('model'));
+    const disclosure = makeDetails('agent-message-disclosure', `agent-message:${id}`);
+    const summary = el('summary', 'agent-message-summary');
+    const header = el('span', 'agent-message-heading');
     header.append(
-      avatar,
-      el('span', 'message-author', () => agent.name || tr('agents.message_title')),
+      el('span', 'agent-message-author', () => agent.name || tr('agents.message_title')),
       el('span', 'agent-message-badge', () =>
         tr(
           agent.relationship === 'child'
@@ -1126,8 +1140,13 @@ function renderMessage(m, index) {
       ),
       el('span', 'message-time', () => dateLabel(m.timestamp)),
     );
-    const body = el('div', 'message-body agent-message-body');
-    body.append(markdown(agent.text));
+    const body = el('div', 'agent-message-body');
+    const content = markdown(agent.text);
+    const preview = el('span', 'agent-message-preview', () =>
+      content.textContent.replace(/\s+/g, ' ').trim(),
+    );
+    summary.append(icon('chevron', 'agent-message-chevron'), header, preview);
+    body.append(content);
     const details = makeDetails('agent-message-details', `agent-source:${id}`);
     details.append(el('summary', '', () => tr('agents.details')));
     const metadata = el('dl');
@@ -1144,7 +1163,8 @@ function renderMessage(m, index) {
     }
     details.append(metadata);
     body.append(details);
-    card.append(header, body);
+    disclosure.append(summary, body);
+    card.append(disclosure);
     messageNodes.set(id, { node: card, signature });
     return card;
   }
@@ -2562,6 +2582,14 @@ $('project-menu').onclick = (e) => {
   const button = e.target.closest('[data-project-action]');
   if (button) void projectMenuAction(button.dataset.projectAction);
 };
+projectSorting = createProjectSorting({
+  root: $('project-list'),
+  canSort: () => !state.readOnly,
+  move: (body) => api('/api/projects/move', { method: 'POST', body }),
+  refresh: refreshOverview,
+  render: renderProjects,
+  reportError: (error) => toast(translateKnown(error.message), true),
+});
 $('remove-project-form').onsubmit = removeProject;
 $('logout-button').onclick = logout;
 const subagentSettings = createSubagentSettings({

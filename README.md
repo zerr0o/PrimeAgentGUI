@@ -41,13 +41,13 @@
 
 Prime Agent Studio brings your **local Prime Agent sessions** together in a Windows application and a browser interface. Follow streaming responses, find your projects and continue a conversation without opening a terminal. On Windows, agents and their tools run in the background, without unexpected PowerShell windows.
 
-**Version 2.9.1** — [Download the Windows x64 installer](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.9.1/Prime-Agent-Studio_2.9.1_x64-setup.exe) · [Release notes and source code](https://github.com/zerr0o/prime-agent-studio/releases/tag/v2.9.1).
+**Version 2.9.2** — [Download the Windows x64 installer](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.9.2/Prime-Agent-Studio_2.9.2_x64-setup.exe) · [Release notes and source code](https://github.com/zerr0o/prime-agent-studio/releases/tag/v2.9.2).
 
 ## What’s new in version 2.9
 
-- **2.9.1 version fix**: system settings and health checks read the version from the server’s packaged metadata. Version 2.9.0 incorrectly displayed 2.8.1 even when its new server was running. An older server that is still active continues to report its own version until restarted.
-- **Agent messages**: dedicated, readable cards with the sender’s name and collapsed delivery details. Automatic queued messages are clearly identified and protected from editing or removal.
-- **Project order**: move projects up or down from their menu, with the order saved across devices.
+- **2.9.2 version fix**: system settings and health checks read the version from the server’s packaged metadata. Version 2.9.0 incorrectly displayed 2.8.1 even when its new server was running. An older server that is still active continues to report its own version until restarted.
+- **Agent messages**: compact, collapsed previews with the sender’s name. Click to read the full message and delivery details. Automatic queued messages are clearly identified and protected from editing or removal.
+- **Project order**: drag projects directly in the sidebar with a mouse, or use the handle on touchscreens. The order is saved across devices.
 - **Shared unread state**: reading a response on desktop clears its indicator on the phone and vice versa, including read-only remote access.
 - **Long Codex sessions**: renew aging idle WebSocket connections between requests and clear transient failure states after a successful native retry. Active requests are preserved.
 - **Restrained presentation**: readable text and discreet labels, without colored side borders. Desktop/mobile, French/English and light/dark rendering reviewed.
@@ -109,7 +109,7 @@ Each project’s **⋯** menu also works on mobile; desktop supports right-click
 
 In the project list, the folder becomes a **green dot** while a session is working, or a **blue dot** when a completed response is unread. Green takes priority. The corresponding session also has a blue dot: read its latest response to clear it. Read receipts are saved on the host PC and shared across browsers, phones and the Windows application, including read-only access. Open devices synchronize at the next refresh (within 10 seconds), or when brought back to the foreground. When shared tracking is first enabled, existing responses become the common starting point.
 
-A project’s **…** menu offers **Move project up** and **Move project down**. The order is saved on the server and shared across devices; pinned projects stay at the top.
+Drag a project to its new position in the sidebar. On touchscreens, use its handle; scrolling the rest of the list remains available. With the keyboard, focus the handle and use the up/down arrows. The **…** menu also retains those actions. The order is saved on the server and shared across devices; pinned projects stay at the top and can be reordered within their group.
 
 In remote Studio, **Preferences → Sign out** closes this browser’s access and returns to the access-code screen. Agents and other connected devices keep running.
 
