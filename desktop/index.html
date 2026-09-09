@@ -41,9 +41,18 @@
           <p id="update-notes-body"></p>
         </details>
         <p id="update-impact" hidden></p>
+        <label id="update-restart-option" class="restart-option" hidden>
+          <input id="update-restart-after" type="checkbox" checked /><span id="update-restart-label"></span>
+        </label>
         <div class="update-actions">
           <button id="update-check" class="text-button"></button
           ><button id="update-install" class="primary" hidden></button>
+        </div>
+        <div class="server-update">
+          <h2 id="server-heading"></h2>
+          <p id="server-state" role="status"></p>
+          <p id="server-agents"></p>
+          <button id="server-restart" class="text-button" disabled></button>
         </div>
       </section>
       <div id="progress" role="status" hidden>
@@ -60,5 +69,17 @@
         ><span id="footer"></span>
       </footer>
     </main>
+    <dialog
+      id="restart-confirm"
+      aria-labelledby="restart-confirm-title"
+      aria-describedby="restart-confirm-note"
+    >
+      <h2 id="restart-confirm-title"></h2>
+      <p id="restart-confirm-note"></p>
+      <div class="update-actions">
+        <button id="restart-cancel" class="text-button" autofocus></button>
+        <button id="restart-proceed" class="primary"></button>
+      </div>
+    </dialog>
   </body>
 </html>

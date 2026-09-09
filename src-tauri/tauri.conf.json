@@ -17,7 +17,18 @@
         {
           "identifier": "launcher",
           "windows": ["main", "desktop-settings"],
-          "permissions": ["core:default"]
+          "permissions": [
+            "core:default",
+            "allow-desktop-state",
+            "allow-desktop-autostart",
+            "allow-desktop-choose-legacy",
+            "allow-desktop-logs",
+            "allow-desktop-start",
+            "allow-desktop-update-status",
+            "allow-desktop-server-restart",
+            "allow-desktop-update-check",
+            "allow-desktop-update-install"
+          ]
         }
       ]
     }

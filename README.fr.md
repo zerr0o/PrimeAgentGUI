@@ -41,10 +41,12 @@
 
 Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une application Windows et une interface accessible depuis le navigateur. Suivez les réponses en direct, retrouvez vos projets et continuez une conversation sans ouvrir de terminal. Sous Windows, les agents et leurs outils démarrent en arrière-plan, sans fenêtres PowerShell intempestives.
 
-**Version 2.9.2** — [Télécharger l’installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.9.2/Prime-Agent-Studio_2.9.2_x64-setup.exe) · [Notes de version et code source](https://github.com/zerr0o/prime-agent-studio/releases/tag/v2.9.2).
+**Version 2.9.3** — [Télécharger l’installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.9.3/Prime-Agent-Studio_2.9.3_x64-setup.exe) · [Notes de version et code source](https://github.com/zerr0o/prime-agent-studio/releases/tag/v2.9.3).
 
 ## Nouveautés de la version 2.9
 
+- **Mises à jour depuis les préférences en 2.9.3** : **Préférences → Mise à jour** affiche les versions de l’application et du serveur, les nouveautés et l’installation signée. Le redémarrage du serveur est optionnel ; des agents actifs demandent confirmation. Les réglages près de l’horloge conservent ces contrôles lorsqu’un ancien serveur tourne encore.
+- **Correctifs Windows 2.9.3** : les liens web et la connexion Codex s’ouvrent dans le navigateur habituel ; les fichiers et images peuvent être déposés dans la conversation. Les réponses terminées vides sont masquées sans modifier l’historique natif.
 - **Correctif 2.9.2** : les préférences système et le diagnostic lisent la version dans les métadonnées du serveur empaqueté. La version 2.9.0 affichait à tort 2.8.1 même lorsque son nouveau serveur fonctionnait. Un ancien serveur toujours actif continue d’indiquer sa propre version jusqu’à son redémarrage.
 - **Messages d’agents** : aperçus compacts et repliés, avec le nom de l’expéditeur. Un clic ouvre le message complet et ses détails de transmission. Les messages automatiques en attente sont clairement identifiés et protégés contre la modification ou la suppression.
 - **Ordre des projets** : glissez les projets directement dans la liste à la souris, ou utilisez la poignée sur écran tactile. L’ordre est conservé entre les appareils.
@@ -57,7 +59,6 @@ Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une 
 - **Correctif 2.8.1** : l’installateur Windows inclut désormais les workers des messages, skills, fournisseurs et MCP, ainsi que les assistants de dossiers et fichiers. La mise à jour restaure aussi les fichiers absents du cache serveur 2.8.0 d’origine sans redémarrer ses agents.
 - **Application Windows Tauri 2** : installateur pour votre utilisateur, raccourcis Bureau et Démarrer, Node.js inclus et icône nette adaptée à l’affichage Windows.
 - **Travail en arrière-plan** : le raccourci démarre le serveur ou retrouve celui déjà actif. Fermer ou quitter l’application laisse les agents travailler. Le démarrage avec Windows est facultatif et désactivé par défaut.
-- **Mises à jour depuis l’application** : dans **Réglages de l’application → Mises à jour**, consultez les nouvelles versions et leurs nouveautés, puis choisissez **Installer et relancer**. La signature est vérifiée avant installation ; le serveur actif conserve sa version jusqu’à son prochain démarrage.
 - **Reprise et accès distant** : reprenez les projets et réglages d’une installation existante. Le LAN, Tailscale, HTTPS, les QR codes et la PWA mobile restent disponibles.
 
 [Installation, reprise des données et mises à jour](docs/desktop.md).

@@ -6,7 +6,7 @@ L’application **Prime Agent Studio**, construite avec Tauri 2, ouvre le Studio
 
 ## Installation et premier lancement
 
-Exécutez l’installateur [Prime-Agent-Studio_2.9.2_x64-setup.exe](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.9.2/Prime-Agent-Studio_2.9.2_x64-setup.exe). L’installation est limitée à votre utilisateur Windows et propose les raccourcis du menu Démarrer et du Bureau. Node.js est inclus. L’installateur installe WebView2 si nécessaire ; une connexion Internet peut être requise pour ce composant.
+Exécutez l’installateur [Prime-Agent-Studio_2.9.3_x64-setup.exe](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.9.3/Prime-Agent-Studio_2.9.3_x64-setup.exe). L’installation est limitée à votre utilisateur Windows et propose les raccourcis du menu Démarrer et du Bureau. Node.js est inclus. L’installateur installe WebView2 si nécessaire ; une connexion Internet peut être requise pour ce composant.
 
 **Prime Agent et uv restent nécessaires sur le PC**, avec un fournisseur configuré. Le moteur Prime Agent, ses comptes et ses sessions ne sont pas réinstallés ni remplacés par cet installateur. Le Studio prépare le noyau Python au besoin lors des exécutions, comme la version navigateur.
 
@@ -40,11 +40,17 @@ Les données se trouvent dans `%LOCALAPPDATA%\com.primeagent.studio` :
 | `webview`      | Préférences visuelles et stockage de la fenêtre                                 |
 | `desktop.json` | Préférences du lanceur et installation à reprendre                              |
 
-Une mise à jour installe la nouvelle application et prépare une nouvelle copie du serveur au prochain démarrage nécessaire. Un serveur déjà actif reste utilisé : la nouvelle version du serveur prendra effet après son arrêt volontaire, à la fin de vos exécutions. Les anciennes copies ne sont pas effacées automatiquement afin de préserver les processus encore actifs.
+Une mise à jour installe la nouvelle application et prépare une nouvelle copie du serveur. **Préférences → Mise à jour** distingue la version de l’application installée de celle du serveur actif. Les anciennes copies ne sont pas effacées automatiquement afin de préserver les processus encore actifs.
 
 Le correctif **2.8.1** ajoute une réparation ponctuelle au lancement : les dix assistants absents de la release 2.8.0 sont ajoutés à son cache d’origine, même si son serveur fonctionne encore. Les fichiers existants sont conservés. Cette réparation rétablit notamment les messages, la découverte des skills et les fournisseurs sans arrêter les agents.
 
-Dans le menu de l’icône près de l’horloge, ouvrez **Réglages de l’application → Mises à jour → Vérifier les mises à jour**. Si une version stable plus récente est publiée sur GitHub, ses nouveautés et le bouton **Installer et relancer** apparaissent. Le téléchargement affiche sa progression, puis Tauri vérifie la signature avant de lancer l’installation. Aucune installation ne démarre sans ce clic. Le serveur et les agents continuent pendant la relance de l’application.
+Dans le Studio, ouvrez **Préférences → Mise à jour → Vérifier les mises à jour**. Si une version stable plus récente est publiée sur GitHub, ses nouveautés et le bouton **Installer et relancer** apparaissent. Le téléchargement affiche sa progression, puis Tauri vérifie la signature avant de lancer l’installation. Aucune installation ne démarre sans ce clic.
+
+L’option **Redémarrer le serveur après l’installation** applique la nouvelle version si le serveur est libre. Si des agents travaillent encore, le serveur reste actif et les réglages s’ouvrent au retour. **Redémarrer le serveur** affiche alors une confirmation : le redémarrage peut interrompre les exécutions et déconnectera temporairement les appareils. Les projets et l’historique enregistré sont conservés. L’activité est vérifiée de nouveau avant l’arrêt ; un serveur lancé par une autre installation n’est pas arrêté.
+
+Ces contrôles restent accessibles dans **Réglages de l’application**, depuis l’icône près de l’horloge, même si l’ancien serveur ne possède pas encore cette catégorie. Depuis un navigateur ou un téléphone, la page indique d’utiliser l’application Windows pour installer ou redémarrer.
+
+Les liens web, y compris la connexion Codex, s’ouvrent dans le navigateur habituel. Le dépôt de fichiers utilise directement le compositeur HTML ; aucune passerelle de fichiers supplémentaire n’est nécessaire. Seules les commandes de mise à jour et de redémarrage sont autorisées depuis la fenêtre locale du Studio ; les autres réglages natifs restent réservés au lanceur.
 
 Une erreur réseau, un catalogue absent ou une signature invalide ne sont jamais présentés comme « à jour ». Vous pouvez réessayer ; les détails techniques sont dans `desktop-update-error.log`, dans le dossier de données. Le catalogue devient disponible lors de la première release contenant `latest.json`. La vérification est manuelle, sans interrogation périodique en arrière-plan.
 
@@ -67,7 +73,9 @@ La construction vérifie les références des modules, workers et assistants nat
 
 Pour les tests isolés, `PRIME_STUDIO_DESKTOP_DATA_ROOT` et `PRIME_STUDIO_DESKTOP_PORT` changent respectivement le dossier de données et le port. Ne les définissez pas pour un usage normal. Le VBS reste disponible pour les installations depuis les sources.
 
-`npm run test:desktop-updates` vérifie les états du panneau en français et anglais. `cargo test --manifest-path src-tauri/Cargo.toml --locked` teste le véritable client de mise à jour contre un serveur local : signature valide, fichier altéré, versions égales/antérieures et catalogue invalide. Les tests n’exécutent aucun installateur.
+`npm run test:desktop-updates` et `npm run test:settings-updates` vérifient les deux panneaux en français et anglais. `npm run test:desktop-lifecycle` valide un vrai redémarrage Tauri avec serveur occupé, confirmation, conservation des données et activation de la version installée. `cargo test --manifest-path src-tauri/Cargo.toml --locked` teste le véritable client de mise à jour contre un serveur local : signature valide, fichier altéré, versions égales/antérieures et catalogue invalide. Les tests n’exécutent aucun installateur.
+
+Pour les tests natifs en parallèle de votre application, compilez une identité de test distincte : `$env:TAURI_CONFIG = '{"identifier":"com.primeagent.studio.interaction-test"}'`, puis `cargo build --manifest-path src-tauri/Cargo.toml --locked`. Retirez ensuite la variable (`Remove-Item Env:TAURI_CONFIG`) avant une compilation de distribution. `npm run test:desktop-interactions` teste les liens web et OAuth synthétiques, les pièces jointes, le presse-papiers, l’export et les permissions dans le véritable WebView2. Il ouvre des onglets de test dans le navigateur habituel, sans connexion à un compte.
 
 ## Préparer une release avec mise à jour
 

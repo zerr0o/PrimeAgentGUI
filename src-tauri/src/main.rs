@@ -52,6 +52,37 @@ fn is_launcher_url(url: &tauri::Url) -> bool {
             || (["http", "https"].contains(&url.scheme())
                 && url.host_str() == Some("tauri.localhost")))
 }
+fn is_external_link(url: &tauri::Url) -> bool {
+    matches!(url.scheme(), "http" | "https" | "mailto" | "tel")
+}
+fn is_studio_url(url: &tauri::Url, port: u16) -> bool {
+    url.scheme() == "http"
+        && url.host_str() == Some("127.0.0.1")
+        && url.port_or_known_default() == Some(port)
+        && url.username().is_empty()
+        && url.password().is_none()
+}
+fn update_window_only(window: &WebviewWindow, app: &tauri::AppHandle) -> Result<(), String> {
+    let url = window.url().map_err(|e| e.to_string())?;
+    if is_launcher_url(&url)
+        || (window.label() == "main" && is_studio_url(&url, app.state::<Desktop>().port))
+    {
+        Ok(())
+    } else {
+        Err("This action is reserved for the Studio desktop application.".into())
+    }
+}
+fn open_external_link(app: &tauri::AppHandle, url: &tauri::Url) {
+    if is_external_link(url) {
+        if app.opener().open_url(url.as_str(), None::<&str>).is_err() {
+            // Do not persist the URL: OAuth links can contain short-lived secrets.
+            let _ = fs::write(
+                app.state::<Desktop>().root.join("desktop-link-error.log"),
+                "The system browser could not be opened.",
+            );
+        }
+    }
+}
 fn show_main(app: &tauri::AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.unminimize();
@@ -64,6 +95,8 @@ fn show_settings(app: &tauri::AppHandle) {
         let _ = window.show();
         let _ = window.set_focus();
     } else {
+        let links_app = app.clone();
+        let navigation_app = app.clone();
         let _ = WebviewWindowBuilder::new(
             app,
             "desktop-settings",
@@ -73,6 +106,17 @@ fn show_settings(app: &tauri::AppHandle) {
         .title("Prime Agent Studio · Application")
         .inner_size(660.0, 760.0)
         .min_inner_size(560.0, 600.0)
+        .on_new_window(move |url, _| {
+            open_external_link(&links_app, &url);
+            tauri::webview::NewWindowResponse::Deny
+        })
+        .on_navigation(move |url| {
+            if is_launcher_url(url) {
+                return true;
+            }
+            open_external_link(&navigation_app, url);
+            false
+        })
         .build();
     }
 }
@@ -174,7 +218,20 @@ async fn desktop_start(
         .map_err(|e| e.to_string())?
         .legacy_root
         .clone();
+    let requested = fs::read(state.root.join("restart-after-update.json"))
+        .ok()
+        .and_then(|bytes| serde_json::from_slice::<serde_json::Value>(&bytes).ok())
+        .is_some_and(|request| request["version"] == app.package_info().version.to_string());
     let result = tauri::async_runtime::spawn_blocking(move || {
+        let options = serde_json::json!({"resourceDir":resources,"dataRoot":root,"port":port,"legacyRoot":legacy});
+        if requested {
+            let restart = run_desktop_control(&resources, &options);
+            // A busy server needs a fresh, explicit confirmation in Preferences.
+            let _ = fs::remove_file(root.join("restart-after-update.json"));
+            if let Ok(value) = restart {
+                if value["restarted"] == true { return Ok(value); }
+            }
+        }
         let mut command = Command::new(resources.join("node.exe"));
         command.arg(resources.join("studio/scripts/desktop-start.mjs"))
             .arg(serde_json::json!({"resourceDir":resources,"dataRoot":root,"port":port,"legacyRoot":legacy}).to_string())
@@ -182,7 +239,9 @@ async fn desktop_start(
         #[cfg(windows)] { use std::os::windows::process::CommandExt; command.creation_flags(0x08000000); }
         let output = command.output().map_err(|e| format!("Impossible de lancer le Studio. / Could not start Studio: {e}"))?;
         if !output.status.success() { return Err(String::from_utf8_lossy(&output.stderr).chars().take(3000).collect::<String>()) }
-        serde_json::from_slice::<serde_json::Value>(&output.stdout).map_err(|e| e.to_string())
+        let mut value = serde_json::from_slice::<serde_json::Value>(&output.stdout).map_err(|e| e.to_string())?;
+        if requested { value["showUpdates"] = true.into(); }
+        Ok(value)
     }).await.map_err(|e|e.to_string()).and_then(|r|r);
     state.starting.store(false, Ordering::SeqCst);
     match result {
@@ -193,13 +252,26 @@ async fn desktop_start(
             let _ = fs::write(state.root.join("backend.json"), result.to_string());
             if let Some(main) = app.get_webview_window("main") {
                 main.navigate(
-                    tauri::Url::parse(&format!("http://127.0.0.1:{}/", state.port))
-                        .map_err(|e| e.to_string())?,
+                    tauri::Url::parse(&format!(
+                        "http://127.0.0.1:{}/{}",
+                        state.port,
+                        if result["showUpdates"] == true {
+                            "?settings=updates"
+                        } else {
+                            ""
+                        }
+                    ))
+                    .map_err(|e| e.to_string())?,
                 )
                 .map_err(|e| e.to_string())?;
                 if window.label() == "desktop-settings" {
                     show_main(&app);
                 }
+            }
+            // An older running server may not yet contain the new Preferences UI.
+            // Keep the bundled restart controls reachable immediately after updating.
+            if result["showUpdates"] == true {
+                show_settings(&app);
             }
             Ok(result)
         }
@@ -210,6 +282,87 @@ async fn desktop_start(
             Err(error)
         }
     }
+}
+
+fn run_desktop_control(
+    resources: &PathBuf,
+    options: &serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    let mut command = Command::new(resources.join("node.exe"));
+    command
+        .arg(resources.join("studio/scripts/desktop-control.mjs"))
+        .arg(options.to_string())
+        .current_dir(resources);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(0x08000000);
+    }
+    let output = command.output().map_err(|_| "server_status_failed")?;
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr)
+            .chars()
+            .take(1000)
+            .collect());
+    }
+    serde_json::from_slice(&output.stdout).map_err(|_| "server_status_failed".into())
+}
+
+#[tauri::command]
+async fn desktop_update_status(
+    window: WebviewWindow,
+    app: tauri::AppHandle,
+) -> Result<serde_json::Value, String> {
+    update_window_only(&window, &app)?;
+    let state = app.state::<Desktop>();
+    let resources = state.resources.clone();
+    let options = serde_json::json!({"action":"status", "dataRoot":state.root,"port":state.port});
+    let mut status =
+        tauri::async_runtime::spawn_blocking(move || run_desktop_control(&resources, &options))
+            .await
+            .map_err(|_| "server_status_failed")??;
+    status["appVersion"] = app.package_info().version.to_string().into();
+    Ok(status)
+}
+
+#[tauri::command]
+async fn desktop_server_restart(
+    window: WebviewWindow,
+    app: tauri::AppHandle,
+    force: bool,
+) -> Result<serde_json::Value, String> {
+    update_window_only(&window, &app)?;
+    if app.state::<updates::Updates>().is_busy() {
+        return Err("update_busy".into());
+    }
+    let state = app.state::<Desktop>();
+    if state.starting.swap(true, Ordering::SeqCst) {
+        return Err("update_busy".into());
+    }
+    let resources = state.resources.clone();
+    let options = serde_json::json!({"resourceDir":resources,"dataRoot":state.root,"port":state.port,"force":force});
+    let result =
+        tauri::async_runtime::spawn_blocking(move || run_desktop_control(&resources, &options))
+            .await
+            .map_err(|_| "server_restart_failed".to_string())
+            .and_then(|r| r);
+    state.starting.store(false, Ordering::SeqCst);
+    if let Err(error) = &result {
+        let _ = fs::write(state.root.join("desktop-server-error.log"), error);
+    }
+    if let Ok(value) = &result {
+        if value["restarted"] == true {
+            let _ = fs::write(state.root.join("backend.json"), value.to_string());
+            if let Some(main) = app.get_webview_window("main") {
+                let _ = main.navigate(
+                    format!("http://127.0.0.1:{}/?settings=updates", state.port)
+                        .parse()
+                        .unwrap(),
+                );
+            }
+        }
+    }
+    result
 }
 
 fn main() {
@@ -225,7 +378,14 @@ fn main() {
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec!["--background"]),
         ))
-        .plugin(tauri_plugin_opener::init())
+        // Studio has no opener IPC permission. The
+        // plugin's default click interceptor prevents navigation then invokes a
+        // denied IPC command. Let the native navigation callbacks handle links.
+        .plugin(
+            tauri_plugin_opener::Builder::new()
+                .open_js_links_on_click(false)
+                .build(),
+        )
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(updates::Updates::default())
         .invoke_handler(tauri::generate_handler![
@@ -234,6 +394,8 @@ fn main() {
             desktop_choose_legacy,
             desktop_logs,
             desktop_start,
+            desktop_update_status,
+            desktop_server_restart,
             updates::desktop_update_check,
             updates::desktop_update_install
         ])
@@ -253,6 +415,17 @@ fn main() {
             if port == 0 {
                 return Err("Invalid Studio port".into());
             }
+            // Only these four commands cross into the exact local Studio origin.
+            // No opener, filesystem, shell or launcher settings permissions.
+            app.add_capability(
+                tauri::ipc::CapabilityBuilder::new("studio-updates")
+                    .window("main")
+                    .remote(format!("http://127.0.0.1:{port}/*"))
+                    .permission("allow-desktop-update-status")
+                    .permission("allow-desktop-server-restart")
+                    .permission("allow-desktop-update-check")
+                    .permission("allow-desktop-update-install"),
+            )?;
             let prefs = fs::read(root.join("desktop.json"))
                 .ok()
                 .and_then(|bytes| serde_json::from_slice(&bytes).ok())
@@ -266,7 +439,6 @@ fn main() {
                 starting: AtomicBool::new(false),
             });
             let handle = app.handle().clone();
-            let origin = format!("http://127.0.0.1:{port}");
             let navigation_app = handle.clone();
             let links_app = handle.clone();
             let background = std::env::args().any(|arg| arg == "--background");
@@ -287,23 +459,20 @@ fn main() {
             .min_inner_size(860.0, 620.0)
             .visible(!background)
             .data_directory(webview_data)
+            // Otherwise Windows consumes file drops before the HTML composer.
+            .disable_drag_drop_handler()
             .initialization_script(
                 "Object.defineProperty(window, '__PRIME_STUDIO_DESKTOP__', { value: true });",
             )
             .on_new_window(move |url, _| {
-                if ["https", "http"].contains(&url.scheme()) {
-                    let _ = links_app.opener().open_url(url.as_str(), None::<&str>);
-                }
+                open_external_link(&links_app, &url);
                 tauri::webview::NewWindowResponse::Deny
             })
             .on_navigation(move |url| {
-                let local = is_launcher_url(url);
-                if local || url.origin().ascii_serialization() == origin {
+                if is_launcher_url(url) || is_studio_url(url, port) {
                     return true;
                 }
-                if ["https", "http"].contains(&url.scheme()) {
-                    let _ = navigation_app.opener().open_url(url.as_str(), None::<&str>);
-                }
+                open_external_link(&navigation_app, url);
                 false
             })
             .build()?;

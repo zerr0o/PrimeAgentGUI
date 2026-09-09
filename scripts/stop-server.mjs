@@ -15,8 +15,8 @@ import {
 
 const execFileAsync = promisify(execFile);
 
-export async function stopServer({ root = APP_ROOT } = {}) {
-  const paths = pathsFor(root);
+export async function stopServer({ root = APP_ROOT, dataDir, expectedInstanceId, beforeStop } = {}) {
+  const paths = pathsFor(root, dataDir);
   await preparePaths(paths);
   const release = await acquireLock(paths);
   try {
@@ -41,12 +41,17 @@ export async function stopServer({ root = APP_ROOT } = {}) {
     if (
       result.state !== 'ready' ||
       result.health.pid !== record.pid ||
-      result.health.instanceId !== record.instanceId
+      result.health.instanceId !== record.instanceId ||
+      (expectedInstanceId && record.instanceId !== expectedInstanceId)
     ) {
       throw new Error(
         'Ce serveur ne correspond pas au lancement enregistré. Aucun processus n’a été arrêté.',
       );
     }
+
+    // The desktop updater rechecks activity under the ownership lock immediately
+    // before stopping this specific server, including after a confirmation dialog.
+    if (beforeStop) await beforeStop(result.health);
 
     if (process.platform === 'win32') {
       // /T also closes active prime-agent descendants. The verified instance marker

@@ -8,6 +8,32 @@ import { normalizeMessage } from '../lib/agent.mjs';
 import { createSessionActivity } from '../public/session-activity.js';
 import { nativeAgentMessage, parseAgentEnvelope, queuedAgentMessage } from '../public/agent-messages.js';
 import { createLiveMessages } from '../lib/live-messages.mjs';
+import { isEmptyCompletedAssistant } from '../public/conversation.js';
+
+test('only successfully completed assistant turns without visible content are hidden', () => {
+  const empty = {
+    role: 'assistant',
+    stopReason: 'stop',
+    text: ' ',
+    thinking: '',
+    tools: [],
+    attachments: [],
+  };
+  assert.equal(isEmptyCompletedAssistant(empty), true);
+  for (const change of [
+    { role: 'system' },
+    { stopReason: 'aborted' },
+    { stopReason: 'error' },
+    { stopReason: undefined },
+    { streaming: true },
+    { text: 'Answer' },
+    { thinking: 'Reasoning' },
+    { tools: [{}] },
+    { attachments: [{}] },
+    { error: 'Failure' },
+  ])
+    assert.equal(isEmptyCompletedAssistant({ ...empty, ...change }), false);
+});
 
 async function fixture(t) {
   const root = await mkdtemp(join(tmpdir(), 'studio-stability-'));

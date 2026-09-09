@@ -39,6 +39,8 @@ try {
             window.calls.push(command);
             if (command === 'desktop_state')
               return { version: '2.8.0', started: false, imported: true, autostart: false };
+            if (command === 'desktop_update_status')
+              return { managed: true, running: true, version: '2.8.0', activeRuns: 1 };
             if (command === 'desktop_update_check') {
               if (window.mode === 'offline') throw 'check_failed';
               return {

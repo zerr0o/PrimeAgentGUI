@@ -13,6 +13,11 @@ pub struct Updates {
     busy: AtomicBool,
     pending: Mutex<Option<Update>>,
 }
+impl Updates {
+    pub fn is_busy(&self) -> bool {
+        self.busy.load(Ordering::SeqCst)
+    }
+}
 struct Operation<'a>(&'a AtomicBool);
 impl Drop for Operation<'_> {
     fn drop(&mut self) {
@@ -37,7 +42,7 @@ pub async fn desktop_update_check(
     window: WebviewWindow,
     app: AppHandle,
 ) -> Result<serde_json::Value, String> {
-    super::native_only(&window)?;
+    super::update_window_only(&window, &app)?;
     let state = app.state::<Updates>();
     let _operation = begin(&state)?;
     *state.pending.lock().map_err(|_| "update_failed")? = None;
@@ -66,9 +71,17 @@ pub async fn desktop_update_install(
     window: WebviewWindow,
     app: AppHandle,
     version: String,
+    restart_server: Option<bool>,
     on_event: Channel<serde_json::Value>,
 ) -> Result<(), String> {
-    super::native_only(&window)?;
+    super::update_window_only(&window, &app)?;
+    if app
+        .state::<super::Desktop>()
+        .starting
+        .load(Ordering::SeqCst)
+    {
+        return Err("update_busy".into());
+    }
     let state = app.state::<Updates>();
     let _operation = begin(&state)?;
     let update = state
@@ -101,10 +114,25 @@ pub async fn desktop_update_install(
         )
         .await
         .map_err(|e| failure(&app, e, "download_failed"))?;
-    // download() verifies the signature before returning bytes. Never stop the detached server.
-    let _ = on_event.send(serde_json::json!({"stage":"installing"}));
-    update
-        .install(bytes)
+    // Download verifies the signature. The newly installed app handles an idle
+    // server restart; it never carries permission to interrupt agents across updates.
+    let restart_path = app
+        .state::<super::Desktop>()
+        .root
+        .join("restart-after-update.json");
+    if restart_server.unwrap_or(false) {
+        std::fs::write(
+            &restart_path,
+            serde_json::json!({"version":version}).to_string(),
+        )
         .map_err(|e| failure(&app, e, "install_failed"))?;
+    } else {
+        let _ = std::fs::remove_file(&restart_path);
+    }
+    let _ = on_event.send(serde_json::json!({"stage":"installing"}));
+    update.install(bytes).map_err(|e| {
+        let _ = std::fs::remove_file(&restart_path);
+        failure(&app, e, "install_failed")
+    })?;
     Ok(())
 }

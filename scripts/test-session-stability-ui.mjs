@@ -22,6 +22,7 @@ try {
   await page.locator('[data-session-id="stability-demo"].project-session-card').click();
   const cards = page.locator('.agent-message');
   await expect(cards).toHaveCount(2);
+  await expect(page.locator('#messages')).not.toContainText('Aucun contenu textuel');
   await expect(cards.first()).toContainText('native-ui-test-driver');
   await expect(cards.first()).toContainText('UI Automation');
   await expect(cards.first().locator('.agent-message-badge')).toHaveText('Sous-agent');
@@ -146,6 +147,8 @@ try {
   }
   await page.setViewportSize({ width: 1440, height: 960 });
   await page.reload();
+  await expect(project('Projet 12')).toHaveCount(1);
+  await expect(page.locator('#project-list')).toContainText('Projet 12');
   await project('Projet 12').scrollIntoViewIfNeeded();
   const lastProject = await project('Projet 12').boundingBox();
   const listBounds = await page.locator('#project-list').boundingBox();

@@ -1,5 +1,21 @@
 const messages = {
   fr: {
+    restartAfter: 'Redémarrer le serveur après l’installation',
+    serverHeading: 'Serveur du Studio',
+    serverVersion: 'Version active : {version}',
+    serverStopped: 'Le serveur est arrêté.',
+    serverIdle: 'Aucune exécution en cours.',
+    serverBusy: 'Des agents travaillent. Le redémarrage demandera confirmation.',
+    serverUnmanaged: 'Ce serveur dépend d’un autre lanceur. Arrêtez-le depuis celui-ci.',
+    restart: 'Redémarrer le serveur',
+    restarting: 'Redémarrage du serveur…',
+    restarted: 'Le serveur utilise maintenant la version installée.',
+    restartFailed: 'Impossible de redémarrer le serveur. Réessayez ou consultez les journaux.',
+    restartTitle: 'Redémarrer malgré les agents en cours ?',
+    restartNote:
+      'Le redémarrage peut interrompre les agents et déconnectera temporairement vos appareils. Vos projets et l’historique enregistré seront conservés.',
+    restartCancel: 'Annuler',
+    restartProceed: 'Redémarrer quand même',
     eyebrow: 'VOTRE APPLICATION DE BUREAU',
     title: 'Votre espace de travail, prêt à vous suivre.',
     description:
@@ -31,7 +47,7 @@ const messages = {
     updateInstall: 'Installer et relancer',
     updateNotes: 'Nouveautés de cette version',
     updateImpact:
-      'L’application se relancera. Vos agents continuent ; le serveur actif garde sa version jusqu’à son prochain démarrage.',
+      'L’application se relancera. Le redémarrage optionnel du serveur est automatique s’il est libre ; sinon, une confirmation sera nécessaire.',
     updateDownloading: 'Téléchargement',
     updateVerifying: 'Vérification de la signature…',
     updateInstalling: 'Installation et relance de l’application…',
@@ -42,6 +58,22 @@ const messages = {
     updateInstallFailed: 'L’installation n’a pas pu démarrer. Vous pouvez réessayer.',
   },
   en: {
+    restartAfter: 'Restart the server after installation',
+    serverHeading: 'Studio server',
+    serverVersion: 'Running version: {version}',
+    serverStopped: 'The server is stopped.',
+    serverIdle: 'No active runs.',
+    serverBusy: 'Agents are working. Restarting will require confirmation.',
+    serverUnmanaged: 'This server belongs to another launcher. Stop it through that launcher.',
+    restart: 'Restart server',
+    restarting: 'Restarting the server…',
+    restarted: 'The server is now using the installed version.',
+    restartFailed: 'Could not restart the server. Try again or check the logs.',
+    restartTitle: 'Restart while agents are running?',
+    restartNote:
+      'Restarting may interrupt agents and will temporarily disconnect your devices. Your projects and saved history will be preserved.',
+    restartCancel: 'Cancel',
+    restartProceed: 'Restart anyway',
     eyebrow: 'YOUR DESKTOP APPLICATION',
     title: 'Your workspace, ready when you are.',
     description: 'Your projects and agents in a dedicated window. Studio starts for you, in the background.',
@@ -72,7 +104,7 @@ const messages = {
     updateInstall: 'Install and restart',
     updateNotes: 'What’s new',
     updateImpact:
-      'The app will restart. Your agents continue; the running server keeps its version until its next start.',
+      'The app will relaunch. The optional server restart is automatic when idle; otherwise, confirmation will be required.',
     updateDownloading: 'Downloading',
     updateVerifying: 'Verifying the signature…',
     updateInstalling: 'Installing and restarting the app…',
@@ -105,6 +137,13 @@ for (const [id, key] of Object.entries({
   'update-install': 'updateInstall',
   'update-notes-label': 'updateNotes',
   'update-impact': 'updateImpact',
+  'update-restart-label': 'restartAfter',
+  'server-heading': 'serverHeading',
+  'server-restart': 'restart',
+  'restart-confirm-title': 'restartTitle',
+  'restart-confirm-note': 'restartNote',
+  'restart-cancel': 'restartCancel',
+  'restart-proceed': 'restartProceed',
 }))
   $(id).textContent = t[key];
 const invoke = window.__TAURI__?.core?.invoke;
@@ -122,6 +161,7 @@ $('update-check').onclick = async () => {
   $('update-install').hidden = true;
   $('update-notes').hidden = true;
   $('update-impact').hidden = true;
+  $('update-restart-option').hidden = true;
   updateStatus(t.updateChecking);
   try {
     const update = await invoke('desktop_update_check');
@@ -130,6 +170,7 @@ $('update-check').onclick = async () => {
       updateStatus(t.updateAvailable.replace('{version}', update.version));
       $('update-install').hidden = false;
       $('update-impact').hidden = false;
+      $('update-restart-option').hidden = false;
       $('update-notes-body').textContent = update.notes || '';
       $('update-notes').hidden = !update.notes;
     } else updateStatus(t.updateCurrent);
@@ -160,7 +201,11 @@ $('update-install').onclick = async () => {
         $('update-progress').removeAttribute('value');
       }
     };
-    await invoke('desktop_update_install', { version: availableVersion, onEvent });
+    await invoke('desktop_update_install', {
+      version: availableVersion,
+      onEvent,
+      restartServer: $('update-restart-after').checked,
+    });
   } catch (error) {
     updateStatus(error === 'install_failed' ? t.updateInstallFailed : t.updateDownloadFailed, true);
     $('update-progress').hidden = true;
@@ -168,6 +213,53 @@ $('update-install').onclick = async () => {
     $('update-install').disabled = false;
     $('start').disabled = false;
     updateBusy = false;
+  }
+};
+let restarting = false;
+async function refreshServer() {
+  const state = await invoke('desktop_update_status');
+  $('server-state').textContent = state.running
+    ? t.serverVersion.replace('{version}', state.version)
+    : t.serverStopped;
+  $('server-agents').textContent = !state.managed
+    ? t.serverUnmanaged
+    : state.activeRuns
+      ? t.serverBusy
+      : t.serverIdle;
+  $('server-restart').disabled = !state.managed || restarting || updateBusy;
+  return state;
+}
+$('server-restart').onclick = async () => {
+  if (restarting || updateBusy) return;
+  restarting = true;
+  try {
+    const state = await refreshServer();
+    if (!state.managed) return;
+    let force = false;
+    if (state.activeRuns) {
+      const dialog = $('restart-confirm');
+      const accepted = new Promise((done) => {
+        dialog.returnValue = '';
+        $('restart-cancel').onclick = () => dialog.close('cancel');
+        $('restart-proceed').onclick = () => dialog.close('proceed');
+        dialog.addEventListener('close', () => done(dialog.returnValue === 'proceed'), { once: true });
+      });
+      dialog.showModal();
+      $('restart-cancel').focus();
+      if (!(await accepted)) return;
+      force = true;
+    }
+    $('server-state').textContent = t.restarting;
+    const result = await invoke('desktop_server_restart', { force });
+    if (result.restarted) {
+      await refreshServer();
+      $('server-agents').textContent = t.restarted;
+    } else await refreshServer();
+  } catch {
+    $('server-state').textContent = t.restartFailed;
+  } finally {
+    restarting = false;
+    $('server-restart').disabled = false;
   }
 };
 let busy = false;
@@ -248,6 +340,10 @@ $('import').onclick = async () => {
     const state = await invoke('desktop_state');
     $('app-version').textContent = `v${state.version}`;
     $('updates').hidden = !settings;
+    if (settings)
+      void refreshServer().catch(() => {
+        $('server-state').textContent = t.restartFailed;
+      });
     $('autostart').checked = state.autostart;
     $('start').disabled = false;
     if (state.imported) {

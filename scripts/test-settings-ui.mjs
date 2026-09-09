@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { chromium, expect } from '@playwright/test';
 import { preferencesFixture } from './preview-preferences.mjs';
 
@@ -22,8 +23,12 @@ try {
   await expect(page.locator('#settings-tab-models')).toBeFocused();
   await expect(page.locator('#model-config-settings')).toBeVisible();
   await page.keyboard.press('End');
+  await expect(page.locator('#settings-tab-updates')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#studio-update-browser')).toBeVisible();
+  await page.keyboard.press('ArrowUp');
   await expect(page.locator('#settings-tab-system')).toHaveAttribute('aria-selected', 'true');
-  await expect(page.locator('#settings-system-info')).toContainText('2.6.0');
+  const { version } = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  await expect(page.locator('#settings-system-info')).toContainText(version);
   await page.locator('#settings-tab-tools').click();
   await page.locator('#settings-skills').click();
   await expect(page.locator('#commands-dialog')).toBeVisible();

@@ -41,10 +41,12 @@
 
 Prime Agent Studio brings your **local Prime Agent sessions** together in a Windows application and a browser interface. Follow streaming responses, find your projects and continue a conversation without opening a terminal. On Windows, agents and their tools run in the background, without unexpected PowerShell windows.
 
-**Version 2.9.2** — [Download the Windows x64 installer](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.9.2/Prime-Agent-Studio_2.9.2_x64-setup.exe) · [Release notes and source code](https://github.com/zerr0o/prime-agent-studio/releases/tag/v2.9.2).
+**Version 2.9.3** — [Download the Windows x64 installer](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.9.3/Prime-Agent-Studio_2.9.3_x64-setup.exe) · [Release notes and source code](https://github.com/zerr0o/prime-agent-studio/releases/tag/v2.9.3).
 
 ## What’s new in version 2.9
 
+- **2.9.3 updates from Preferences**: **Preferences → Updates** shows application and server versions, release notes and signed installation. Optionally restart the server afterward; active agents require confirmation. The tray’s app settings retain these controls when an older server is still running.
+- **2.9.3 Windows fixes**: web links and Codex sign-in open in the default browser; files and images can be dropped into the conversation. Completed empty responses are hidden without changing the native history.
 - **2.9.2 version fix**: system settings and health checks read the version from the server’s packaged metadata. Version 2.9.0 incorrectly displayed 2.8.1 even when its new server was running. An older server that is still active continues to report its own version until restarted.
 - **Agent messages**: compact, collapsed previews with the sender’s name. Click to read the full message and delivery details. Automatic queued messages are clearly identified and protected from editing or removal.
 - **Project order**: drag projects directly in the sidebar with a mouse, or use the handle on touchscreens. The order is saved across devices.
@@ -57,7 +59,6 @@ Prime Agent Studio brings your **local Prime Agent sessions** together in a Wind
 - **2.8.1 packaging fix**: the Windows installer now includes the workers used by messages, skills, providers and MCP, plus the folder/file helpers. Updating also restores the missing files in the original 2.8.0 server cache without restarting its agents.
 - **Tauri 2 Windows application**: per-user installer, desktop and Start menu shortcuts, bundled Node.js and a crisp icon sized for Windows displays.
 - **Background work**: the shortcut starts the server or reuses the active instance. Closing or quitting the application lets agents keep working. Start with Windows is optional and disabled by default.
-- **Updates from the application**: in **App settings → Updates**, check for new versions and release notes, then choose **Install and restart**. The signature is verified before installation; the running server keeps its version until its next start.
 - **Migration and remote access**: reuse projects and settings from an existing installation. LAN, Tailscale, HTTPS, QR codes and the mobile PWA remain available.
 
 [Installation, migration and updates](docs/en/desktop.md).

@@ -52,6 +52,7 @@ export async function createStabilityFixture() {
     },
     'custom_message',
   );
+  add({ role: 'assistant', content: [], stopReason: 'stop' });
   add(
     {
       customType: 'agent_message',
@@ -68,6 +69,7 @@ export async function createStabilityFixture() {
     },
     'custom_message',
   );
+  add({ role: 'assistant', content: [], stopReason: 'stop' });
   await writeFile(join(sessionDir, 'demo.jsonl'), entries.map(JSON.stringify).join('\n') + '\n');
   let control;
   const runtime = {

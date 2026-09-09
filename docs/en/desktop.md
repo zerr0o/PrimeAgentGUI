@@ -6,7 +6,7 @@ The **Prime Agent Studio** application, built with Tauri 2, opens Studio in a de
 
 ## Installation and first launch
 
-Run [Prime-Agent-Studio_2.9.2_x64-setup.exe](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.9.2/Prime-Agent-Studio_2.9.2_x64-setup.exe). Installation is limited to your Windows user and offers Start menu and desktop shortcuts. Node.js is included. The installer installs WebView2 when needed; this component may require an Internet connection.
+Run [Prime-Agent-Studio_2.9.3_x64-setup.exe](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.9.3/Prime-Agent-Studio_2.9.3_x64-setup.exe). Installation is limited to your Windows user and offers Start menu and desktop shortcuts. Node.js is included. The installer installs WebView2 when needed; this component may require an Internet connection.
 
 **Prime Agent and uv are still required on the PC**, with a configured provider. The installer does not reinstall or replace the Prime Agent engine, accounts or sessions. Studio prepares the Python kernel when needed for runs, as the browser version does.
 
@@ -40,11 +40,17 @@ Data is stored in `%LOCALAPPDATA%\com.primeagent.studio`:
 | `webview`      | Window preferences and storage                                      |
 | `desktop.json` | Launcher preferences and installation to migrate                    |
 
-An update installs the new application and prepares a new server copy when the next startup is needed. A running server remains in use: the new server version takes effect after you deliberately stop it when your runs have finished. Old copies are not automatically removed, preserving any processes still using them.
+An update installs the new application and prepares a new server copy. **Preferences → Updates** distinguishes the installed application version from the running server version. Old copies are not automatically removed, preserving any processes still using them.
 
 The **2.8.1** fix adds a one-time startup repair: the ten helpers omitted from release 2.8.0 are added to its original cache, even while its server is running. Existing files are preserved. This restores messages, skill discovery and providers without stopping agents.
 
-In the tray icon menu, open **App settings → Updates → Check for updates**. When a newer stable version is published on GitHub, its release notes and an **Install and restart** button appear. Download progress is displayed, then Tauri verifies the signature before starting installation. Installation requires this explicit click. The server and agents continue during the application restart.
+In Studio, open **Preferences → Updates → Check for updates**. When a newer stable version is published on GitHub, its release notes and an **Install and relaunch** button appear. Download progress is displayed, then Tauri verifies the signature before starting installation. Installation requires this explicit click.
+
+The **Restart the server after installation** option applies the new version when the server is idle. If agents are still working, the server stays running and settings open after relaunch. **Restart server** then displays a confirmation: restarting may interrupt runs and will temporarily disconnect devices. Projects and saved history are preserved. Activity is checked again before stopping; a server started by another installation is not stopped.
+
+These controls also remain available in **App settings** through the tray icon, even when the older server does not yet have the new category. In a browser or on a phone, the page directs you to the Windows application to install or restart.
+
+Web links, including Codex sign-in, open in the default browser. File drops use the HTML composer directly, without another file bridge. Only update and restart commands are allowed from the local Studio window; other native settings remain restricted to the launcher.
 
 A network error, missing catalog or invalid signature is never reported as “up to date”. You can retry; technical details are in `desktop-update-error.log` in the data folder. The catalog becomes available with the first release containing `latest.json`. Checking is manual, with no periodic background polling.
 
@@ -67,7 +73,9 @@ The build validates module, worker and native helper references before creating 
 
 For isolated tests, `PRIME_STUDIO_DESKTOP_DATA_ROOT` and `PRIME_STUDIO_DESKTOP_PORT` override the data folder and port. Leave them unset for normal use. VBS remains available for source installations.
 
-`npm run test:desktop-updates` checks the panel states in French and English. `cargo test --manifest-path src-tauri/Cargo.toml --locked` tests the actual updater client against a local server: valid signature, tampered file, equal/older versions and invalid catalog. Tests never execute an installer.
+`npm run test:desktop-updates` and `npm run test:settings-updates` check both panels in French and English. `npm run test:desktop-lifecycle` validates a real Tauri restart with a busy server, confirmation, preserved data and activation of the installed version. `cargo test --manifest-path src-tauri/Cargo.toml --locked` tests the actual updater client against a local server: valid signature, tampered file, equal/older versions and invalid catalog. Tests never execute an installer.
+
+For native tests alongside your application, compile a separate test identity: `$env:TAURI_CONFIG = '{"identifier":"com.primeagent.studio.interaction-test"}'`, then `cargo build --manifest-path src-tauri/Cargo.toml --locked`. Remove the variable afterward (`Remove-Item Env:TAURI_CONFIG`) before a distribution build. `npm run test:desktop-interactions` tests web and synthetic OAuth links, attachments, clipboard, export and permissions in actual WebView2. It opens test tabs in the default browser without signing into an account.
 
 ## Prepare an update release
 

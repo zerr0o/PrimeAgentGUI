@@ -5,6 +5,150 @@ export const languages = [
   { id: 'en', label: 'English' },
 ];
 export const messages = {
+  'updates.title': { fr: 'Mise à jour', en: 'Updates' },
+  'updates.scope': { fr: 'Application Windows · Ce PC', en: 'Windows application · This PC' },
+  'updates.browser': {
+    fr: 'Ouvrez le Studio dans l’application Windows pour installer une mise à jour ou redémarrer son serveur.',
+    en: 'Open Studio in the Windows application to install an update or restart its server.',
+  },
+  'updates.app_version': { fr: 'Application installée', en: 'Installed application' },
+  'updates.server_version': { fr: 'Serveur en cours', en: 'Running server' },
+  'updates.idle': {
+    fr: 'Recherchez les nouvelles versions publiées sur GitHub.',
+    en: 'Check for new versions published on GitHub.',
+  },
+  'updates.check': { fr: 'Vérifier les mises à jour', en: 'Check for updates' },
+  'updates.checking': { fr: 'Recherche d’une nouvelle version…', en: 'Checking for a new version…' },
+  'updates.current': {
+    fr: 'L’application installée est à jour.',
+    en: 'The installed application is up to date.',
+  },
+  'updates.available': { fr: 'La version {version} est disponible.', en: 'Version {version} is available.' },
+  'updates.notes': { fr: 'Nouveautés de cette version', en: 'What’s new' },
+  'updates.install': { fr: 'Installer et relancer', en: 'Install and relaunch' },
+  'updates.restart_after': {
+    fr: 'Redémarrer le serveur après l’installation',
+    en: 'Restart the server after installation',
+  },
+  'updates.restart_after_note': {
+    fr: 'S’il reste des agents en cours, le serveur attendra votre confirmation.',
+    en: 'If agents are still running, the server will wait for your confirmation.',
+  },
+  'updates.server_title': { fr: 'Serveur du Studio', en: 'Studio server' },
+  'updates.pending': {
+    fr: 'La version installée sera appliquée au prochain redémarrage du serveur.',
+    en: 'The installed version will take effect when the server restarts.',
+  },
+  'updates.server_current': {
+    fr: 'Le serveur utilise la version installée de l’application.',
+    en: 'The server is using the installed application version.',
+  },
+  'updates.unmanaged': {
+    fr: 'Ce serveur a été lancé depuis une autre installation. Arrêtez-le depuis son lanceur avant de démarrer celui de l’application.',
+    en: 'This server was started by another installation. Stop it through its launcher before starting the application’s server.',
+  },
+  'updates.agents': {
+    fr: {
+      one: '{count} exécution en cours. Un redémarrage peut l’interrompre.',
+      other: '{count} exécutions en cours. Un redémarrage peut les interrompre.',
+    },
+    en: {
+      one: '{count} active run. Restarting may interrupt it.',
+      other: '{count} active runs. Restarting may interrupt them.',
+    },
+  },
+  'updates.no_agents': { fr: 'Aucune exécution en cours dans le Studio.', en: 'No active runs in Studio.' },
+  'updates.stopped': { fr: 'Arrêté', en: 'Stopped' },
+  'updates.stopped_note': {
+    fr: 'Démarrez le serveur avec la version installée.',
+    en: 'Start the server with the installed version.',
+  },
+  'updates.restart': { fr: 'Redémarrer le serveur', en: 'Restart server' },
+  'updates.restarting': {
+    fr: 'Redémarrage du serveur… La connexion va se rétablir.',
+    en: 'Restarting the server… The connection will be restored.',
+  },
+  'updates.restarted': {
+    fr: 'Le serveur a redémarré avec la version installée.',
+    en: 'The server restarted with the installed version.',
+  },
+  'updates.agents_changed': {
+    fr: 'Une exécution a démarré entre-temps. Le serveur a été conservé ; cliquez à nouveau pour confirmer son redémarrage.',
+    en: 'A run started in the meantime. The server was kept running; click again to confirm a restart.',
+  },
+  'updates.cancel': { fr: 'Annuler', en: 'Cancel' },
+  'updates.interrupt_title': {
+    fr: 'Redémarrer malgré les agents en cours ?',
+    en: 'Restart while agents are running?',
+  },
+  'updates.interrupt_note': {
+    fr: {
+      one: '{count} exécution est en cours. Le redémarrage peut l’interrompre et déconnectera temporairement vos appareils. Les projets et l’historique enregistré seront conservés.',
+      other:
+        '{count} exécutions sont en cours. Le redémarrage peut les interrompre et déconnectera temporairement vos appareils. Les projets et l’historique enregistré seront conservés.',
+    },
+    en: {
+      one: '{count} run is active. Restarting may interrupt it and will temporarily disconnect your devices. Projects and saved history will be preserved.',
+      other:
+        '{count} runs are active. Restarting may interrupt them and will temporarily disconnect your devices. Projects and saved history will be preserved.',
+    },
+  },
+  'updates.interrupt': { fr: 'Redémarrer quand même', en: 'Restart anyway' },
+  'updates.install_busy_title': {
+    fr: 'Installer pendant que les agents travaillent ?',
+    en: 'Install while agents are working?',
+  },
+  'updates.install_busy_note': {
+    fr: {
+      one: '{count} exécution est en cours. L’application se relancera ; le serveur et son agent continueront. Si un agent travaille encore après l’installation, vous devrez confirmer le redémarrage du serveur.',
+      other:
+        '{count} exécutions sont en cours. L’application se relancera ; le serveur et ses agents continueront. Si des agents travaillent encore après l’installation, vous devrez confirmer le redémarrage du serveur.',
+    },
+    en: {
+      one: '{count} run is active. The application will relaunch; the server and its agent will continue. If an agent is still working after installation, you must confirm the server restart.',
+      other:
+        '{count} runs are active. The application will relaunch; the server and its agents will continue. If agents are still working after installation, you must confirm the server restart.',
+    },
+  },
+  'updates.downloading': { fr: 'Téléchargement de la mise à jour…', en: 'Downloading the update…' },
+  'updates.verifying': { fr: 'Vérification de la signature…', en: 'Verifying the signature…' },
+  'updates.installing': {
+    fr: 'Installation et relance de l’application…',
+    en: 'Installing and relaunching the application…',
+  },
+  'updates.releases': { fr: 'Voir les versions sur GitHub', en: 'View releases on GitHub' },
+  'updates.check_failed': {
+    fr: 'Impossible de vérifier les mises à jour. Vérifiez votre connexion et réessayez.',
+    en: 'Could not check for updates. Check your connection and try again.',
+  },
+  'updates.download_failed': {
+    fr: 'Le téléchargement ou sa signature n’a pas pu être validé. Aucune mise à jour installée.',
+    en: 'The download or its signature could not be verified. No update was installed.',
+  },
+  'updates.install_failed': {
+    fr: 'L’installation n’a pas pu démarrer. Réessayez.',
+    en: 'The installer could not start. Try again.',
+  },
+  'updates.server_not_managed': {
+    fr: 'Ce serveur appartient à un autre lanceur. Aucun processus n’a été arrêté.',
+    en: 'This server belongs to another launcher. No process was stopped.',
+  },
+  'updates.server_port_occupied': {
+    fr: 'Le port du Studio est occupé par un autre service.',
+    en: 'Another service is using the Studio port.',
+  },
+  'updates.server_version_mismatch': {
+    fr: 'La version attendue du serveur n’a pas pu être confirmée. Consultez les journaux du Studio.',
+    en: 'The expected server version could not be confirmed. Check the Studio logs.',
+  },
+  'updates.update_busy': {
+    fr: 'Une opération est déjà en cours. Patientez avant de réessayer.',
+    en: 'An operation is already in progress. Wait before trying again.',
+  },
+  'updates.failed': {
+    fr: 'L’opération n’a pas abouti. Réessayez ou consultez les journaux de l’application.',
+    en: 'The operation did not complete. Try again or check the application logs.',
+  },
   'agents.message_title': { fr: 'Message d’agent', en: 'Agent message' },
   'agents.message_child': { fr: 'Sous-agent', en: 'Subagent' },
   'agents.parent': { fr: 'Agent parent', en: 'Parent agent' },

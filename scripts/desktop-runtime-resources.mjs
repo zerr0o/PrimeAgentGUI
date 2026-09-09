@@ -7,6 +7,8 @@ export const desktopRuntimeScripts = [
   'start-server.mjs',
   'launcher-common.mjs',
   'desktop-start.mjs',
+  'desktop-control.mjs',
+  'stop-server.mjs',
   'desktop-runtime-resources.mjs',
   'command-catalog-worker.mjs',
   'kernel-catalog-worker.mjs',
@@ -25,6 +27,8 @@ const missingIn280 = desktopRuntimeScripts.filter(
       'start-server.mjs',
       'launcher-common.mjs',
       'desktop-start.mjs',
+      'desktop-control.mjs',
+      'stop-server.mjs',
       'desktop-runtime-resources.mjs',
     ].includes(name),
 );

@@ -1,5 +1,18 @@
 import { t as tr, bindText, bindAttribute, textNode, translateKnown } from './i18n.js';
 // Presentation only: native messages and streaming events remain unchanged.
+export function isEmptyCompletedAssistant(message) {
+  return (
+    message.role === 'assistant' &&
+    message.stopReason === 'stop' &&
+    !message.streaming &&
+    !message.text?.trim() &&
+    !message.thinking?.trim() &&
+    !message.tools?.length &&
+    !message.attachments?.length &&
+    !message.error
+  );
+}
+
 export function createConversationRenderer({
   el,
   icon,
@@ -261,6 +274,7 @@ export function createConversationRenderer({
         }
       };
       messages.forEach((m, index) => {
+        if (isEmptyCompletedAssistant(m)) return;
         if (m.role === 'assistant') assistant.push({ ...m, id: idOf(m, index) });
         else {
           flush();

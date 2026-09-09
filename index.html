@@ -904,6 +904,16 @@
           >
             <span data-icon="monitor"></span><span data-i18n="settings.system">Système</span>
           </button>
+          <button
+            id="settings-tab-updates"
+            role="tab"
+            aria-selected="false"
+            aria-controls="settings-panel-updates"
+            tabindex="-1"
+            data-settings-tab="updates"
+          >
+            <span data-icon="download"></span><span data-i18n="updates.title">Mise à jour</span>
+          </button>
         </nav>
         <div class="settings-panels">
           <section
@@ -1167,12 +1177,93 @@
               </button>
             </div>
           </section>
+          <section
+            id="settings-panel-updates"
+            class="settings-panel"
+            role="tabpanel"
+            tabindex="0"
+            aria-labelledby="settings-tab-updates"
+            hidden
+          >
+            <div class="settings-section-heading">
+              <h3 data-i18n="updates.title">Mise à jour</h3>
+              <p class="settings-scope" data-i18n="updates.scope"></p>
+            </div>
+            <p id="studio-update-browser" class="settings-footnote" data-i18n="updates.browser" hidden></p>
+            <div id="studio-update-native" hidden>
+              <dl class="update-versions">
+                <dt data-i18n="updates.app_version"></dt>
+                <dd id="studio-update-app-version">—</dd>
+                <dt data-i18n="updates.server_version"></dt>
+                <dd id="studio-update-server-version">—</dd>
+              </dl>
+              <p id="studio-update-status" class="update-status" role="status" aria-live="polite"></p>
+              <progress id="studio-update-progress" max="100" hidden></progress>
+              <details id="studio-update-notes" class="update-notes" hidden>
+                <summary data-i18n="updates.notes"></summary>
+                <p id="studio-update-notes-body"></p>
+              </details>
+              <div id="studio-update-options" hidden>
+                <label class="update-option"
+                  ><input id="studio-update-restart-after" type="checkbox" checked />
+                  <span data-i18n="updates.restart_after"></span
+                ></label>
+                <p class="settings-footnote" data-i18n="updates.restart_after_note"></p>
+              </div>
+              <div class="update-actions">
+                <button id="studio-update-check" class="secondary-button" data-i18n="updates.check"></button>
+                <button
+                  id="studio-update-install"
+                  class="primary-button"
+                  data-i18n="updates.install"
+                  hidden
+                ></button>
+              </div>
+              <div class="update-server">
+                <h4 data-i18n="updates.server_title"></h4>
+                <p id="studio-update-server-note" class="settings-footnote"></p>
+                <p id="studio-update-agents" class="settings-footnote"></p>
+                <button
+                  id="studio-update-restart"
+                  class="secondary-button"
+                  data-i18n="updates.restart"
+                  disabled
+                ></button>
+              </div>
+            </div>
+            <p id="studio-update-error" class="form-error" role="alert" hidden></p>
+            <a
+              class="update-release-link"
+              href="https://github.com/zerr0o/prime-agent-studio/releases/latest"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-i18n="updates.releases"
+            ></a>
+          </section>
         </div>
       </div>
       <div class="modal-actions settings-actions">
         <button id="logout-button" class="danger-text" type="button" hidden>
           <span data-i18n="ui.se_deconnecter">Se déconnecter</span></button
         ><button class="primary-button" data-close-dialog data-i18n="ui.termine">Terminé</button>
+      </div>
+    </dialog>
+    <dialog
+      id="studio-update-confirm"
+      class="modal update-confirm"
+      aria-labelledby="studio-update-confirm-title"
+      aria-describedby="studio-update-confirm-note"
+    >
+      <div class="modal-heading"><h2 id="studio-update-confirm-title"></h2></div>
+      <p id="studio-update-confirm-note"></p>
+      <div class="modal-actions">
+        <button
+          id="studio-update-cancel"
+          class="secondary-button"
+          data-i18n="updates.cancel"
+          autofocus
+        ></button>
+        <button id="studio-update-proceed" class="primary-button"></button>
       </div>
     </dialog>
     <dialog id="remote-access-dialog" class="modal" aria-labelledby="remote-access-title">

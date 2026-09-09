@@ -11,6 +11,41 @@ use std::{
 use tauri_plugin_updater::UpdaterExt;
 
 #[test]
+fn desktop_links_do_not_expand_the_privileged_or_studio_origins() {
+    assert!(super::is_studio_url(
+        &"http://127.0.0.1:3088/?project=test".parse().unwrap(),
+        3088
+    ));
+    for raw in [
+        "https://127.0.0.1:3088/",
+        "http://127.0.0.1:3089/",
+        "http://127.0.0.1.evil.test:3088/",
+        "http://user@127.0.0.1:3088/",
+    ] {
+        assert!(!super::is_studio_url(&raw.parse().unwrap(), 3088));
+    }
+    for raw in [
+        "https://auth.openai.com/authorize?state=demo",
+        "http://localhost:1455/auth/callback?code=demo",
+        "mailto:test@example.com",
+        "tel:+33123456789",
+    ] {
+        let url = raw.parse().unwrap();
+        assert!(super::is_external_link(&url));
+        assert!(!super::is_launcher_url(&url));
+    }
+    for raw in [
+        "file:///C:/Windows/notepad.exe",
+        "javascript:alert(1)",
+        "data:text/html,test",
+        "ms-settings:privacy",
+        "tauri://localhost/index.html",
+    ] {
+        assert!(!super::is_external_link(&raw.parse().unwrap()));
+    }
+}
+
+#[test]
 fn only_bundled_origins_can_invoke_native_commands() {
     for url in [
         "tauri://localhost/index.html",
