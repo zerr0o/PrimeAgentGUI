@@ -1,5 +1,6 @@
 import { formatMessage as tr, requestLanguage } from './public/i18n-core.js';
 import { createServer } from 'node:http';
+import { isModelAvailabilityError } from './lib/model-availability.mjs';
 import { readFile, stat, mkdir } from 'node:fs/promises';
 import { dirname, join, resolve, extname, sep } from 'node:path';
 import { homedir } from 'node:os';
@@ -174,6 +175,7 @@ export function createApp(options = {}) {
   let closing = false;
   let statusCache,
     modelCache,
+    modelRefreshing = false,
     statusAt = 0,
     modelsAt = 0;
   async function status() {
@@ -183,10 +185,19 @@ export function createApp(options = {}) {
     }
     return statusCache;
   }
-  async function models() {
-    if (!modelCache || Date.now() - modelsAt > 60000) {
-      modelCache = Promise.resolve(runtime.getModels());
+  async function models({ refresh = false } = {}) {
+    if (refresh || !modelCache || Date.now() - modelsAt > (modelRefreshing ? 1000 : 5000)) {
+      const request = Promise.resolve(runtime.getModels({ refresh }));
+      modelCache = request;
       modelsAt = Date.now();
+      request.then(
+        (catalog) => {
+          if (modelCache === request) modelRefreshing = !!catalog.refreshing;
+        },
+        () => {
+          if (modelCache === request) invalidateModels();
+        },
+      );
     }
     return modelCache;
   }
@@ -214,6 +225,7 @@ export function createApp(options = {}) {
         prefix = selected ? `${selected.provider}/` : '';
       if (!selected || !selected.id.startsWith(prefix) || selected.id.length === prefix.length)
         throw new HttpError(400, tr('server.ce_modele_n_est_pas_disponible_dans_prime_agent'));
+      if (selected.availability === 'unavailable') throw new HttpError(409, tr('model.unavailableSelection'));
       selection = { provider: selected.provider, id: selected.id.slice(prefix.length) };
     }
     return configuredModels(modelDefaults.set(selection));
@@ -231,6 +243,8 @@ export function createApp(options = {}) {
       run.finished = true;
       run.status = event.status || ((event.code ?? 0) === 0 ? 'completed' : 'failed');
       run.error = event.error || null;
+      if (run.status === 'failed' && isModelAvailabilityError(run.error))
+        void models({ refresh: true }).catch(() => {});
       run.endedAt = new Date().toISOString();
       if (run.sessionId) sessionLocks.delete(run.sessionId);
     }
@@ -296,6 +310,10 @@ export function createApp(options = {}) {
       if (!existing.cwd || cwdKey(cwd) !== cwdKey(existing.cwd))
         throw new HttpError(409, tr('server.cette_session_appartient_a_un_autre_dossier'));
     }
+    const catalog = await models();
+    const selectedModel = body.model || existing?.model || catalog.default?.model;
+    if (catalog.models?.find((model) => model.id === selectedModel)?.availability === 'unavailable')
+      throw new HttpError(409, tr('model.unavailableSelection'));
     // Check after awaited validation so simultaneous HTTP requests cannot race the lock.
     if (activeRuns().length >= 8)
       throw new HttpError(429, tr('server.huit_sessions_tournent_deja_arretez_en_une_avant_de_continuer'));
@@ -457,6 +475,10 @@ export function createApp(options = {}) {
       if (path === '/api/remote-access/code' && method === 'POST')
         return json(res, 200, await remoteAccess.changeCode(await readBody(req)));
       if (method === 'GET' && path === '/api/models') return json(res, 200, await models());
+      if (method === 'POST' && path === '/api/models/refresh') {
+        await readBody(req);
+        return json(res, 200, await models({ refresh: true }));
+      }
       if (method === 'GET' && path === '/api/inspector')
         return json(
           res,
@@ -597,6 +619,8 @@ export function createApp(options = {}) {
             const model = (await models()).models?.find((m) => m.id === body.policy.model);
             if (!model)
               throw new HttpError(400, tr('server.ce_modele_n_est_pas_disponible_dans_prime_agent'));
+            if (model.availability === 'unavailable')
+              throw new HttpError(409, tr('model.unavailableSelection'));
             if (body.policy.thinking && !model.thinkingLevels?.includes(body.policy.thinking))
               throw new HttpError(
                 400,

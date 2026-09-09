@@ -43,7 +43,13 @@
 
 Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une application Windows et une interface accessible depuis le navigateur. Suivez les réponses en direct, retrouvez vos projets et continuez une conversation sans ouvrir de terminal. Sous Windows, les agents et leurs outils démarrent en arrière-plan, sans fenêtres PowerShell intempestives.
 
-**Version 3.0.0** · [Télécharger l’installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.0.0/Prime-Agent-Studio_3.0.0_x64-setup.exe) · [Notes de version et code source](https://github.com/zerr0o/prime-agent-studio/releases/tag/v3.0.0).
+**Version 3.0.1** · [Télécharger l’installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.0.1/Prime-Agent-Studio_3.0.1_x64-setup.exe) · [Notes de version et code source](https://github.com/zerr0o/prime-agent-studio/releases/tag/v3.0.1).
+
+## Nouveautés de la version 3.0.1
+
+- **Catalogue natif Prime Agent 0.9.4** : le Studio utilise les modèles disponibles dans le registre du moteur installé, avec leurs niveaux de réflexion. Le bouton d’actualisation du sélecteur permet de recharger le catalogue.
+- **Disponibilité OpenRouter** : les modèles retirés du catalogue public sont signalés comme indisponibles. Une variante gratuite disparue reste distincte de son équivalent payant ; aucun remplacement automatique n’est effectué. Les connexions à des endpoints personnalisés sont conservées.
+- **Choix préservés** : actualiser conserve la sélection, les favoris, la recherche et le brouillon. En cas de panne réseau, le catalogue reste consultable et une nouvelle tentative est possible. [Guide des fournisseurs](docs/providers.md).
 
 ## Nouveautés de la version 3.0.0
 
@@ -52,7 +58,7 @@ Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une 
 - **Mémoires et refinements natifs** : consultez les mémoires de session et les modifications avant/après enregistrées. Les éléments globaux portent la mention **Global** et restent partagés entre projets par Prime Agent. La consultation laisse les données natives intactes.
 - **Outils d’historique pour les agents** : les nouvelles exécutions du Studio et leurs sous-agents peuvent rechercher et lire les sources utiles du projet à la demande. La recherche textuelle ne sollicite aucun modèle et un cache local évite de relire les conversations inchangées. L’historique complet n’est pas ajouté automatiquement au contexte de l’agent.
 
-**Après la mise à jour :** l’application peut continuer à utiliser l’ancien serveur pendant que les agents terminent leur travail. Une fois leurs exécutions terminées, utilisez **Préférences → Mise à jour → Redémarrer le serveur** dans l’application Windows pour activer la version 3.0.0. [Guide de mise à jour](docs/desktop.md).
+**Après la mise à jour :** l’application peut continuer à utiliser l’ancien serveur pendant que les agents terminent leur travail. Une fois leurs exécutions terminées, utilisez **Préférences → Mise à jour → Redémarrer le serveur** dans l’application Windows pour activer la version 3.0.1. [Guide de mise à jour](docs/desktop.md).
 
 ## Nouveautés de la version 2.9
 

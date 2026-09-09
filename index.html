@@ -845,16 +845,29 @@
         />
       </div>
       <div class="model-list-toolbar">
-        <span id="model-results-status" role="status" aria-live="polite"></span
-        ><button id="model-favorites-filter" type="button" aria-pressed="false">
-          <span data-icon="star"></span><span id="model-favorites-label" data-i18n="ui.favoris">Favoris</span>
-        </button>
+        <span id="model-results-status" role="status" aria-live="polite"></span>
+        <div class="model-list-actions">
+          <button id="model-favorites-filter" type="button" aria-pressed="false">
+            <span data-icon="star"></span
+            ><span id="model-favorites-label" data-i18n="ui.favoris">Favoris</span>
+          </button>
+          <button
+            id="model-refresh"
+            type="button"
+            class="icon-button"
+            aria-label="Actualiser les modèles"
+            title="Actualiser les modèles"
+            data-i18n-aria-label="model.refresh"
+            data-i18n-title="model.refresh"
+            data-icon="refresh"
+          ></button>
+        </div>
       </div>
       <div
         id="model-list"
         class="model-list"
         role="region"
-        aria-label="Modèles disponibles"
+        aria-label="Catalogue des modèles"
         data-i18n-aria-label="ui.modeles_disponibles"
       ></div>
     </dialog>

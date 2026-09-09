@@ -34,6 +34,9 @@ let liveMessagesUI;
 let commandsUI;
 let inspectorUI;
 let modelPickerTarget = null;
+let modelCatalogRequest = null;
+let modelCatalogPoll = null;
+let modelCatalogPollsRemaining = 0;
 const $ = (id) => document.getElementById(id);
 const icons = {
   plus: 'M12 5v14M5 12h14',
@@ -70,6 +73,7 @@ const icons = {
   chat: 'M21 4H3v13h5l4 4 4-4h5V4Z',
   chevron: 'm9 5 7 7-7 7',
   check: 'm5 12 4 4L19 6',
+  refresh: 'M20 7v5h-5M4 17v-5h5M6.1 7a7 7 0 0 1 11.6-2L20 8M4 16l2.3 3A7 7 0 0 0 17.9 17',
   alert: 'm12 3 10 18H2L12 3Zm0 5v6m0 3v.01',
   user: 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM4 21v-3a8 5 0 0 1 16 0v3',
   brain: 'M12 4C8 0 4 4 5 7c-5 1-4 7-1 8-1 5 5 8 8 4 3 4 9 1 8-4 3-1 4-7-1-8 1-3-3-7-7-3Zm0 0v15',
@@ -143,6 +147,8 @@ const state = {
   modelConfigOriginal: null,
   modelDefaults: null,
   modelCatalogDefault: '',
+  modelCatalogRefreshing: false,
+  modelCatalogNotice: '',
 };
 const selection = readStorage('selection', {});
 const sessionActivity = createSessionActivity({
@@ -209,7 +215,7 @@ function modelDisplayName(id) {
     state.models.find((model) => model.id === id)?.name || id?.split('/').pop() || tr('ui.modele_par_defaut')
   );
 }
-function setSelectedModel(value, persist = false) {
+function setSelectedModel(value, persist = false, render = true) {
   const id = typeof value === 'string' ? value : '',
     select = $('model-select');
   if (id && ![...select.options].some((option) => option.value === id)) {
@@ -235,23 +241,29 @@ function setSelectedModel(value, persist = false) {
     tr('ui.choisir_le_modele_selection_actuelle', { value1: id ? `${name}, ${model?.id || id}` : name }),
   );
   if (persist) savePreferences({ model: id });
-  if ($('model-dialog').open) renderModelList();
+  if (render && $('model-dialog').open) renderModelList();
 }
 function modelRow(model, favorite = false) {
   const id = model.id || '',
     defaultChoice = !id,
+    unavailable = model.availability === 'unavailable',
     name = model.name || modelDisplayName(id),
     selected = (modelPickerTarget?.value ?? $('model-select').value) === id,
     accessibleName = defaultChoice ? name : `${name}, ${model.id}`,
-    row = el('div', `model-row${selected ? ' selected' : ''}`),
+    row = el('div', `model-row${selected ? ' selected' : ''}${unavailable ? ' unavailable' : ''}`),
     choice = el('button', 'model-choice'),
     copy = el('span', 'model-choice-copy'),
     favoriteButton = defaultChoice ? null : el('button', 'model-favorite');
   row.dataset.modelId = id;
   row.setAttribute('role', 'listitem');
   choice.type = 'button';
+  choice.disabled = unavailable;
   choice.dataset.modelId = id;
-  bindAttribute(choice, 'aria-label', () => tr('model.use', { value1: accessibleName }));
+  bindAttribute(choice, 'aria-label', () =>
+    unavailable
+      ? tr('common.unavailable', { value1: accessibleName })
+      : tr('model.use', { value1: accessibleName }),
+  );
   if (selected) choice.setAttribute('aria-current', 'true');
   copy.append(
     el('span', 'model-choice-name', () => name),
@@ -260,6 +272,7 @@ function modelRow(model, favorite = false) {
     ),
   );
   choice.append(copy);
+  if (unavailable) choice.append(el('span', 'model-choice-availability', () => tr('model.unavailable')));
   if (selected) choice.append(icon('check', 'model-choice-check'));
   row.append(choice);
   if (favoriteButton) {
@@ -288,8 +301,10 @@ function appendModelGroup(title, models, favorites) {
   section.append(heading, list);
   $('model-list').append(section);
 }
-function renderModelList({ focusFavorite } = {}) {
+function renderModelList({ focusFavorite, preserveFocus = false } = {}) {
   const root = $('model-list'),
+    focused = preserveFocus && root.contains(document.activeElement) ? document.activeElement : null,
+    scrollTop = root.scrollTop,
     query = normalizeModelSearch($('model-search').value),
     favorites = favoriteModelIds(),
     matching = state.models.filter((model) =>
@@ -311,9 +326,13 @@ function renderModelList({ focusFavorite } = {}) {
       : tr('ui.favoris'),
   );
   bindText($('model-results-status'), () =>
-    query || state.modelFavoritesOnly
-      ? tr('count.results', { count: visibleCount })
-      : tr('count.choices', { count: visibleCount }),
+    state.modelCatalogRefreshing
+      ? tr('model.refreshing')
+      : state.modelCatalogNotice
+        ? tr(state.modelCatalogNotice)
+        : query || state.modelFavoritesOnly
+          ? tr('count.results', { count: visibleCount })
+          : tr('count.choices', { count: visibleCount }),
   );
   appendModelGroup(() => tr('ui.favoris'), favoriteModels, favorites);
   if (showDefault)
@@ -353,7 +372,60 @@ function renderModelList({ focusFavorite } = {}) {
       );
       (target || $('model-favorites-filter')).focus();
     });
+  } else if (preserveFocus) {
+    const replacement =
+      focused &&
+      [
+        ...root.querySelectorAll(focused.matches('.model-favorite') ? '.model-favorite' : '.model-choice'),
+      ].find((button) => button.dataset.modelId === focused.dataset.modelId);
+    if (replacement && !replacement.disabled) replacement.focus({ preventScroll: true });
+    else if (focused) $('model-search').focus({ preventScroll: true });
+    root.scrollTop = scrollTop;
   }
+}
+function renderModelRefresh() {
+  const button = $('model-refresh');
+  const busy = Boolean(modelCatalogRequest) || state.modelCatalogRefreshing;
+  button.disabled = Boolean(modelCatalogRequest) || state.readOnly;
+  button.setAttribute('aria-busy', String(busy));
+  bindAttribute(button, 'aria-label', () => tr(busy ? 'model.refreshing' : 'model.refresh'));
+  bindAttribute(button, 'title', () => tr(busy ? 'model.refreshing' : 'model.refresh'));
+}
+async function refreshModelCatalog({ force = false, manual = false, poll = false } = {}) {
+  if (modelCatalogRequest) return modelCatalogRequest;
+  clearTimeout(modelCatalogPoll);
+  if (!poll) {
+    modelCatalogPollsRemaining = 10;
+    state.modelCatalogNotice = '';
+  }
+  modelCatalogRequest = api(force ? '/api/models/refresh' : '/api/models', {
+    method: force ? 'POST' : 'GET',
+    ...(force ? { body: {} } : {}),
+  })
+    .then((catalog) => {
+      populateModels(catalog, { preserveSelection: true });
+    })
+    .catch((error) => {
+      state.modelCatalogRefreshing = false;
+      state.modelCatalogNotice = 'model.refreshInterrupted';
+      modelCatalogPollsRemaining = 0;
+      if (manual) toast(() => tr('model.refreshFailed', { value1: translateKnown(error.message) }), true);
+    })
+    .finally(() => {
+      modelCatalogRequest = null;
+      if ($('model-dialog').open && state.modelCatalogRefreshing && modelCatalogPollsRemaining === 0) {
+        state.modelCatalogRefreshing = false;
+        state.modelCatalogNotice = 'model.refreshDelayed';
+      }
+      if ($('model-dialog').open && state.modelCatalogNotice) renderModelList({ preserveFocus: true });
+      renderModelRefresh();
+      if ($('model-dialog').open && state.modelCatalogRefreshing && modelCatalogPollsRemaining > 0) {
+        modelCatalogPollsRemaining -= 1;
+        modelCatalogPoll = setTimeout(() => void refreshModelCatalog({ poll: true }), 2000);
+      }
+    });
+  renderModelRefresh();
+  return modelCatalogRequest;
 }
 function toggleModelFavorite(id) {
   if (!state.models.some((model) => model.id === id)) return;
@@ -384,6 +456,7 @@ function openModelPicker(target) {
     $('model-search').focus();
     $('model-list').querySelector('.model-row.selected')?.scrollIntoView({ block: 'center' });
   });
+  void refreshModelCatalog();
 }
 function toast(message, error = false) {
   const n = el('div', `toast${error ? ' error' : ''}`);
@@ -1492,6 +1565,7 @@ function subscribe(run) {
 async function finishRun(run, e) {
   run.replayedDone = true;
   run.status = e.status || 'completed';
+  if (run.status === 'failed') void refreshModelCatalog();
   run.endedAt = new Date().toISOString();
   run.source?.close();
   run.source = null;
@@ -1894,9 +1968,13 @@ async function deleteModelConfiguration(index) {
     toast(() => tr('ui.impossible_de_supprimer_ce_modele', { value1: translateKnown(error.message) }), true);
   }
 }
-function populateModels(catalog) {
+function populateModels(catalog, { preserveSelection = false } = {}) {
+  const selected = $('model-select').value,
+    thinking = $('thinking-select').value;
   state.models = Array.isArray(catalog?.models) ? catalog.models : [];
   state.modelCatalogDefault = typeof catalog?.default?.model === 'string' ? catalog.default.model : '';
+  state.modelCatalogRefreshing = catalog?.refreshing === true;
+  state.modelCatalogNotice = '';
   const select = $('model-select');
   select.replaceChildren();
   const option = el('option', '', () => tr('ui.modele_par_defaut'));
@@ -1912,10 +1990,16 @@ function populateModels(catalog) {
     }
     const item = el('option', '', () => model.name || model.id);
     item.value = model.id;
+    item.disabled = model.availability === 'unavailable';
     groups.get(model.provider).append(item);
   }
-  selectNewConversationModel();
-  $('thinking-select').value = prefs.thinking ?? catalog?.default?.thinking ?? '';
+  if (preserveSelection) setSelectedModel(selected, false, false);
+  else selectNewConversationModel();
+  $('thinking-select').value = preserveSelection
+    ? thinking
+    : (prefs.thinking ?? catalog?.default?.thinking ?? '');
+  if ($('model-dialog').open) renderModelList({ preserveFocus: true });
+  renderModelRefresh();
 }
 function selectNewConversationModel() {
   const model = state.modelCatalogDefault;
@@ -2586,6 +2670,7 @@ $('composer').onkeydown = (e) => {
   }
 };
 $('model-picker-button').onclick = openModelDialog;
+$('model-refresh').onclick = () => void refreshModelCatalog({ force: true, manual: true });
 $('model-select').onchange = () => setSelectedModel($('model-select').value, true);
 $('model-search').oninput = () => renderModelList();
 $('model-favorites-filter').onclick = () => {
@@ -2600,14 +2685,14 @@ $('model-list').onclick = (event) => {
     return;
   }
   const choice = event.target.closest('.model-choice');
-  if (!choice) return;
+  if (!choice || choice.disabled) return;
   const target = modelPickerTarget;
   $('model-dialog').close();
   target?.onSelect(choice.dataset.modelId);
 };
 $('model-search').onkeydown = (event) => {
   if (event.key !== 'ArrowDown') return;
-  const first = $('model-list').querySelector('.model-choice');
+  const first = $('model-list').querySelector('.model-choice:not(:disabled)');
   if (first) {
     event.preventDefault();
     first.focus();
@@ -2617,7 +2702,7 @@ $('model-list').onkeydown = (event) => {
   if (!event.target.matches('.model-choice') || !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key))
     return;
   event.preventDefault();
-  const choices = [...$('model-list').querySelectorAll('.model-choice')],
+  const choices = [...$('model-list').querySelectorAll('.model-choice:not(:disabled)')],
     current = choices.indexOf(event.target),
     index =
       event.key === 'Home'
@@ -2628,6 +2713,8 @@ $('model-list').onkeydown = (event) => {
   choices[index]?.focus();
 };
 $('model-dialog').addEventListener('close', () => {
+  clearTimeout(modelCatalogPoll);
+  modelCatalogPollsRemaining = 0;
   modelPickerTarget?.button.setAttribute('aria-expanded', 'false');
   modelPickerTarget = null;
 });

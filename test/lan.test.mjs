@@ -151,6 +151,23 @@ async function fixture(t, permissions = {}, extraOptions = {}) {
   return { api, local, login, authenticate, runtime, app, cwd, sessionDir, port, config };
 }
 
+test('catalogue refresh follows authenticated mobile control permissions and never starts an agent', async (t) => {
+  for (const readOnly of [true, false]) {
+    const f = await fixture(t, { readOnly });
+    const result = await f.api('/api/models/refresh', {
+      method: 'POST',
+      body: '{}',
+      headers: {
+        Cookie: await f.authenticate(),
+        Origin: `http://127.0.0.1:${f.port}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    assert.equal(result.status, readOnly ? 405 : 200);
+    assert.equal(f.runtime.controls.length, 0);
+  }
+});
+
 test('authenticated phone receipts synchronize in consultation mode without allowing project changes', async (t) => {
   const f = await fixture(t, { readOnly: true });
   await f.app.store.overview();

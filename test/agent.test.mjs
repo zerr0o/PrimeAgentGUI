@@ -8,6 +8,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { createAgentRuntime, normalizeEvent, discoverCli, agentEnvironment } from '../lib/agent.mjs';
+import { createModelAvailability } from '../lib/model-availability.mjs';
 
 const exec = promisify(execFile);
 const fixture = fileURLToPath(new URL('./fixtures/agent-cli.mjs', import.meta.url));
@@ -107,6 +108,126 @@ test('model catalogue returns a positive allowlist and never credential-bearing 
   assert.equal(catalog.default.model, 'custom/test-model');
   assert.equal(catalog.models[0].contextWindow, 8192);
   assert.equal(JSON.stringify(catalog).includes(secret), false);
+});
+
+test('model picker uses native available models, keeps missing recent/default choices unavailable and projects safe fields', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'prime-studio-native-catalog-'));
+  const requests = [];
+  let refreshing = false;
+  const runtime = createAgentRuntime({
+    agentHome: root,
+    sessionDir: join(root, 'sessions'),
+    cliPath: fixture,
+    env: {},
+    nativeModelCatalog: {
+      read: async (options) => {
+        requests.push(options);
+        return {
+          refreshing,
+          models: [
+            {
+              id: 'new-model',
+              provider: 'prime-inference',
+              name: 'Live model',
+              reasoning: true,
+              thinkingLevels: ['low', 'high', 'malicious'],
+              input: ['text'],
+              contextWindow: 32000,
+              headers: { Authorization: 'never expose me' },
+              apiKey: 'never expose me',
+            },
+          ],
+        };
+      },
+      close: async () => {},
+    },
+  });
+  t.after(async () => {
+    await runtime.close();
+    await rm(root, { recursive: true, force: true });
+  });
+  await writeFile(
+    join(root, 'settings.json'),
+    JSON.stringify({
+      defaultProvider: 'prime-inference',
+      defaultModel: 'retired',
+      recentModels: ['prime-inference/internal/no-longer-authorized'],
+    }),
+  );
+  // Native validation is authoritative: raw custom overrides cannot re-add unavailable private models.
+  await writeFile(
+    join(root, 'models.json'),
+    JSON.stringify({ providers: { 'prime-inference': { models: [{ id: 'internal/hidden' }] } } }),
+  );
+  const result = await runtime.getModels({ refresh: true });
+  assert.equal(requests[0].refresh, true);
+  assert.equal(result.refreshing, false);
+  assert.equal(result.default.model, 'prime-inference/retired');
+  assert.equal(result.models.find((m) => m.id.endsWith('/retired')).availability, 'unavailable');
+  assert.equal(result.models.find((m) => m.id.endsWith('/no-longer-authorized')).availability, 'unavailable');
+  assert.equal(
+    result.models.some((m) => m.id.endsWith('/hidden')),
+    false,
+  );
+  assert.deepEqual(result.models.find((m) => m.name === 'Live model').thinkingLevels, ['low', 'high']);
+  assert.equal(JSON.stringify(result).includes('never expose me'), false);
+  refreshing = true;
+  assert.equal(
+    (await runtime.getModels()).models.find((m) => m.id.endsWith('/retired')).availability,
+    'unknown',
+  );
+});
+
+test('native endpoint provenance and legacy JSONC per-model endpoints stay outside the public check', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'prime-studio-model-endpoint-'));
+  const modelAvailability = createModelAvailability({
+    fetchImpl: async () => Response.json({ data: [{ id: 'minimax/minimax-m3' }] }),
+  });
+  let legacy = false;
+  const runtime = createAgentRuntime({
+    agentHome: root,
+    cliPath: fixture,
+    env: {},
+    modelAvailability,
+    nativeModelCatalog: {
+      read: async () => {
+        if (legacy) throw new Error('Legacy engine');
+        return {
+          refreshing: false,
+          models: [
+            { provider: 'openrouter', id: 'private/local', openRouterPublic: false },
+            { provider: 'openrouter', id: 'minimax/minimax-m3:free', openRouterPublic: true },
+          ],
+        };
+      },
+      close: async () => {},
+    },
+  });
+  t.after(async () => {
+    await runtime.close();
+    await rm(root, { recursive: true, force: true });
+  });
+  await runtime.getModels();
+  await new Promise((done) => setImmediate(done));
+  let result = await runtime.getModels();
+  assert.equal(result.models.find((m) => m.id.endsWith('/local')).availability, undefined);
+  assert.equal(result.models.find((m) => m.id.endsWith(':free')).availability, 'unavailable');
+  assert.equal(JSON.stringify(result).includes('openRouterPublic'), false);
+  legacy = true;
+  await writeFile(
+    join(root, 'models.json'),
+    `{
+    // Native configuration may contain comments and trailing commas.
+    "providers": {"openrouter": {"baseUrl": "https://openrouter.ai/api/v1", "models": [
+      {"id": "private/local", "baseUrl": "http://127.0.0.1:1234/v1"},
+      {"id": "minimax/minimax-m3:free"},
+    ]}},
+  }`,
+  );
+  result = await runtime.getModels();
+  assert.equal(result.models.find((m) => m.id.endsWith('/local')).availability, undefined);
+  assert.equal(result.models.find((m) => m.id.endsWith(':free')).availability, 'unavailable');
+  assert.equal(JSON.stringify(result).includes('127.0.0.1:1234'), false);
 });
 
 test('cancelling a run terminates its child process tree', { timeout: 20000 }, async (t) => {

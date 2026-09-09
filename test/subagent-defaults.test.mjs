@@ -95,24 +95,44 @@ test('thinking choices use the native capability map and preserve it through mod
     join(agentHome, 'models.json'),
     JSON.stringify({
       providers: {
-        fixture: {
-          api: 'openai-completions',
-          models: [
-            {
-              id: 'mapped',
-              name: 'Before',
+        openrouter: {
+          apiKey: 'isolated-openrouter-fixture-key',
+          modelOverrides: {
+            'minimax/minimax-m3': {
+              name: 'After',
               reasoning: true,
-              thinkingLevelMap: { high: null, xhigh: 'very_high', max: 'maximum' },
+              thinkingLevelMap: {
+                minimal: 'minimal',
+                low: 'low',
+                medium: 'medium',
+                high: null,
+                xhigh: 'very_high',
+                max: 'maximum',
+              },
             },
-          ],
-          modelOverrides: { mapped: { name: 'After' } },
+          },
         },
       },
     }),
   );
-  const runtime = createAgentRuntime({ agentHome });
+  const runtime = createAgentRuntime({
+    agentHome,
+    env: {
+      SystemRoot: process.env.SystemRoot,
+      HOME: agentHome,
+      USERPROFILE: agentHome,
+      APPDATA: agentHome,
+      PI_OFFLINE: '1',
+    },
+    modelAvailability: {
+      async apply(models) {
+        return { models, refreshing: false };
+      },
+      close() {},
+    },
+  });
   t.after(() => runtime.close());
-  const model = (await runtime.getModels()).models.find((m) => m.id === 'fixture/mapped');
+  const model = (await runtime.getModels()).models.find((m) => m.id === 'openrouter/minimax/minimax-m3');
   assert.equal(model.name, 'After');
   assert.deepEqual(model.thinkingLevels, ['off', 'minimal', 'low', 'medium', 'xhigh', 'max']);
   assert.equal('thinkingLevelMap' in model, false);

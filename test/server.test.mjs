@@ -16,6 +16,66 @@ test('server health and system settings report the packaged release version', as
   assert.equal((await api('/api/system')).json.studio, version);
 });
 
+test('retired model choices are rejected for messages and defaults without switching to a paid model', async (t) => {
+  const runtime = fakeRuntime();
+  runtime.getModels = async () => ({
+    models: [
+      { id: 'openrouter/minimax/minimax-m3:free', provider: 'openrouter', availability: 'unavailable' },
+      { id: 'openrouter/minimax/minimax-m3', provider: 'openrouter', availability: 'available' },
+    ],
+    default: { model: 'openrouter/minimax/minimax-m3:free' },
+  });
+  const f = await fixture(t, { runtime });
+  for (const model of ['', 'openrouter/minimax/minimax-m3:free']) {
+    const result = await f.api('/api/runs', { method: 'POST', body: { cwd: f.cwd, message: 'Test', model } });
+    assert.equal(result.status, 409);
+    assert.equal(runtime.controls.length, 0);
+  }
+  const changed = await f.api('/api/model-defaults', {
+    method: 'POST',
+    body: { model: 'openrouter/minimax/minimax-m3:free' },
+  });
+  assert.equal(changed.status, 409);
+  const data = (await f.api('/api/subagent-defaults')).json;
+  const child = await f.api('/api/subagent-defaults', {
+    method: 'POST',
+    body: {
+      revision: data.revision,
+      policy: { model: 'openrouter/minimax/minimax-m3:free', thinking: '' },
+    },
+  });
+  assert.equal(child.status, 409);
+  const paid = await f.api('/api/runs', {
+    method: 'POST',
+    body: { cwd: f.cwd, message: 'Explicit paid choice', model: 'openrouter/minimax/minimax-m3' },
+  });
+  assert.equal(paid.status, 201);
+  assert.equal(runtime.controls[0].input.model, 'openrouter/minimax/minimax-m3');
+});
+
+test('manual catalogue refresh and provider model failures invalidate the cached list', async (t) => {
+  const runtime = fakeRuntime(),
+    requests = [];
+  const original = runtime.getModels;
+  runtime.getModels = async (options) => {
+    requests.push(options);
+    return original();
+  };
+  const f = await fixture(t, { runtime });
+  await f.api('/api/models');
+  await f.api('/api/models');
+  assert.equal(requests.length, 1);
+  assert.equal((await f.api('/api/models/refresh', { method: 'POST', body: {} })).status, 200);
+  assert.equal(requests.at(-1).refresh, true);
+  const result = await f.api('/api/runs', { method: 'POST', body: { cwd: f.cwd, message: 'Test' } });
+  assert.equal(result.status, 201);
+  const before = requests.length;
+  runtime.controls[0].finish({ status: 'failed', error: '404 This model is unavailable for free.' });
+  await until(() => requests.length > before);
+  assert.equal(requests.at(-1).refresh, true);
+  assert.equal(runtime.controls.length, 1, 'No automatic retry with another model');
+});
+
 test('resource folders use the chosen scope and reject unknown sources, scopes and projects', async (t) => {
   const opened = [];
   const f = await fixture(t, {

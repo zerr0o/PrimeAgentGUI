@@ -16,6 +16,16 @@ With Prime Agent 0.9.2, available account flows are OpenAI Codex, Anthropic and 
 
 Azure and Cloudflare require additional environment settings. Bedrock and Vertex use their existing cloud settings; guidance in each card explains where to configure them. Custom providers must first be defined in **Models and defaults**.
 
+## Catalog and availability
+
+With Prime Agent **0.9.4**, the model picker uses the native registry of available models for configured providers. Refreshing includes public models and private Prime Inference models accessible to your account. If the engine is older or this registry is unavailable, Studio uses the catalog bundled with the installation and custom models.
+
+For **OpenRouter**, Studio also checks identifiers against the public catalog at `https://openrouter.ai/api/v1/models`, with a five-minute cache. This lookup generates no response and checks neither your credits, your quota nor a model’s capacity to respond at that moment. A network error does not mark the whole list unavailable. This public check is skipped when you configure a custom OpenRouter endpoint.
+
+A model identified as retired stays visible as **Unavailable** and can no longer be selected. Old identifiers remain in history and saved defaults. Choose another model to continue: Studio never automatically replaces a retired free identifier with its paid version.
+
+The **Refresh models** button beside favorites in the picker resynchronizes the catalog. Studio also requests a refresh when a run fails with a model-unavailable error. Refreshing preserves your selection and starts no generation.
+
 ## Disconnecting and active sessions
 
 **Disconnect** asks for confirmation, then removes only that provider’s saved credentials from `auth.json`. Conversations, custom models, MCP connections and other providers remain in place. Environment variables, `models.json` settings and the Prime CLI connection are not removed, so they may continue to provide access.

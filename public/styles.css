@@ -3110,6 +3110,20 @@ kbd {
   border-radius: 7px;
   white-space: nowrap;
 }
+.model-list-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#model-refresh {
+  width: 30px;
+  height: 30px;
+  color: var(--picker-secondary);
+}
+#model-refresh svg {
+  width: 15px;
+  height: 15px;
+}
 #model-favorites-filter:hover,
 #model-favorites-filter[aria-pressed='true'] {
   color: var(--accent-text);
@@ -3184,6 +3198,19 @@ kbd {
 .model-choice-detail {
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.model-row.unavailable .model-choice-name {
+  color: var(--picker-secondary);
+}
+.model-choice:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.model-choice-availability {
+  margin-left: 10px;
+  color: var(--picker-secondary);
+  font-size: 10px;
   white-space: nowrap;
 }
 .model-choice-name {

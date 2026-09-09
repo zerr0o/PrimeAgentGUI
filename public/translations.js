@@ -3072,8 +3072,8 @@ export const messages = {
     en: 'Search by name, provider or identifier…',
   },
   'ui.modeles_disponibles': {
-    fr: 'Modèles disponibles',
-    en: 'Available models',
+    fr: 'Catalogue des modèles',
+    en: 'Model catalogue',
   },
   'ui.prime_agent_studio_reconnexion': {
     fr: 'Prime Agent Studio · Reconnexion',
@@ -3094,6 +3094,34 @@ export const messages = {
   'model.use': {
     fr: 'Utiliser {value1}',
     en: 'Use {value1}',
+  },
+  'model.unavailable': {
+    fr: 'Indisponible',
+    en: 'Unavailable',
+  },
+  'model.unavailableSelection': {
+    fr: 'Ce modèle n’est plus disponible. Choisissez-en un autre ; aucun remplacement automatique ne sera effectué.',
+    en: 'This model is no longer available. Choose another model; no automatic replacement will be made.',
+  },
+  'model.refresh': {
+    fr: 'Actualiser les modèles',
+    en: 'Refresh models',
+  },
+  'model.refreshing': {
+    fr: 'Actualisation des modèles…',
+    en: 'Refreshing models…',
+  },
+  'model.refreshFailed': {
+    fr: 'Impossible d’actualiser les modèles : {value1}',
+    en: 'Could not refresh models: {value1}',
+  },
+  'model.refreshInterrupted': {
+    fr: 'Actualisation interrompue. Catalogue conservé.',
+    en: 'Refresh interrupted. Catalogue retained.',
+  },
+  'model.refreshDelayed': {
+    fr: 'Actualisation incomplète. Réessayez.',
+    en: 'Refresh incomplete. Try again.',
   },
   'model.favoritesCount': {
     fr: 'Favoris ({value1})',
@@ -3355,12 +3383,12 @@ export const messages = {
   },
   'count.choices': {
     fr: {
-      one: '{count} choix disponible',
-      other: '{count} choix disponibles',
+      one: '{count} choix',
+      other: '{count} choix',
     },
     en: {
-      one: '{count} available option',
-      other: '{count} available options',
+      one: '{count} option',
+      other: '{count} options',
     },
   },
   'count.providers': {

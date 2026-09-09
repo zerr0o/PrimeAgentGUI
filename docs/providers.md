@@ -16,6 +16,16 @@ Avec Prime Agent 0.9.2, les parcours par compte disponibles sont ceux d’OpenAI
 
 Azure et Cloudflare demandent des paramètres d’environnement complémentaires. Bedrock et Vertex utilisent leurs réglages cloud existants ; une indication dans leur carte explique où les configurer. Les fournisseurs personnalisés doivent d’abord être définis dans **Modèles et valeurs par défaut**.
 
+## Catalogue et disponibilité
+
+Avec Prime Agent **0.9.4**, le sélecteur utilise le registre natif des modèles disponibles pour les fournisseurs configurés. Son actualisation inclut les modèles publics et les modèles privés Prime Inference accessibles à votre compte. Si le moteur est plus ancien ou si ce registre est indisponible, le Studio utilise le catalogue intégré à l’installation et les modèles personnalisés.
+
+Pour **OpenRouter**, le Studio vérifie aussi les identifiants dans le catalogue public `https://openrouter.ai/api/v1/models`, avec un cache de cinq minutes. Cette consultation ne génère aucune réponse et ne vérifie ni vos crédits, ni votre quota, ni la capacité d’un modèle à répondre à cet instant. Une erreur réseau ne rend pas toute la liste indisponible. Cette vérification publique est ignorée lorsque vous configurez une adresse OpenRouter personnalisée.
+
+Un modèle reconnu comme retiré reste visible avec la mention **Indisponible** et ne peut plus être sélectionné. Les anciens identifiants restent conservés dans l’historique et les valeurs par défaut. Choisissez un autre modèle pour continuer : le Studio ne remplace jamais automatiquement un identifiant gratuit retiré par sa version payante.
+
+Le bouton **Actualiser les modèles**, près des favoris dans le sélecteur, relance la synchronisation du catalogue. Le Studio la demande aussi lorsqu’une exécution échoue avec une erreur de modèle indisponible. L’actualisation conserve votre sélection ; elle ne relance aucune génération.
+
 ## Déconnexion et sessions en cours
 
 **Déconnecter** demande une confirmation, puis retire uniquement les identifiants enregistrés pour ce fournisseur dans `auth.json`. Les conversations, les modèles personnalisés, les connexions MCP et les autres fournisseurs restent en place. Les variables d’environnement, les paramètres de `models.json` et la connexion Prime CLI ne sont pas supprimés : ils peuvent donc continuer à fournir un accès.
