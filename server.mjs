@@ -27,6 +27,7 @@ import { createFileStore, validateFiles, appendFileMessage, splitFileMessage } f
 import { createProjectFiles } from './lib/project-files.mjs';
 import { openFile as openLocalFile, fileLaunchMode } from './lib/open-file.mjs';
 import { createSessionInspector } from './lib/session-inspector.mjs';
+import { createKnowledge } from './lib/knowledge.mjs';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const VERSION = JSON.parse(await readFile(new URL('./package.json', import.meta.url), 'utf8')).version;
@@ -109,6 +110,7 @@ export function createApp(options = {}) {
       cliPath: process.env.PRIME_AGENT_CLI,
       kernelRoot: process.env.PRIME_AGENT_GUI_KERNEL_ROOT,
       subagentPolicyFile: subagentDefaults.file,
+      knowledge: { dataDir },
     });
   const modelConfig = options.modelConfig || createModelConfigStore({ agentHome });
   const modelDefaults = options.modelDefaults || createModelDefaultsStore({ agentHome });
@@ -124,6 +126,7 @@ export function createApp(options = {}) {
       onChanged: () => invalidateModels(),
     });
   const projectFiles = createProjectFiles({ store, protectedRoots: [agentHome, sessionDir, dataDir] });
+  const knowledge = options.knowledge || createKnowledge({ store, dataDir, agentHome, sessionDir });
   const inspector = createSessionInspector({
     store,
     agentHome,
@@ -622,6 +625,24 @@ export function createApp(options = {}) {
         );
       if (method === 'GET' && path === '/api/overview')
         return json(res, 200, { ...(await store.overview()), runs: activeRuns() });
+      if (method === 'GET' && path === '/api/knowledge')
+        return json(
+          res,
+          200,
+          await knowledge.search({
+            cwd: url.searchParams.get('cwd'),
+            q: url.searchParams.get('q') || '',
+            kind: url.searchParams.get('kind') || 'all',
+            limit: url.searchParams.has('limit') ? Number(url.searchParams.get('limit')) : 30,
+            cursor: url.searchParams.get('cursor') || undefined,
+          }),
+        );
+      if (method === 'GET' && path === '/api/knowledge/item')
+        return json(
+          res,
+          200,
+          await knowledge.detail({ cwd: url.searchParams.get('cwd'), id: url.searchParams.get('id') }),
+        );
       if (method === 'GET' && path === '/api/history') {
         const { file, ...history } = await store.history(url.searchParams.get('id'));
         return json(res, 200, history);

@@ -6,7 +6,7 @@ The **Prime Agent Studio** application, built with Tauri 2, opens Studio in a de
 
 ## Installation and first launch
 
-Run [Prime-Agent-Studio_2.9.3_x64-setup.exe](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.9.3/Prime-Agent-Studio_2.9.3_x64-setup.exe). Installation is limited to your Windows user and offers Start menu and desktop shortcuts. Node.js is included. The installer installs WebView2 when needed; this component may require an Internet connection.
+Run [Prime-Agent-Studio_3.0.0_x64-setup.exe](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.0.0/Prime-Agent-Studio_3.0.0_x64-setup.exe). Installation is limited to your Windows user and offers Start menu and desktop shortcuts. Node.js is included. The installer installs WebView2 when needed; this component may require an Internet connection.
 
 **Prime Agent and uv are still required on the PC**, with a configured provider. The installer does not reinstall or replace the Prime Agent engine, accounts or sessions. Studio prepares the Python kernel when needed for runs, as the browser version does.
 
@@ -41,6 +41,8 @@ Data is stored in `%LOCALAPPDATA%\com.primeagent.studio`:
 | `desktop.json` | Launcher preferences and installation to migrate                    |
 
 An update installs the new application and prepares a new server copy. **Preferences → Updates** distinguishes the installed application version from the running server version. Old copies are not automatically removed, preserving any processes still using them.
+
+**Upgrading to 3.0.0:** if the previous server stays running after installation, Studio still shows that server’s version and features. Wait for agents to finish, then use **Preferences → Updates → Restart server** in the Windows application to load V3. [Collapsible project navigation](navigation.md) and [project knowledge](knowledge.md) then become available; new runs and their subagents receive the history search and reading tools.
 
 The **2.8.1** fix adds a one-time startup repair: the ten helpers omitted from release 2.8.0 are added to its original cache, even while its server is running. Existing files are preserved. This restores messages, skill discovery and providers without stopping agents.
 

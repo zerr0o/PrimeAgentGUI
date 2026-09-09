@@ -1,6 +1,6 @@
 {
   "name": "prime-agent-studio",
-  "version": "2.9.3",
+  "version": "3.0.0",
   "private": true,
   "author": "zerr0o",
   "license": "MIT",
@@ -24,6 +24,10 @@
     "docs:sync": "node scripts/check-docs.mjs --record",
     "test:activity": "node scripts/test-project-activity-ui.mjs",
     "test:stability": "node scripts/test-session-stability-ui.mjs",
+    "test:navigation": "node scripts/test-project-navigation-ui.mjs",
+    "test:knowledge": "node scripts/test-knowledge-ui.mjs",
+    "test:knowledge:native": "node scripts/test-knowledge-native.mjs",
+    "test:knowledge:packaged": "node scripts/test-knowledge-packaged.mjs .desktop-build/studio",
     "test:mobile": "node scripts/test-mobile-control.mjs",
     "test:workspace": "node scripts/test-workspace-ui.mjs",
     "test:inspector": "node scripts/test-inspector-ui.mjs",

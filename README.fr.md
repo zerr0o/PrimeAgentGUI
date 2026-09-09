@@ -24,6 +24,8 @@
   <a href="#pendant-que-lagent-travaille">Messages en cours</a> ·
   <a href="#images-et-pièces-jointes">Pièces jointes</a> ·
   <a href="#vos-modèles-à-portée-de-main">Modèles</a> ·
+  <a href="docs/navigation.md">Projets et conversations</a> ·
+  <a href="docs/knowledge.md">Connaissances du projet</a> ·
   <a href="docs/mcp.md">Connexions MCP</a> ·
   <a href="docs/providers.md">Fournisseurs</a> ·
   <a href="docs/commands.md">Commandes et skills</a> ·
@@ -41,7 +43,16 @@
 
 Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une application Windows et une interface accessible depuis le navigateur. Suivez les réponses en direct, retrouvez vos projets et continuez une conversation sans ouvrir de terminal. Sous Windows, les agents et leurs outils démarrent en arrière-plan, sans fenêtres PowerShell intempestives.
 
-**Version 2.9.3** — [Télécharger l’installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.9.3/Prime-Agent-Studio_2.9.3_x64-setup.exe) · [Notes de version et code source](https://github.com/zerr0o/prime-agent-studio/releases/tag/v2.9.3).
+**Version 3.0.0** · [Télécharger l’installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.0.0/Prime-Agent-Studio_3.0.0_x64-setup.exe) · [Notes de version et code source](https://github.com/zerr0o/prime-agent-studio/releases/tag/v3.0.0).
+
+## Nouveautés de la version 3.0.0
+
+- **Projets et conversations réunis** : les conversations apparaissent sous leur projet dépliable, dans une seule liste, avec les projets épinglés en tête et **Afficher plus** pour les sessions anciennes. Recherche, archives, indicateurs de non-lus et réorganisation des projets restent à portée de main. Replier un projet conserve la conversation active et son brouillon ouverts. Sur téléphone, toucher le nom d’un projet le déplie ou le replie en gardant le volet ouvert ; choisir une conversation le referme. Les actions d’une conversation s’ouvrent aussi par clic droit sur PC. [Guide de navigation](docs/navigation.md).
+- **Connaissances du projet** : retrouvez les travaux passés depuis **Session** dans le panneau de droite, la vue du projet ou son menu **⋯**. Recherchez du texte, filtrez les résultats et consultez la source native exacte, avec un lien vers la conversation d’origine lorsqu’il est disponible. La consultation fonctionne aussi sur téléphone et en accès distant authentifié en lecture seule. [Guide des connaissances](docs/knowledge.md).
+- **Mémoires et refinements natifs** : consultez les mémoires de session et les modifications avant/après enregistrées. Les éléments globaux portent la mention **Global** et restent partagés entre projets par Prime Agent. La consultation laisse les données natives intactes.
+- **Outils d’historique pour les agents** : les nouvelles exécutions du Studio et leurs sous-agents peuvent rechercher et lire les sources utiles du projet à la demande. La recherche textuelle ne sollicite aucun modèle et un cache local évite de relire les conversations inchangées. L’historique complet n’est pas ajouté automatiquement au contexte de l’agent.
+
+**Après la mise à jour :** l’application peut continuer à utiliser l’ancien serveur pendant que les agents terminent leur travail. Une fois leurs exécutions terminées, utilisez **Préférences → Mise à jour → Redémarrer le serveur** dans l’application Windows pour activer la version 3.0.0. [Guide de mise à jour](docs/desktop.md).
 
 ## Nouveautés de la version 2.9
 
@@ -91,6 +102,7 @@ Les traductions sont réunies dans **une table unique**, avec le français et l�
 | Fonction                           | Dans le Studio                                                                                                                    |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | **Organiser vos projets**          | Ouvrir leurs dossiers sur le PC, les épingler ou les retirer du Studio avec confirmation ; organiser et reprendre leurs sessions. |
+| **Retrouver les travaux passés**   | Rechercher dans l’historique du projet, les mémoires et les refinements natifs, puis lire leurs sources ou les faire consulter par un agent. |
 | **Suivre le travail**              | Lire les réponses en streaming et déplier une activité regroupant les outils et le raisonnement.                                  |
 | **Inspecter une session**          | Consulter son état et sa consommation, suivre les sous-agents et ouvrir leurs échanges sans changer de session.                   |
 | **Consulter les fichiers**         | Parcourir le projet, lire les changements Git, prévisualiser et ouvrir les fichiers sur PC ou mobile.                             |
@@ -108,7 +120,7 @@ Les exécutions continuent lorsque vous changez de session, rechargez la page ou
 
 Le menu **⋯** de chaque projet fonctionne aussi sur mobile ; le clic droit est disponible sur PC. Retirer un projet masque son entrée dans le Studio et conserve son dossier et ses sessions. Vous pouvez retrouver ceux-ci en ajoutant à nouveau le dossier. Un projet avec une exécution active ne peut pas être retiré.
 
-Dans la liste des projets, le dossier devient un **point vert** lorsqu’une session travaille, ou un **point bleu** lorsqu’une réponse terminée reste à lire. Le vert est prioritaire. La session concernée porte aussi un point bleu : consultez sa dernière réponse pour l’effacer. La lecture est enregistrée sur le PC serveur et partagée entre les navigateurs, le téléphone et l’application Windows, y compris en mode consultation. Les appareils ouverts se synchronisent au prochain rafraîchissement (au plus 10 secondes), ou dès leur retour au premier plan. À la première activation de ce suivi partagé, les réponses déjà présentes constituent le point de départ commun.
+Dans la liste des projets, un **point vert** indique une session en cours et un **point bleu** une réponse terminée restant à lire. Le vert est prioritaire. La session concernée porte aussi un point bleu : consultez sa dernière réponse pour l’effacer. La lecture est enregistrée sur le PC serveur et partagée entre les navigateurs, le téléphone et l’application Windows, y compris en mode consultation. Les appareils ouverts se synchronisent au prochain rafraîchissement (au plus 10 secondes), ou dès leur retour au premier plan. À la première activation de ce suivi partagé, les réponses déjà présentes constituent le point de départ commun.
 
 Glissez un projet vers sa nouvelle position dans la liste. Sur écran tactile, utilisez sa poignée ; le reste de la liste reste disponible pour défiler. Au clavier, placez le focus sur la poignée puis utilisez les flèches haut/bas. Le menu **…** conserve aussi ces actions. L’ordre est enregistré sur le serveur et partagé entre appareils ; les projets épinglés restent en tête et se réordonnent dans leur groupe.
 
@@ -124,7 +136,7 @@ Les skills Python sont préparées selon les réglages natifs du projet, pour le
 
 ## Session, agents et fichiers
 
-Le panneau de droite propose trois onglets : **Session** pour l’état et les tokens, **Agents** pour les délégations et leurs échanges, **Fichiers** pour parcourir le projet ou consulter les changements Git. Sur téléphone, le bouton de panneau en haut à droite ouvre ces vues en pleine hauteur.
+Le panneau de droite propose trois onglets : **Session** pour l’état, les tokens et l’accès aux **Connaissances du projet**, **Agents** pour les délégations et leurs échanges, **Fichiers** pour parcourir le projet ou consulter les changements Git. Sur téléphone, le bouton de panneau en haut à droite ouvre ces vues en pleine hauteur.
 
 Les fichiers s’affichent en lecture seule, avec un rendu Markdown, du JSON indenté et une bascule **Aperçu / Source**. Les liens vers des documents dans la conversation ouvrent le même visualiseur. **Ouvrir** lance le fichier dans son application sur le PC ; depuis le téléphone, le bouton indique **Ouvrir sur le PC**. Les changements Git concernent tout le projet, y compris le travail d’autres sessions. Le [guide du panneau](docs/inspector.md) détaille le suivi en direct et les limites des aperçus.
 
@@ -146,7 +158,7 @@ Les tests découvrent les outils sans en exécuter. Les nouveaux réglages s’a
 
 ### Application Windows
 
-Téléchargez l’[installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.8.1/Prime-Agent-Studio_2.8.1_x64-setup.exe), installez-le, puis ouvrez **Prime Agent Studio** depuis le Bureau ou le menu Démarrer. Node.js est inclus ; **Prime Agent et uv** doivent être installés, avec un fournisseur configuré. Si vous utilisiez le VBS, choisissez **Reprendre une installation existante** avant le premier démarrage. [Guide complet](docs/desktop.md).
+Téléchargez l’[installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/latest), installez-le, puis ouvrez **Prime Agent Studio** depuis le Bureau ou le menu Démarrer. Node.js est inclus ; **Prime Agent et uv** doivent être installés, avec un fournisseur configuré. Si vous utilisiez le VBS, choisissez **Reprendre une installation existante** avant le premier démarrage. [Guide complet](docs/desktop.md).
 
 Les mises à jour sont signées pour Tauri ; l’installateur ne possède pas encore de signature Windows Authenticode.
 
@@ -251,7 +263,7 @@ Dans **Préférences → Raisonnement de l’agent**, choisissez **Masqué**, **
 
 ## Un espace pour chaque projet
 
-Retrouvez les conversations d’un projet, filtrez les sessions archivées et gardez les échanges importants épinglés. Le Studio propose les thèmes **sombre, clair et système**, des brouillons locaux, un export Markdown et des raccourcis clavier.
+Dépliez un projet dans la barre latérale pour retrouver ses conversations, filtrez les sessions archivées et gardez les échanges importants épinglés. Le menu **⋯** d’une conversation, également accessible par clic droit sur PC, permet de la renommer, de l’épingler, de l’archiver ou de l’exporter. Le Studio propose les thèmes **sombre, clair et système**, des brouillons locaux, un export Markdown et des raccourcis clavier.
 
 ![Vue des sessions d’un projet sur PC, en thème clair, avec recherche et session épinglée.](docs/screenshots/desktop-projects.png)
 
@@ -286,6 +298,8 @@ La PWA conserve les commandes et pièces jointes du site. En cas de coupure, un 
 | Guide                                             | Contenu                                                                         |
 | ------------------------------------------------- | ------------------------------------------------------------------------------- |
 | [Configuration et données](docs/configuration.md) | Modèles, valeurs par défaut, stockage et variables d’environnement.             |
+| [Projets et conversations](docs/navigation.md)    | Projets dépliables, recherche, archives, menus et réorganisation.                |
+| [Connaissances du projet](docs/knowledge.md)      | Travaux passés, mémoires natives, refinements et outils d’historique des agents. |
 | [Fournisseurs](docs/providers.md)                 | Connexions par compte, clés API, déconnexion et accès réservé au PC.            |
 | [Accès mobile](docs/lan.md)                       | Activation, adresse réseau, authentification et permissions.                    |
 | [Application installable](docs/pwa.md)            | Installation PWA, HTTPS privé et reconnexion.                                   |

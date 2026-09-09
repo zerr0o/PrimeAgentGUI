@@ -73,38 +73,40 @@
             /><kbd>Ctrl K</kbd></label
           >
         </div>
-        <div class="sidebar-section-heading">
-          <span><span data-i18n="ui.espace_de_travail_2">ESPACE DE TRAVAIL</span></span
-          ><button
-            id="add-project"
-            class="icon-button small"
-            title="Ajouter un projet"
-            data-i18n-title="ui.ajouter_un_projet"
-            aria-label="Ajouter un projet"
-            data-i18n-aria-label="ui.ajouter_un_projet"
-            data-icon="plus"
-          ></button>
+        <div class="sidebar-section-heading workspace-heading">
+          <span id="session-list-label" data-i18n="ui.espace_de_travail_2">ESPACE DE TRAVAIL</span>
+          <div class="workspace-heading-actions">
+            <button
+              id="show-archived"
+              class="icon-button small"
+              title="Afficher les sessions archivées"
+              data-i18n-title="ui.afficher_les_sessions_archivees"
+              aria-label="Afficher les sessions archivées"
+              data-i18n-aria-label="ui.afficher_les_sessions_archivees"
+              aria-pressed="false"
+              data-icon="archive"
+            ></button>
+            <button
+              id="add-project"
+              class="icon-button small"
+              title="Ajouter un projet"
+              data-i18n-title="ui.ajouter_un_projet"
+              aria-label="Ajouter un projet"
+              data-i18n-aria-label="ui.ajouter_un_projet"
+              data-icon="plus"
+            ></button>
+          </div>
         </div>
-        <div id="project-list" class="project-list" aria-label="Projets" data-i18n-aria-label="ui.projets">
-          <div class="skeleton skeleton-project"></div>
-          <div class="skeleton skeleton-project short"></div>
-        </div>
-        <div class="sidebar-section-heading session-heading">
-          <span id="session-list-label"><span data-i18n="ui.sessions_recentes">SESSIONS RÉCENTES</span></span
-          ><button
-            id="show-archived"
-            class="icon-button small"
-            title="Afficher les sessions archivées"
-            data-i18n-title="ui.afficher_les_sessions_archivees"
-            aria-label="Afficher les sessions archivées"
-            data-i18n-aria-label="ui.afficher_les_sessions_archivees"
-            aria-pressed="false"
-            data-icon="archive"
-          ></button>
-        </div>
-        <nav id="session-list" class="session-list" aria-label="Sessions" data-i18n-aria-label="ui.sessions">
-          <div class="skeleton skeleton-session"></div>
-          <div class="skeleton skeleton-session short"></div>
+        <nav
+          id="project-list"
+          class="project-list"
+          aria-label="Projets et sessions"
+          data-i18n-aria-label="ui.projets_et_sessions"
+        >
+          <div id="session-list" class="session-list">
+            <div class="skeleton skeleton-project"></div>
+            <div class="skeleton skeleton-session short"></div>
+          </div>
         </nav>
         <div class="sidebar-footer">
           <div class="runtime-status">
@@ -207,6 +209,14 @@
                 >
                   Retrouvez une conversation et reprenez là où vous en étiez.
                 </p>
+                <button
+                  id="project-knowledge"
+                  class="text-button project-knowledge-action"
+                  type="button"
+                  data-i18n="knowledge.open"
+                >
+                  Connaissances du projet
+                </button>
                 <div class="project-overview-toolbar">
                   <div
                     class="project-session-filters"
@@ -538,6 +548,17 @@
                 <button id="copy-project-path" class="text-button" hidden>
                   <span data-icon="copy"></span><span data-i18n="ui.copier_le_chemin">Copier le chemin </span>
                 </button>
+                <button
+                  id="detail-project-knowledge"
+                  type="button"
+                  class="text-button"
+                  aria-haspopup="dialog"
+                  aria-controls="knowledge-dialog"
+                  hidden
+                >
+                  <span data-icon="brain"></span
+                  ><span data-i18n="knowledge.open">Connaissances du projet</span>
+                </button>
               </section>
               <section class="context-section">
                 <div class="context-label" data-i18n="ui.session">SESSION</div>
@@ -579,7 +600,7 @@
                   conversation.
                 </p>
                 <div class="context-footer">
-                  <span>PRIME AGENT STUDIO</span><span id="studio-version">2.5</span>
+                  <span>PRIME AGENT STUDIO</span><span id="studio-version">3.0.0</span>
                 </div>
               </div>
             </div>
@@ -667,6 +688,9 @@
       data-i18n-aria-label="ui.options_du_projet_2"
       hidden
     >
+      <button role="menuitem" data-project-action="knowledge">
+        <span data-icon="brain"></span><span data-i18n="knowledge.open">Connaissances du projet</span>
+      </button>
       <button role="menuitem" data-project-action="open">
         <span data-icon="folder"></span
         ><span data-i18n="ui.ouvrir_le_dossier_sur_le_pc">Ouvrir le dossier sur le PC </span>

@@ -42,7 +42,14 @@ export function createProjectSorting({ root, canSort, move, refresh, render, rep
     // Only allow the pinned/unpinned group under the pointer, not a hidden group above it.
     const first = group[0]?.getBoundingClientRect(),
       last = group.at(-1)?.getBoundingClientRect();
-    if (!first || gesture.y < first.top - 8 || gesture.y > last.bottom + 8) return;
+    const heading = group[0]?.previousElementSibling;
+    const groupTop = heading?.classList.contains('project-group-label')
+      ? heading.getBoundingClientRect().top
+      : first?.top;
+    // The first heading is part of its group's drop area, including the list's
+    // top autoscroll edge. A later group still starts at its own heading.
+    const minimum = group[0] === entries()[0] ? bounds.top - 20 : groupTop - 8;
+    if (!first || gesture.y < minimum || gesture.y > last.bottom + 8) return;
     const candidates = group.filter((entry) => entry !== gesture.entry);
     const target =
       candidates.find((entry) => {

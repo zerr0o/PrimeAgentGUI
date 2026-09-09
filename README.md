@@ -24,6 +24,8 @@
   <a href="#while-the-agent-is-working">Live messages</a> ·
   <a href="#images-and-attachments">Attachments</a> ·
   <a href="#your-models-within-reach">Models</a> ·
+  <a href="docs/en/navigation.md">Projects and conversations</a> ·
+  <a href="docs/en/knowledge.md">Project knowledge</a> ·
   <a href="docs/en/mcp.md">MCP connections</a> ·
   <a href="docs/en/providers.md">Providers</a> ·
   <a href="docs/en/commands.md">Commands and skills</a> ·
@@ -41,7 +43,16 @@
 
 Prime Agent Studio brings your **local Prime Agent sessions** together in a Windows application and a browser interface. Follow streaming responses, find your projects and continue a conversation without opening a terminal. On Windows, agents and their tools run in the background, without unexpected PowerShell windows.
 
-**Version 2.9.3** — [Download the Windows x64 installer](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.9.3/Prime-Agent-Studio_2.9.3_x64-setup.exe) · [Release notes and source code](https://github.com/zerr0o/prime-agent-studio/releases/tag/v2.9.3).
+**Version 3.0.0** · [Download the Windows x64 installer](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.0.0/Prime-Agent-Studio_3.0.0_x64-setup.exe) · [Release notes and source code](https://github.com/zerr0o/prime-agent-studio/releases/tag/v3.0.0).
+
+## What’s new in version 3.0.0
+
+- **Projects and conversations together**: conversations appear beneath collapsible projects in one sidebar, with pinned projects first and **Show more** for older sessions. Search, archives, unread indicators and project reordering remain within reach. Collapsing a project keeps the active conversation and its draft open. On phones, tapping a project name expands or collapses it while keeping the sidebar open; selecting a conversation closes it. Conversation actions also open with a right-click on desktop. [Navigation guide](docs/en/navigation.md).
+- **Project knowledge**: find past work from **Session** in the right panel, the project overview or its **⋯** menu. Search text, filter results and read the exact native source, with a link to the original conversation when available. Browsing also works on phones and through authenticated read-only access. [Knowledge guide](docs/en/knowledge.md).
+- **Native memories and refinements**: read session memories and recorded before/after changes. Global records are labelled **Global** and remain shared across projects by Prime Agent. Browsing leaves the native records unchanged.
+- **History tools for agents**: new Studio runs and their subagents can search and read relevant project sources on demand. Text search needs no model call, and a local cache avoids rereading unchanged conversations. The full history is not automatically added to the agent’s context.
+
+**After updating:** the application can keep using the previous server while agents finish. Once they have finished, use **Preferences → Updates → Restart server** in the Windows application to activate 3.0.0. [Update guide](docs/en/desktop.md).
 
 ## What’s new in version 2.9
 
@@ -91,6 +102,7 @@ Translations live in **one table**, with French and English side by side for eac
 | Feature                     | In Studio                                                                                                                |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | **Organize projects**       | Open their folders on the PC, pin them or remove them from Studio with confirmation; organize and resume their sessions. |
+| **Find previous work**     | Search project history, native memories and refinements, then read their sources or let an agent consult them.          |
 | **Follow progress**         | Read streaming responses and expand an activity block containing tools and reasoning.                                    |
 | **Inspect a session**       | Check its status and usage, follow subagents and open their conversations without switching sessions.                    |
 | **Browse files**            | Explore the project, read Git changes, preview and open files from desktop or mobile.                                    |
@@ -108,7 +120,7 @@ Runs continue when you switch sessions, reload the page or close the tab. The se
 
 Each project’s **⋯** menu also works on mobile; desktop supports right-click. Removing a project hides its Studio entry while preserving its folder and sessions. Add the folder again to find them. A project with an active run cannot be removed.
 
-In the project list, the folder becomes a **green dot** while a session is working, or a **blue dot** when a completed response is unread. Green takes priority. The corresponding session also has a blue dot: read its latest response to clear it. Read receipts are saved on the host PC and shared across browsers, phones and the Windows application, including read-only access. Open devices synchronize at the next refresh (within 10 seconds), or when brought back to the foreground. When shared tracking is first enabled, existing responses become the common starting point.
+In the project list, a **green dot** indicates a working session and a **blue dot** indicates an unread completed response. Green takes priority. The corresponding session also has a blue dot: read its latest response to clear it. Read receipts are saved on the host PC and shared across browsers, phones and the Windows application, including read-only access. Open devices synchronize at the next refresh (within 10 seconds), or when brought back to the foreground. When shared tracking is first enabled, existing responses become the common starting point.
 
 Drag a project to its new position in the sidebar. On touchscreens, use its handle; scrolling the rest of the list remains available. With the keyboard, focus the handle and use the up/down arrows. The **…** menu also retains those actions. The order is saved on the server and shared across devices; pinned projects stay at the top and can be reordered within their group.
 
@@ -124,7 +136,7 @@ Python skills are prepared according to the project’s native settings, for bot
 
 ## Session, agents and files
 
-The right panel has three tabs: **Session** for status and token usage, **Agents** for delegations and their conversations, and **Files** for browsing the project or reading Git changes. On phones, the panel button at the top right opens these views at full height.
+The right panel has three tabs: **Session** for status, token usage and access to **Project knowledge**, **Agents** for delegations and their conversations, and **Files** for browsing the project or reading Git changes. On phones, the panel button at the top right opens these views at full height.
 
 Files open read-only, with Markdown rendering, indented JSON and a **Preview / Source** switch. Document links in conversations open the same viewer. **Open** launches the file in its application on the PC; on phones, the button says **Open on PC**. Git changes cover the entire project, including work from other sessions. The [panel guide](docs/en/inspector.md) explains live tracking and preview limits.
 
@@ -146,7 +158,7 @@ Connection tests discover tools without executing them. New settings apply to ne
 
 ### Windows application
 
-Download the [Windows x64 installer](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.8.1/Prime-Agent-Studio_2.8.1_x64-setup.exe), install it, then open **Prime Agent Studio** from your desktop or Start menu. Node.js is included; **Prime Agent and uv** must be installed, with a configured provider. If you used the VBS launcher, select **Use an existing installation** before the first startup. [Full guide](docs/en/desktop.md).
+Download the [Windows x64 installer](https://github.com/zerr0o/prime-agent-studio/releases/latest), install it, then open **Prime Agent Studio** from your desktop or Start menu. Node.js is included; **Prime Agent and uv** must be installed, with a configured provider. If you used the VBS launcher, select **Use an existing installation** before the first startup. [Full guide](docs/en/desktop.md).
 
 Updates are signed for Tauri; the installer does not yet carry a Windows Authenticode signature.
 
@@ -251,7 +263,7 @@ In **Preferences → Agent reasoning**, choose **Hidden**, **Preview** or **Expa
 
 ## A space for each project
 
-Find a project’s conversations, filter archived sessions and keep important exchanges pinned. Studio offers **dark, light and system** themes, local drafts, Markdown export and keyboard shortcuts.
+Expand a project in the sidebar to find its conversations, filter archived sessions and keep important exchanges pinned. A conversation’s **⋯** menu, also available by right-click on desktop, lets you rename, pin, archive or export it. Studio offers **dark, light and system** themes, local drafts, Markdown export and keyboard shortcuts.
 
 ![Desktop project sessions in light theme, with search and a pinned session.](docs/screenshots/en/desktop-projects.png)
 
@@ -286,6 +298,8 @@ The PWA keeps the website’s commands and attachments. If connectivity is lost,
 | Guide                                                 | Contents                                                                    |
 | ----------------------------------------------------- | --------------------------------------------------------------------------- |
 | [Configuration and data](docs/en/configuration.md)    | Models, defaults, storage and environment variables.                        |
+| [Projects and conversations](docs/en/navigation.md)  | Collapsible projects, search, archives, menus and reordering.               |
+| [Project knowledge](docs/en/knowledge.md)             | Past work, native memories, refinements and history tools for agents.        |
 | [Providers](docs/en/providers.md)                     | Account sign-in, API keys, sign-out and desktop-only access.                |
 | [Mobile access](docs/en/lan.md)                       | Setup, network address, authentication and permissions.                     |
 | [Installable application](docs/en/pwa.md)             | PWA installation, private HTTPS and reconnection.                           |

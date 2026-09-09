@@ -110,6 +110,19 @@ async function settings() {
   await expect(page.locator('#settings-dialog')).toBeVisible();
 }
 async function boxInside(selector, width, height) {
+  // Mobile viewport dimensions are applied on the next animation frame.
+  await expect
+    .poll(async () => {
+      const current = await page.locator(selector).boundingBox();
+      return (
+        !!current &&
+        current.x >= 0 &&
+        current.y >= 0 &&
+        current.x + current.width <= width + 1 &&
+        current.y + current.height <= height + 1
+      );
+    })
+    .toBe(true);
   const box = await page.locator(selector).boundingBox();
   expect(box.x).toBeGreaterThanOrEqual(0);
   expect(box.y).toBeGreaterThanOrEqual(0);

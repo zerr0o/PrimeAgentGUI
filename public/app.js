@@ -25,8 +25,11 @@ import { fileLinkRenderer, bindFileLinks } from './file-links.js';
 import { createSessionActivity } from './session-activity.js';
 import { parseAgentEnvelope } from './agent-messages.js';
 import { createProjectSorting } from './project-sorting.js';
+import { createProjectNavigation } from './project-navigation.js';
+import { createKnowledgeBrowser } from './knowledge.js';
 let imageComposer;
 let projectSorting;
+let projectNavigation;
 let liveMessagesUI;
 let commandsUI;
 let inspectorUI;
@@ -583,79 +586,33 @@ function updateComposer() {
   liveMessagesUI?.update();
 }
 function renderProjects() {
-  if (projectSorting?.active) return;
-  const root = $('project-list');
-  root.replaceChildren();
-  const items = [...state.projects].sort((a, b) => Number(b.pinned) - Number(a.pinned));
-  for (const p of items) {
-    const entry = el('div', 'project-entry');
-    entry.dataset.cwd = p.cwd;
-    entry.dataset.pinned = String(!!p.pinned);
-    const b = el('button', `project-row${samePath(p.cwd, state.projectCwd) ? ' active' : ''}`);
-    bindAttribute(b, 'title', () => p.cwd);
-    b.setAttribute('aria-pressed', String(samePath(p.cwd, state.projectCwd)));
-    const running = [...state.runs.values()].some((run) => samePath(run.cwd, p.cwd) && isRunning(run));
-    const unread = (p.sessions || []).some((s) => sessionActivity.isUnread(s.id));
-    const status = running ? 'running' : unread ? 'unread' : 'idle';
-    b.dataset.activity = status;
-    b.append(
-      status === 'idle' ? icon('folder') : activityDot(status, true),
-      el('span', 'project-label', () => p.name || p.cwd.split(/[\\/]/).pop()),
-    );
-    const count = el('span', 'project-count', () =>
-      String((p.sessions || []).filter((s) => !s.archived).length),
-    );
-    b.append(count);
-    if (p.exists === false) {
-      bindText(count, () => '!');
-      bindAttribute(count, 'title', () => tr('ui.dossier_introuvable'));
-    }
-    b.onclick = () => selectProject(p.cwd);
-    b.oncontextmenu = (e) => {
-      if (!state.readOnly) {
-        e.preventDefault();
-        openProjectMenu(p.cwd, b);
-      }
-    };
-    if (!state.readOnly && items.length > 1) {
-      const handle = el('button', 'project-drag-handle');
-      handle.type = 'button';
-      bindAttribute(handle, 'aria-label', () => tr('projects.drag', { name: p.name }));
-      bindAttribute(handle, 'title', () => tr('projects.drag_hint'));
-      handle.setAttribute('aria-keyshortcuts', 'ArrowUp ArrowDown');
-      handle.append(icon('grip'));
-      entry.append(handle);
-    }
-    entry.append(b);
-    if (!state.readOnly) {
-      const more = el('button', 'project-more');
-      more.type = 'button';
-      bindAttribute(more, 'aria-label', () => tr('ui.options_du_projet', { value1: p.name }));
-      more.setAttribute('aria-haspopup', 'menu');
-      more.append(icon('more'));
-      more.onclick = () => openProjectMenu(p.cwd, more);
-      entry.append(more);
-    }
-    if (p.pinned) {
-      const pin = icon('pin');
-      pin.classList.add('project-pin');
-      b.insertBefore(pin, count);
-    }
-    root.append(entry);
-  }
-  if (!items.length) {
-    const empty = el('div', 'sidebar-empty', () =>
-      state.readOnly
-        ? tr('ui.aucun_projet_a_consulter_pour_le_moment')
-        : tr('ui.vos_projets_au_meme_endroit'),
-    );
-    if (!state.readOnly) {
-      const b = el('button', '', () => tr('ui.ajouter_un_dossier'));
-      b.onclick = openProjectDialog;
-      empty.append(b);
-    }
-    root.append(empty);
-  }
+  if (projectSorting?.active || !projectNavigation) return;
+  const query = $('session-search').value.trim();
+  bindText($('session-list-label'), () =>
+    state.archived
+      ? tr('ui.sessions_archivees')
+      : query
+        ? tr('ui.resultats_de_recherche')
+        : tr('ui.espace_de_travail_2'),
+  );
+  $('show-archived').setAttribute('aria-pressed', String(state.archived));
+  bindAttribute($('show-archived'), 'title', () =>
+    state.archived ? tr('ui.afficher_les_sessions_recentes') : tr('ui.afficher_les_sessions_archivees'),
+  );
+  bindAttribute($('show-archived'), 'aria-label', () => $('show-archived').title);
+  projectNavigation.render({
+    projects: state.projects,
+    projectCwd: state.projectCwd,
+    sessionId: state.sessionId,
+    viewRunId: state.viewRunId,
+    archived: state.archived,
+    query,
+    readOnly: state.readOnly,
+    runs: [...state.runs.values()],
+    unreadIds: allSessions()
+      .filter((s) => sessionActivity.isUnread(s.id))
+      .map((s) => s.id),
+  });
 }
 function activityDot(status, project = false) {
   const dot = el(
@@ -668,86 +625,8 @@ function activityDot(status, project = false) {
   bindAttribute(dot, 'aria-label', () => translateKnown(label));
   return dot;
 }
-function groupLabel(s) {
-  if (s.pinned) return tr('ui.epinglees');
-  const age = (Date.now() - toTime(s.updatedAt)) / 86400000;
-  return age < 1
-    ? tr('ui.aujourd_hui')
-    : age < 7
-      ? tr('ui.cette_semaine')
-      : age < 30
-        ? tr('ui.ce_mois_ci')
-        : tr('ui.plus_anciennes');
-}
 function renderSessions() {
-  const query = $('session-search').value.trim().toLocaleLowerCase(getLanguage());
-  let items = query
-    ? allSessions()
-    : (project()?.sessions || []).map((s) => ({ ...s, cwd: s.cwd || state.projectCwd }));
-  items = items.filter(
-    (s) =>
-      Boolean(s.archived) === state.archived &&
-      (!query || `${s.title} ${s.cwd}`.toLocaleLowerCase(getLanguage()).includes(query)),
-  );
-  items.sort((a, b) => Number(b.pinned) - Number(a.pinned) || toTime(b.updatedAt) - toTime(a.updatedAt));
-  const root = $('session-list'),
-    scroll = root.scrollTop;
-  root.replaceChildren();
-  bindText($('session-list-label'), () =>
-    state.archived
-      ? tr('ui.sessions_archivees')
-      : query
-        ? tr('ui.resultats_de_recherche')
-        : tr('ui.sessions_recentes'),
-  );
-  $('show-archived').setAttribute('aria-pressed', String(state.archived));
-  bindAttribute($('show-archived'), 'title', () =>
-    state.archived ? tr('ui.afficher_les_sessions_recentes') : tr('ui.afficher_les_sessions_archivees'),
-  );
-  bindAttribute($('show-archived'), 'aria-label', () => $('show-archived').title);
-  let group = '';
-  for (const s of items) {
-    const label = groupLabel(s);
-    if (label !== group && !query) {
-      root.append(el('div', 'session-group-label', () => translateKnown(label)));
-      group = label;
-    }
-    const row = el('div', `session-row${s.id === state.sessionId ? ' active' : ''}`),
-      b = el('button', 'session-select');
-    bindAttribute(b, 'title', () => s.title || tr('ui.sans_titre'));
-    b.setAttribute('aria-current', s.id === state.sessionId ? 'page' : 'false');
-    const running = [...state.runs.values()].some((r) => r.sessionId === s.id && isRunning(r));
-    const unread = sessionActivity.isUnread(s.id);
-    row.dataset.activity = running ? 'running' : unread ? 'unread' : 'idle';
-    b.append(
-      running || unread ? activityDot(running ? 'running' : 'unread') : icon(s.pinned ? 'pin' : 'chat'),
-      el('span', 'session-title', () => s.title || tr('ui.nouvelle_session')),
-    );
-    b.onclick = () => selectSession(s.id, s.cwd);
-    const menu = el('button', 'icon-button session-more');
-    menu.append(icon('more'));
-    bindAttribute(menu, 'title', () => tr('ui.options_de_la_session'));
-    bindAttribute(menu, 'aria-label', () =>
-      tr('common.options', { value1: s.title || tr('ui.nouvelle_session') }),
-    );
-    menu.setAttribute('aria-haspopup', 'menu');
-    menu.onclick = (e) => openSessionMenu(s.id, e.currentTarget);
-    row.append(b, menu);
-    root.append(row);
-  }
-  if (!items.length)
-    root.append(
-      el('div', 'empty-search', () =>
-        query
-          ? tr('ui.aucune_session_ne_correspond_a_votre_recherche')
-          : state.archived
-            ? tr('ui.aucune_session_archivee')
-            : state.readOnly
-              ? tr('ui.aucune_session_a_consulter_dans_ce_projet_pour_le_moment')
-              : tr('ui.vos_conversations_apparaitront_ici_commencez_une_nouvelle_session'),
-      ),
-    );
-  root.scrollTop = scroll;
+  renderProjects();
 }
 let projectListSignature = '';
 function renderProjectOverview() {
@@ -922,6 +801,7 @@ function renderDetails() {
         : tr('ui.connectez_un_dossier_local_pour_donner_du_contexte_a_votre_agent')),
   );
   $('copy-project-path').hidden = !p;
+  $('detail-project-knowledge').hidden = !p;
   bindText($('welcome-project').lastElementChild, () =>
     p
       ? p.exists === false
@@ -1284,6 +1164,7 @@ function scrollBottom(smooth = false) {
   markVisibleSessionRead();
 }
 let renderScheduled = false;
+let bottomScrollFrame;
 function scheduleMessages() {
   if (renderScheduled) return;
   renderScheduled = true;
@@ -1295,6 +1176,7 @@ function scheduleMessages() {
   });
 }
 function renderMessages(forceScroll = false) {
+  cancelAnimationFrame(bottomScrollFrame);
   const stick = forceScroll || nearBottom(),
     messages = activeMessages();
   $('welcome').hidden = state.projectOverview || messages.length > 0 || state.loading;
@@ -1308,7 +1190,7 @@ function renderMessages(forceScroll = false) {
   if (!messages.length && !state.loading) {
     $('conversation-scroll').scrollTop = 0;
     $('scroll-bottom').hidden = true;
-  } else if (stick) requestAnimationFrame(() => scrollBottom());
+  } else if (stick) bottomScrollFrame = requestAnimationFrame(() => scrollBottom());
   else $('scroll-bottom').hidden = nearBottom();
 }
 function closeSidebar() {
@@ -1346,6 +1228,7 @@ function selectProject(cwd) {
   saveDraft();
   resetView();
   state.projectCwd = cwd;
+  projectNavigation?.reveal(cwd);
   state.projectOverview = true;
   state.archived = false;
   $('session-search').value = '';
@@ -1371,6 +1254,7 @@ async function selectSession(id, cwd) {
   state.sessionId = id;
   state.projectOverview = false;
   state.projectCwd = cwd || session(id)?.cwd || state.projectCwd;
+  projectNavigation?.reveal(state.projectCwd);
   state.viewRunId = null;
   state.history = [];
   state.loading = true;
@@ -1415,6 +1299,7 @@ async function selectRun(run) {
   saveDraft();
   resetView();
   state.projectCwd = run.cwd;
+  projectNavigation?.reveal(run.cwd);
   state.viewRunId = run.id;
   if (!run.initialized) initializeRun(run, []);
   subscribe(run);
@@ -2081,10 +1966,10 @@ async function bootstrap() {
   } catch (e) {
     setConnection(false);
     banner(() => tr('ui.impossible_de_joindre_le_serveur', { value1: translateKnown(e.message) }), true);
-    $('project-list').replaceChildren(
+    projectNavigation?.invalidate();
+    $('session-list').replaceChildren(
       el('div', 'sidebar-empty', () => tr('ui.le_serveur_local_est_indisponible_reconnexion_automatique')),
     );
-    $('session-list').replaceChildren();
     setTimeout(bootstrap, 5000);
   }
 }
@@ -2168,13 +2053,15 @@ function closeProjectMenu() {
   projectMenuAnchor?.setAttribute('aria-expanded', 'false');
 }
 function openProjectMenu(cwd, anchor) {
-  if (state.readOnly) return;
   closeSessionMenu();
   closeProjectMenu();
   const p = state.projects.find((p) => samePath(p.cwd, cwd));
   if (!p) return;
   menuProjectCwd = cwd;
   projectMenuAnchor = anchor;
+  for (const item of $('project-menu').querySelectorAll('[data-project-action]'))
+    item.hidden = state.readOnly && item.dataset.projectAction !== 'knowledge';
+  for (const divider of $('project-menu').querySelectorAll('.menu-divider')) divider.hidden = state.readOnly;
   bindText($('project-pin-label'), () => (p.pinned ? tr('ui.desepingler') : tr('ui.epingler')));
   $('project-menu').querySelector('[data-project-action="open"]').disabled = p.exists === false;
   const projectIndex = state.projects.indexOf(p);
@@ -2189,12 +2076,14 @@ function openProjectMenu(cwd, anchor) {
   $('project-menu').hidden = false;
   anchor.setAttribute('aria-expanded', 'true');
   positionMenus();
-  $('project-menu').querySelector('button:not(:disabled)').focus({ preventScroll: true });
+  $('project-menu').querySelector('button:not(:disabled):not([hidden])').focus({ preventScroll: true });
 }
 async function projectMenuAction(action) {
   const p = state.projects.find((p) => samePath(p.cwd, menuProjectCwd));
   closeProjectMenu();
-  if (!p || state.readOnly) return;
+  if (!p) return;
+  if (action === 'knowledge') return knowledgeUI.open(p, projectMenuAnchor);
+  if (state.readOnly) return;
   try {
     if (action === 'open') {
       await api('/api/projects/open', { method: 'POST', body: { cwd: p.cwd } });
@@ -2390,6 +2279,33 @@ async function exportSession(id = state.sessionId) {
 }
 
 hydrateIcons();
+const knowledgeUI = createKnowledgeBrowser({
+  api,
+  onOpenSession: async ({ sessionId, cwd, messageId }) => {
+    await selectSession(sessionId, cwd);
+    if (!messageId) return;
+    const message = [...$('messages').querySelectorAll('[data-message-id]')].findLast(
+      (node) => node.dataset.messageId === messageId,
+    );
+    if (message) {
+      cancelAnimationFrame(bottomScrollFrame);
+      for (
+        let ancestor = message.parentElement;
+        ancestor && ancestor !== $('messages');
+        ancestor = ancestor.parentElement
+      )
+        if (ancestor.tagName === 'DETAILS') ancestor.open = true;
+      message.scrollIntoView({ block: 'start', behavior: 'instant' });
+      message.setAttribute('tabindex', '-1');
+      message.focus({ preventScroll: true });
+    }
+  },
+});
+for (const id of ['project-knowledge', 'detail-project-knowledge'])
+  $(id).onclick = (event) => {
+    const selected = project();
+    if (selected) knowledgeUI.open(selected, event.currentTarget);
+  };
 inspectorUI = createInspector({
   api,
   markdown,
@@ -2536,6 +2452,21 @@ liveMessagesUI = createLiveMessages({
   },
   onError: (error) => toast(translateKnown(error.message) || String(error), true),
 });
+projectNavigation = createProjectNavigation({
+  root: $('session-list'),
+  scroller: $('project-list'),
+  el,
+  icon,
+  activityDot,
+  read: readStorage,
+  write: writeStorage,
+  selectProject,
+  selectSession,
+  selectRun,
+  openProjectMenu,
+  openSessionMenu,
+  addProject: openProjectDialog,
+});
 applyPreferences();
 $('new-session').onclick = newSession;
 $('project-new-session').onclick = newSession;
@@ -2584,7 +2515,7 @@ $('project-menu').onclick = (e) => {
 };
 projectSorting = createProjectSorting({
   root: $('project-list'),
-  canSort: () => !state.readOnly,
+  canSort: () => !state.readOnly && !state.archived && !$('session-search').value.trim(),
   move: (body) => api('/api/projects/move', { method: 'POST', body }),
   refresh: refreshOverview,
   render: renderProjects,
@@ -2759,7 +2690,7 @@ document.addEventListener('click', (e) => {
 });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    if ($('inspector-viewer').open) return;
+    if ($('inspector-viewer').open || $('knowledge-dialog').open) return;
     closeProjectMenu();
     closeSessionMenu();
     closeSidebar();
@@ -2837,7 +2768,7 @@ setInterval(() => {
   }
 }, 1000);
 setInterval(() => {
-  if (state.initialized) void refreshOverview();
+  if (state.initialized && !document.hidden) void refreshOverview();
 }, 10000);
 createMcpSettings({ api, toast });
 createProviderSettings({

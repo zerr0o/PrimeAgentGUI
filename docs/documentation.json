@@ -7,8 +7,8 @@
       "fr": "docs/desktop.md",
       "en": "docs/en/desktop.md",
       "reviewed": {
-        "fr": "bf7fb01dee90d6ce680e7eb5ff22c1e68d9ac48be81d1a1436f97f6364e5b6ab",
-        "en": "1674ae12fc95eae6f117c901a72a4ce725d122c58f8f08ea5d4b6f22fcc989e7"
+        "fr": "3be5c78ad2c66e43e865b40c1e1d9bd782d51d8ff0591436dc1f6755a53883d2",
+        "en": "86af8d1a088182e04d81081fa8815ae9d2b6c2babdbc71141d08f58123737108"
       }
     },
     {
@@ -16,8 +16,8 @@
       "fr": "README.fr.md",
       "en": "README.md",
       "reviewed": {
-        "fr": "a879a82de13b0c62dc0092354d0113415fd8e95082925770f7b9d014667a24ba",
-        "en": "d4c9c03050aa0d636950461368c85fbaed91a988d967ae8d2e47b14290441545"
+        "fr": "61c610f275ac9ccdd21f556a5d0eb054391c37ffebc42cf97b2ef899c8be2f25",
+        "en": "b2fb4e6fca1dfebaeaa835ba3346642bfdef044215b7d82088e5083514a3e331"
       }
     },
     {
@@ -99,6 +99,24 @@
       "reviewed": {
         "fr": "ee401ba46a9194e2a2a22d9a38b9ab04f3bcc177c932e02e8939ef27887f475a",
         "en": "d69f2f6b82cb2f1873d6a80ee83225ec0063ea25f17a9fdfc9f22ff29320881d"
+      }
+    },
+    {
+      "id": "navigation",
+      "fr": "docs/navigation.md",
+      "en": "docs/en/navigation.md",
+      "reviewed": {
+        "fr": "ef2debb312d3f83fc4fbf3cabd1d26fcd5e72366e9c43bcb078082aa6d6ba501",
+        "en": "ab92e793725bf03219ec08a08b26b1517c783730760842e0921fe694a991f44b"
+      }
+    },
+    {
+      "id": "knowledge",
+      "fr": "docs/knowledge.md",
+      "en": "docs/en/knowledge.md",
+      "reviewed": {
+        "fr": "762166b4b48f16c1002974157b47617ea94ee920239083861bff18ad1f54ae57",
+        "en": "ed5e94610187d1d754c5d1feb9c9840fd2bcee26c69411fc56a5240b164ae442"
       }
     }
   ]

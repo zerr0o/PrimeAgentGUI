@@ -5,6 +5,91 @@ export const languages = [
   { id: 'en', label: 'English' },
 ];
 export const messages = {
+  'navigation.pinned': { fr: 'Épinglés', en: 'Pinned' },
+  'navigation.collapse': { fr: 'Replier {name}', en: 'Collapse {name}' },
+  'navigation.expand': { fr: 'Déplier {name}', en: 'Expand {name}' },
+  'navigation.empty': { fr: 'Aucune conversation', en: 'No conversations' },
+  'navigation.show_more': { fr: 'Afficher plus', en: 'Show more' },
+  'navigation.show_more_project': {
+    fr: 'Afficher plus de conversations dans {name}',
+    en: 'Show more conversations in {name}',
+  },
+  'navigation.show_less': { fr: 'Afficher moins', en: 'Show less' },
+  'knowledge.open': { fr: 'Connaissances du projet', en: 'Project knowledge' },
+  'knowledge.close': { fr: 'Fermer les connaissances du projet', en: 'Close project knowledge' },
+  'knowledge.search': {
+    fr: 'Rechercher une décision, un problème, une solution…',
+    en: 'Search for a decision, a problem, a solution…',
+  },
+  'knowledge.filter': { fr: 'Type de source', en: 'Source type' },
+  'knowledge.kind.all': { fr: 'Tout', en: 'All' },
+  'knowledge.kind.history': { fr: 'Travaux passés', en: 'Past work' },
+  'knowledge.kind.memory': { fr: 'Mémoires', en: 'Memories' },
+  'knowledge.kind.refinement': { fr: 'Refinements', en: 'Refinements' },
+  'knowledge.scope.global': { fr: 'Global', en: 'Global' },
+  'knowledge.scope.session': { fr: 'Session', en: 'Session' },
+  'knowledge.native': {
+    fr: 'Sources natives de Prime Agent · Consultation uniquement',
+    en: 'Native Prime Agent sources · Read only',
+  },
+  'knowledge.more': { fr: 'Afficher plus de résultats', en: 'Show more results' },
+  'knowledge.choose': {
+    fr: 'Sélectionnez un résultat pour consulter sa source.',
+    en: 'Select a result to read its source.',
+  },
+  'knowledge.back': { fr: '← Résultats', en: '← Results' },
+  'knowledge.changes': { fr: 'Modifications enregistrées', en: 'Recorded changes' },
+  'knowledge.not_applied': { fr: 'Modification non appliquée', en: 'Change not applied' },
+  'knowledge.before': { fr: 'Avant', en: 'Before' },
+  'knowledge.after': { fr: 'Après', en: 'After' },
+  'knowledge.absent': { fr: 'Aucune entrée', en: 'No entry' },
+  'knowledge.source': { fr: 'Source exacte', en: 'Exact source' },
+  'knowledge.line': { fr: 'Ligne {line}', en: 'Line {line}' },
+  'knowledge.message': { fr: 'Message', en: 'Message' },
+  'knowledge.open_session': { fr: 'Ouvrir la conversation', en: 'Open conversation' },
+  'knowledge.loading': { fr: 'Recherche dans les sources natives…', en: 'Searching native sources…' },
+  'knowledge.retry': { fr: 'Réessayer', en: 'Try again' },
+  'knowledge.results': {
+    fr: { one: '{count} résultat', other: '{count} résultats' },
+    en: { one: '{count} result', other: '{count} results' },
+  },
+  'knowledge.partial': {
+    fr: 'Certaines sources n’ont pas pu être consultées. Les résultats peuvent être incomplets.',
+    en: 'Some sources could not be read. Results may be incomplete.',
+  },
+  'knowledge.truncated': {
+    fr: 'Cet extrait est limité. Consultez la source pour retrouver le contenu complet.',
+    en: 'This excerpt is limited. Consult the source for the full content.',
+  },
+  'knowledge.invalid_project': { fr: 'Choisissez un projet valide.', en: 'Choose a valid project.' },
+  'knowledge.invalid_query': {
+    fr: 'Cette recherche est invalide. Utilisez au maximum 500 caractères.',
+    en: 'Invalid search. Use up to 500 characters.',
+  },
+  'knowledge.invalid_limit': {
+    fr: 'Le nombre de résultats demandé est invalide.',
+    en: 'The requested result count is invalid.',
+  },
+  'knowledge.invalid_cursor': {
+    fr: 'La recherche a changé. Relancez-la pour afficher les résultats.',
+    en: 'The search has changed. Run it again to view results.',
+  },
+  'knowledge.invalid_id': {
+    fr: 'Cette référence de source est invalide.',
+    en: 'This source reference is invalid.',
+  },
+  'knowledge.not_found': {
+    fr: 'Cette source n’est plus disponible. Relancez la recherche.',
+    en: 'This source is no longer available. Run the search again.',
+  },
+  'knowledge.no_results': {
+    fr: 'Aucun résultat. Essayez un autre terme ou un autre type de source.',
+    en: 'No results. Try another term or source type.',
+  },
+  'knowledge.empty': {
+    fr: 'Aucune source de ce type pour ce projet pour le moment.',
+    en: 'No sources of this type for this project yet.',
+  },
   'updates.title': { fr: 'Mise à jour', en: 'Updates' },
   'updates.scope': { fr: 'Application Windows · Ce PC', en: 'Windows application · This PC' },
   'updates.browser': {

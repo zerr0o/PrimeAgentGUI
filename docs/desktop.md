@@ -6,7 +6,7 @@ L’application **Prime Agent Studio**, construite avec Tauri 2, ouvre le Studio
 
 ## Installation et premier lancement
 
-Exécutez l’installateur [Prime-Agent-Studio_2.9.3_x64-setup.exe](https://github.com/zerr0o/prime-agent-studio/releases/download/v2.9.3/Prime-Agent-Studio_2.9.3_x64-setup.exe). L’installation est limitée à votre utilisateur Windows et propose les raccourcis du menu Démarrer et du Bureau. Node.js est inclus. L’installateur installe WebView2 si nécessaire ; une connexion Internet peut être requise pour ce composant.
+Exécutez l’installateur [Prime-Agent-Studio_3.0.0_x64-setup.exe](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.0.0/Prime-Agent-Studio_3.0.0_x64-setup.exe). L’installation est limitée à votre utilisateur Windows et propose les raccourcis du menu Démarrer et du Bureau. Node.js est inclus. L’installateur installe WebView2 si nécessaire ; une connexion Internet peut être requise pour ce composant.
 
 **Prime Agent et uv restent nécessaires sur le PC**, avec un fournisseur configuré. Le moteur Prime Agent, ses comptes et ses sessions ne sont pas réinstallés ni remplacés par cet installateur. Le Studio prépare le noyau Python au besoin lors des exécutions, comme la version navigateur.
 
@@ -41,6 +41,8 @@ Les données se trouvent dans `%LOCALAPPDATA%\com.primeagent.studio` :
 | `desktop.json` | Préférences du lanceur et installation à reprendre                              |
 
 Une mise à jour installe la nouvelle application et prépare une nouvelle copie du serveur. **Préférences → Mise à jour** distingue la version de l’application installée de celle du serveur actif. Les anciennes copies ne sont pas effacées automatiquement afin de préserver les processus encore actifs.
+
+**Passage à la version 3.0.0 :** si l’ancien serveur reste actif après l’installation, le Studio affiche encore sa version et ses fonctions. Attendez la fin des agents, puis utilisez **Préférences → Mise à jour → Redémarrer le serveur** dans l’application Windows pour charger la V3. La [navigation par projets dépliables](navigation.md) et les [connaissances du projet](knowledge.md) deviennent alors disponibles ; les nouvelles exécutions et leurs sous-agents reçoivent les outils de recherche et de lecture de l’historique.
 
 Le correctif **2.8.1** ajoute une réparation ponctuelle au lancement : les dix assistants absents de la release 2.8.0 sont ajoutés à son cache d’origine, même si son serveur fonctionne encore. Les fichiers existants sont conservés. Cette réparation rétablit notamment les messages, la découverte des skills et les fournisseurs sans arrêter les agents.
 
