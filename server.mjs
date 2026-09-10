@@ -47,7 +47,7 @@ const MIME = {
   '.woff2': 'font/woff2',
   '.webmanifest': 'application/manifest+json',
 };
-const publicRun = ({ id, sessionId, cwd, status, startedAt, endedAt, error, model, thinking, prompt }) => ({
+const publicRun = ({
   id,
   sessionId,
   cwd,
@@ -57,6 +57,21 @@ const publicRun = ({ id, sessionId, cwd, status, startedAt, endedAt, error, mode
   error,
   model,
   thinking,
+  allowQuestions,
+  interactions,
+  prompt,
+}) => ({
+  id,
+  sessionId,
+  cwd,
+  status,
+  startedAt,
+  endedAt,
+  error,
+  model,
+  thinking,
+  allowQuestions: !!allowQuestions,
+  interactions: interactions || [],
   prompt: splitFileMessage(prompt).text,
   attachments: splitFileMessage(prompt).attachments,
 });
@@ -279,10 +294,20 @@ export function createApp(options = {}) {
     return [...runs.values()].filter((r) => r.status === 'running' || r.status === 'stopping').map(publicRun);
   }
   function pushEvent(run, event) {
+    if (event.kind === 'interaction') {
+      run.interactions ||= [];
+      const index = run.interactions.findIndex((item) => item.id === event.request.id);
+      if (index < 0) run.interactions.push(event.request);
+      else run.interactions[index] = event.request;
+    }
     if (event.kind === 'session' && event.sessionId) {
       run.sessionId = event.sessionId;
       sessionLocks.add(event.sessionId);
       roadmapRoutes.onSession(run);
+      if (run.allowQuestions !== undefined)
+        void store
+          .setConversationSettings(event.sessionId, { allowQuestions: run.allowQuestions })
+          .catch(console.error);
     }
     if (event.kind === 'done') {
       if (run.finished) return;
@@ -363,6 +388,9 @@ export function createApp(options = {}) {
     const selectedModel = (body.model ?? settings?.model ?? existing?.model) || catalog.default?.model;
     const selectedThinking =
       (body.thinking ?? settings?.thinking ?? existing?.thinking) || catalog.default?.thinking;
+    if (body.allowQuestions !== undefined && typeof body.allowQuestions !== 'boolean')
+      throw new HttpError(400, tr('server.demande_invalide'));
+    const allowQuestions = body.allowQuestions ?? settings?.allowQuestions ?? false;
     if (catalog.models?.find((model) => model.id === selectedModel)?.availability === 'unavailable')
       throw new HttpError(409, tr('model.unavailableSelection'));
     // Check after awaited validation so simultaneous HTTP requests cannot race the lock.
@@ -379,6 +407,8 @@ export function createApp(options = {}) {
       startedAt: new Date().toISOString(),
       model: selectedModel || null,
       thinking: selectedThinking || null,
+      allowQuestions,
+      interactions: [],
       prompt: body.message.trim() || tr('ui.analyse_les_pieces_jointes'),
       seq: 0,
       events: [],
@@ -397,6 +427,7 @@ export function createApp(options = {}) {
         sessionFile: existing?.file,
         model: selectedModel || undefined,
         thinking: selectedThinking || undefined,
+        allowQuestions,
         onEvent: (event) => pushEvent(run, event),
       });
       if (run.status === 'stopping') void run.handle.cancel();
@@ -552,6 +583,20 @@ export function createApp(options = {}) {
         const file = await projectFiles.localFile(body.cwd, body.path);
         fileLaunchMode(file);
         return json(res, 200, await (options.openFile || openLocalFile)(file));
+      }
+      if (['GET', 'HEAD'].includes(method) && path === '/api/project-files/image') {
+        const image = await projectFiles.image(
+          url.searchParams.get('cwd'),
+          url.searchParams.get('reference'),
+          url.searchParams.get('basePath') || '',
+        );
+        res.writeHead(200, {
+          'Content-Type': image.type,
+          'X-Content-Type-Options': 'nosniff',
+          'Cache-Control': 'no-store',
+          'Content-Length': image.data.length,
+        });
+        return res.end(method === 'HEAD' ? undefined : image.data);
       }
       if (method === 'GET' && path.startsWith('/api/project-files')) {
         const cwd = url.searchParams.get('cwd'),
@@ -806,10 +851,20 @@ export function createApp(options = {}) {
       if (method === 'GET' && path === '/api/runs') return json(res, 200, { runs: activeRuns() });
       if (method === 'POST' && path === '/api/runs')
         return json(res, 201, await startRun(await readBody(req)));
-      const runRoute = path.match(/^\/api\/runs\/([a-f0-9-]+)\/(events|stop)$/);
+      const runRoute = path.match(/^\/api\/runs\/([a-f0-9-]+)\/(events|stop|interactions)$/);
       if (runRoute) {
         const run = runs.get(runRoute[1]);
         if (!run) throw new HttpError(404, tr('server.execution_introuvable_rechargez_son_historique'));
+        if (method === 'POST' && runRoute[2] === 'interactions') {
+          if (run.finished || run.status !== 'running' || !run.handle?.respond)
+            throw new HttpError(409, tr('questions.closed'));
+          const body = await readBody(req);
+          try {
+            return json(res, 200, await run.handle.respond(body.id, body.response));
+          } catch (error) {
+            throw new HttpError(409, error.message);
+          }
+        }
         if (method === 'GET' && runRoute[2] === 'events') return subscribe(req, res, run, url);
         if (method === 'POST' && runRoute[2] === 'stop') {
           if (!run.finished) {

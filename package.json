@@ -1,6 +1,6 @@
 {
   "name": "prime-agent-studio",
-  "version": "3.1.4",
+  "version": "3.2.0",
   "private": true,
   "author": "zerr0o",
   "license": "MIT",
@@ -44,6 +44,9 @@
     "test:folders": "node scripts/test-folder-ui.mjs",
     "test:layout": "node scripts/test-mobile-layout.mjs",
     "test:attachments": "node scripts/test-attachments-ui.mjs",
+    "test:interactions": "node scripts/test-interactions-ui.mjs",
+    "test:interactions:scroll": "node scripts/test-interactions-scroll.mjs",
+    "test:interactions:native": "node scripts/test-interactions-native.mjs",
     "check": "node --check server.mjs && node --check public/app.js && node scripts/check-translations.mjs && node scripts/check-docs.mjs",
     "format": "prettier --write --ignore-unknown server.mjs lib public scripts test index.html README.md package.json",
     "test:settings": "node scripts/test-settings-ui.mjs",

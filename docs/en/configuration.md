@@ -24,6 +24,14 @@ The [translation documentation](translations.md) describes the single table, fal
 
 ## Configure models
 
+### Interactive questions and conversation images
+
+The **Allow questions** checkbox beside thinking enables the question tool for this conversation. It is off by default and can be changed between runs. The agent offers choices with short descriptions, collapsed by default and accessible via **Show description**. Select an option, write another answer, or skip. Studio uses Prime Agent’s native interactive protocol and records the result in its tool history. Answering on a phone also resolves the request on the PC. Reloading the page restores requests while the run and server remain active; stopping the engine cancels them.
+
+The agent can display a project PNG, JPEG, GIF or WebP file with `![Preview](captures/result.png)`. Studio reads the original file without copying it, and clicking enlarges the image. Moved or deleted images show an unavailable state. Editing the file therefore changes its preview on the next load. Project access rules apply on mobile too; this feature does not expose files outside the project. User-uploaded attachments retain their existing behavior.
+
+### Model and thinking level
+
 The model and thinking selectors beside the message field belong to the current conversation. Studio restores its choices when reopened, including from another device. New conversations start from Prime Agent defaults; changing one conversation does not change those global defaults.
 
 You can change thinking while the agent is working. The engine applies the supported level to subsequent model calls, without interrupting the current call or tool. A message confirms acceptance; if it fails, the selector returns to its previous value. Choose the model between runs.

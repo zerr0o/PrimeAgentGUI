@@ -28,6 +28,9 @@ import { createProjectSorting } from './project-sorting.js';
 import { createProjectNavigation } from './project-navigation.js';
 import { createKnowledgeBrowser } from './knowledge.js';
 import { createRoadmap } from './roadmap.js';
+import { bindInlineImages } from './inline-images.js';
+import { createQuestions } from './questions.js';
+let questionsUI;
 let imageComposer;
 let projectSorting;
 let projectNavigation;
@@ -233,7 +236,11 @@ function rememberGenerationSettings(id, settings, revision = 0) {
   return generationConfirmed.get(id);
 }
 function restoreGenerationSettings(history = session(), run = activeRun()) {
-  const defaults = { model: state.modelCatalogDefault || '', thinking: state.modelCatalogThinking || '' };
+  const defaults = {
+    model: state.modelCatalogDefault || '',
+    thinking: state.modelCatalogThinking || '',
+    allowQuestions: false,
+  };
   const saved =
     rememberGenerationSettings(state.sessionId, history?.generationSettings, history?.generationRevision)
       ?.settings || {};
@@ -244,11 +251,13 @@ function restoreGenerationSettings(history = session(), run = activeRun()) {
       ? {
           model: saved.model ?? run?.model ?? history?.model ?? defaults.model,
           thinking: saved.thinking ?? run?.thinking ?? history?.thinking ?? defaults.thinking,
+          allowQuestions: saved.allowQuestions ?? run?.allowQuestions ?? false,
         }
       : { ...defaults, ...draft };
   selectedGeneration = { ...settings, ...pending?.settings };
   setSelectedModel(selectedGeneration.model, false);
   $('thinking-select').value = selectedGeneration.thinking;
+  $('allow-questions').checked = !!selectedGeneration.allowQuestions;
 }
 async function saveGenerationSettings(patch) {
   const id = state.sessionId,
@@ -259,7 +268,7 @@ async function saveGenerationSettings(patch) {
     return;
   }
   const run = activeRun();
-  if (isRunning(run) && ('model' in patch || !id || run.status !== 'running')) {
+  if (isRunning(run) && ('model' in patch || 'allowQuestions' in patch || !id || run.status !== 'running')) {
     restoreGenerationSettings();
     return;
   }
@@ -737,6 +746,8 @@ function updateComposer() {
     generationPending.has(state.sessionId);
   $('model-select').disabled = settingsDisabled || running;
   $('model-picker-button').disabled = settingsDisabled || running;
+  $('allow-questions').disabled = settingsDisabled || running;
+  questionsUI?.update();
   $('thinking-select').disabled =
     settingsDisabled || (running && (!state.sessionId || activeRun()?.status !== 'running'));
   bindAttribute($('thinking-select'), 'title', () =>
@@ -746,7 +757,9 @@ function updateComposer() {
   bindText($('run-status-label'), () =>
     activeRun()?.status === 'stopping'
       ? tr('ui.arret_de_l_agent')
-      : activeRun()?.statusLabel || tr('ui.l_agent_travaille'),
+      : activeRun()?.interactions?.some((item) => item.status === 'pending')
+        ? tr('questions.waiting')
+        : activeRun()?.statusLabel || tr('ui.l_agent_travaille'),
   );
   bindAttribute($('composer'), 'placeholder', () =>
     composerCommand()
@@ -1053,16 +1066,20 @@ function renderNavigation() {
   roadmapUI?.update();
 }
 marked.setOptions({ gfm: true, breaks: false });
-function markdown(text, { cwd = state.projectCwd, basePath = '' } = {}) {
+function markdown(text, { cwd = state.projectCwd, basePath = '', imageRoot } = {}) {
   const n = el('div', 'markdown');
-  const references = [];
+  const references = [],
+    images = [];
   n.dataset.i18nIgnore = '';
   n.innerHTML = DOMPurify.sanitize(
-    marked.parse(String(text || ''), { renderer: fileLinkRenderer(marked, references) }),
+    marked.parse(String(text || ''), { renderer: fileLinkRenderer(marked, references, images) }),
     {
       USE_PROFILES: { html: true },
       FORBID_TAGS: [
         'style',
+        'img',
+        'picture',
+        'source',
         'form',
         'input',
         'button',
@@ -1078,10 +1095,11 @@ function markdown(text, { cwd = state.projectCwd, basePath = '' } = {}) {
       ],
       FORBID_ATTR: ['style', 'id', 'name', 'target'],
       ALLOW_DATA_ATTR: false,
-      ADD_ATTR: ['data-studio-file'],
+      ADD_ATTR: ['data-studio-file', 'data-studio-image'],
     },
   );
   bindFileLinks(n, references, (reference) => inspectorUI?.openDocument(reference, { cwd, basePath }));
+  bindInlineImages(n, images, { cwd, basePath, imageRoot });
   n.querySelectorAll('a').forEach((a) => {
     if (a.classList.contains('document-link')) return;
     const href = a.getAttribute('href') || '';
@@ -1092,11 +1110,6 @@ function markdown(text, { cwd = state.projectCwd, basePath = '' } = {}) {
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
     }
-  });
-  n.querySelectorAll('img').forEach((img) => {
-    const src = img.getAttribute('src') || '';
-    if (!src.startsWith('/') && !src.startsWith('data:image/'))
-      img.replaceWith(el('span', '', () => `[Image : ${img.alt || src}]`));
   });
   n.querySelectorAll('pre').forEach((pre) => {
     const code = pre.querySelector('code');
@@ -1157,6 +1170,26 @@ function renderTool(t, messageId) {
   );
   d.append(summary);
   const content = el('div', 'tool-content');
+  if (t.name === 'question') {
+    let result;
+    try {
+      result = JSON.parse(t.result);
+    } catch {
+      /* Pending native result. */
+    }
+    content.append(el('p', '', () => result?.question || t.args?.question || tr('questions.title')));
+    content.append(
+      el('p', '', () =>
+        result
+          ? result.answer
+            ? `${tr('questions.answered')} ${result.answer}`
+            : tr('questions.closed')
+          : tr('questions.waiting'),
+      ),
+    );
+    d.append(content);
+    return d;
+  }
   if (t.args != null)
     content.append(
       el('h4', '', () => tr('ui.parametres')),
@@ -1333,6 +1366,7 @@ async function syncSessionActivity() {
   renderProjectOverview();
 }
 function scrollBottom(smooth = false) {
+  followConversation = true;
   $('conversation-scroll').scrollTo({
     top: $('conversation-scroll').scrollHeight,
     behavior: smooth && !matchMedia('(prefers-reduced-motion: reduce)').matches ? 'smooth' : 'instant',
@@ -1342,6 +1376,7 @@ function scrollBottom(smooth = false) {
 }
 let renderScheduled = false;
 let bottomScrollFrame;
+let followConversation = true;
 function scheduleMessages() {
   if (renderScheduled) return;
   renderScheduled = true;
@@ -1354,7 +1389,7 @@ function scheduleMessages() {
 }
 function renderMessages(forceScroll = false) {
   cancelAnimationFrame(bottomScrollFrame);
-  const stick = forceScroll || nearBottom(),
+  const stick = forceScroll || followConversation,
     messages = activeMessages();
   $('welcome').hidden = state.projectOverview || messages.length > 0 || state.loading;
   $('conversation-loading').hidden = !state.loading;
@@ -1362,6 +1397,7 @@ function renderMessages(forceScroll = false) {
   const root = $('messages'),
     keep = new Set();
   conversationRenderer.render(root, messages);
+  questionsUI?.update();
   messages.forEach((m, i) => keep.add(m.id || `history-${i}`));
   for (const key of messageNodes.keys()) if (!keep.has(key)) messageNodes.delete(key);
   if (!messages.length && !state.loading) {
@@ -1545,6 +1581,13 @@ function applyRunEvent(run, e) {
   if (e.seq && e.seq <= run.lastSeq) return;
   if (e.seq) run.lastSeq = e.seq;
   switch (e.kind) {
+    case 'interaction': {
+      run.interactions ||= [];
+      const index = run.interactions.findIndex((item) => item.id === e.request.id);
+      if (index < 0) run.interactions.push(e.request);
+      else run.interactions[index] = e.request;
+      break;
+    }
     case 'session':
       run.sessionId = e.sessionId;
       upsertSession(e.sessionId, run);
@@ -1751,6 +1794,7 @@ async function sendMessage(event) {
         ...(sessionId ? { sessionId } : {}),
         model: $('model-select').value || state.modelCatalogDefault || '',
         thinking: $('thinking-select').value || state.modelCatalogThinking || '',
+        allowQuestions: $('allow-questions').checked,
       },
     });
     Object.assign(run, {
@@ -2843,9 +2887,19 @@ $('toggle-details').onclick = () => {
 };
 $('scroll-bottom').onclick = () => scrollBottom(true);
 $('conversation-scroll').onscroll = () => {
+  followConversation = nearBottom();
   $('scroll-bottom').hidden = state.projectOverview || nearBottom();
   markVisibleSessionRead();
 };
+// Images and native questions can grow after the transcript render has finished.
+// Preserve the user's reading position, or keep following the latest content.
+const conversationSizeObserver = new ResizeObserver(() => {
+  if (state.projectOverview) return;
+  if (followConversation) scrollBottom();
+  else $('scroll-bottom').hidden = nearBottom();
+});
+conversationSizeObserver.observe($('messages'));
+conversationSizeObserver.observe($('interactive-questions'));
 $('composer').oninput = () => {
   saveDraft();
   resizeComposer();
@@ -2917,6 +2971,17 @@ $('model-dialog').addEventListener('keydown', (event) => {
 $('thinking-select').onchange = () => {
   void saveGenerationSettings({ thinking: $('thinking-select').value });
 };
+$('allow-questions').onchange = () =>
+  void saveGenerationSettings({ allowQuestions: $('allow-questions').checked });
+questionsUI = createQuestions({
+  root: $('interactive-questions'),
+  api,
+  getContext: () => ({
+    run: activeRun(),
+    readOnly: state.readOnly || !state.online,
+    hidden: state.projectOverview || state.loading,
+  }),
+});
 $('enter-to-send').onchange = (e) => {
   savePreferences({ enterToSend: e.target.checked });
   applyPreferences();

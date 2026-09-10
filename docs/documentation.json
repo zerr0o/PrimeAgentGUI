@@ -1,6 +1,9 @@
 {
   "version": 1,
-  "languages": ["fr", "en"],
+  "languages": [
+    "fr",
+    "en"
+  ],
   "pages": [
     {
       "id": "roadmap",
@@ -25,8 +28,8 @@
       "fr": "README.fr.md",
       "en": "README.md",
       "reviewed": {
-        "fr": "8710225ea24934674315c8c75b9bf6ad556e3c7d978008ace8203e5e1365dbfd",
-        "en": "eccfd30952cd11dfb10fc2e915e888d76b33e6fcfe4e381fedf4087979339feb"
+        "fr": "88eae47645c08736a657844d050b4f8f4f9cf7afa34eae078cd767014b0c6e31",
+        "en": "8b58bf294238ccea3d96a98f295530a3b0a5ea2f52e3940e1e6ea61cb0ca0783"
       }
     },
     {
@@ -34,8 +37,8 @@
       "fr": "docs/changelog.md",
       "en": "docs/en/changelog.md",
       "reviewed": {
-        "fr": "986c7a90c06a106dae53244e3b9a58ed6c2c28fc90b32799a38b93c8d6691f21",
-        "en": "122ac330db751e9a17fa40c9f0755d42928adec553ad8fb91e893be5ef551294"
+        "fr": "279514899f32524f09deb7a6a5a315696d51a2485adc8b2d5d1ca2c38eeb7af4",
+        "en": "ec6c6e5e966e2cf185f5b413bf959a0f527c0cc452f21a262c3ba4ad5937c9ff"
       }
     },
     {
@@ -52,8 +55,8 @@
       "fr": "docs/configuration.md",
       "en": "docs/en/configuration.md",
       "reviewed": {
-        "fr": "1e2af28d458b1df64a4914d74d73575a1bc419494c8f96c746d15cc87de2a240",
-        "en": "6513e70f808ed52f2858a3f079d2aff1c81d0af798c606b80c9c2355a839c5ed"
+        "fr": "8aae7720552c4ee6ca3113f03234ced986ed1244f6c61f00d22bb67f9c2ae3f8",
+        "en": "f07b2296be43289c66b4e3a16ff5f0f97cc3bde41facf6d583b434ab81b211de"
       }
     },
     {

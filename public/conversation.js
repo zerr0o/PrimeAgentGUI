@@ -163,7 +163,7 @@ export function createConversationRenderer({
     if (!part || part.signature !== signature) {
       const node = el('div', 'assistant-text');
       node.dataset.messageId = m.id;
-      if (m.text) node.append(markdown(m.text));
+      if (m.text) node.append(markdown(m.text, { imageRoot: part?.node }));
       if (translateKnown(m.error)) node.append(el('div', 'message-error', () => translateKnown(m.error)));
       if (m.attachments?.length)
         node.append(

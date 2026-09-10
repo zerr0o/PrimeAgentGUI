@@ -4,6 +4,13 @@
 
 Les changements par version. Retrouvez les installateurs et les archives du code source dans les [releases GitHub](https://github.com/zerr0o/prime-agent-studio/releases).
 
+## 3.2.0
+
+- **Images dans les réponses de l’agent** : affichez les images du projet dans la conversation et cliquez pour les agrandir. Le Studio lit le fichier d’origine sans copie supplémentaire ; une image déplacée ou supprimée apparaît comme indisponible. Disponible sur PC et via l’accès mobile authentifié.
+- **Questions interactives natives** : activez **Autoriser les questions** par conversation. Sélectionnez une réponse proposée, écrivez la vôtre ou passez. Les questions utilisent le mécanisme natif de demande et de réponse de Prime Agent, reprennent l’agent en attente et se synchronisent entre appareils connectés.
+- **Précisions à la demande** : chaque choix possède une courte description, repliée par défaut. Le bouton **Passer** reçoit un contour discret. Le chargement des images et l’arrivée des questions préservent votre position de lecture.
+- **Documentation illustrée** : les captures des README français et anglais présentent les deux fonctions dans une conversation fictive autour d’une Lotus Elise. [Guide de configuration](configuration.md#questions-interactives-et-images-dans-la-conversation).
+
 ## 3.1.4
 
 - **Tout replier ou tout déplier** dans chaque plan de la Roadmap. Le plan reste ouvert, avec ses tâches principales et leurs compteurs visibles.

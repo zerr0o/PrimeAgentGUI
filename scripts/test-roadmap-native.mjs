@@ -253,6 +253,7 @@ try {
     cwd,
     message: 'Create a Roadmap plan and verify its checklist with one native child.',
     model: 'fixture/parent',
+    allowQuestions: process.env.PRIME_STUDIO_TEST_QUESTIONS === '1',
     onEvent: (event) => {
       events.push(event);
       if (event.kind === 'session') run.sessionId = event.sessionId;

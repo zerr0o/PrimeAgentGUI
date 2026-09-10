@@ -44,7 +44,17 @@
 
 Prime Agent Studio brings your **local Prime Agent sessions** together in a Windows application and a browser interface. Follow streaming responses, find your projects and continue a conversation without opening a terminal. On Windows, agents and their tools run in the background, without unexpected PowerShell windows.
 
-**Version 3.1.4** · [Download the Windows x64 installer](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.1.4/Prime-Agent-Studio_3.1.4_x64-setup.exe) · [Release history](docs/en/changelog.md).
+**Version 3.2.0** · [Download the Windows x64 installer](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.2.0/Prime-Agent-Studio_3.2.0_x64-setup.exe) · [Release history](docs/en/changelog.md).
+
+## Images and questions in the conversation
+
+See project images directly in the agent’s response and click to enlarge them. Studio reads the original file without making an extra copy. If it is moved or deleted, the conversation shows that the image is no longer available.
+
+Enable **Allow questions** beside the thinking selector when you want the agent to ask for your input. Choose an option, expand its description, write another answer or **Skip**. The setting belongs to the conversation and is off by default. Questions use Prime Agent’s native interaction mechanism and stay synchronized between PC and phone. [Configuration guide](docs/en/configuration.md#interactive-questions-and-conversation-images).
+
+![Project image and native agent question, with an expanded option description, a free-text answer field and a Skip button.](docs/screenshots/en/desktop-interactive-questions.png)
+
+_Real interface with a fictional conversation. Lotus Elise photo: [Exotic Car Trader](https://www.exoticcartrader.com/listing/2005-lotus-elise-1)._
 
 ## Project Roadmap
 
@@ -71,6 +81,8 @@ Translations live in **one table**, with French and English side by side for eac
 | **Browse files**            | Explore the project, read Git changes, preview and open files from desktop or mobile.                                    |
 | **Intervene live**          | Steer the agent or queue a follow-up message without stopping its work.                                                  |
 | **Attach images and files** | Select a photo or document, drop it into the conversation or paste it from the clipboard.                                |
+| **See project images**      | View images in agent responses, enlarge them and keep their original files as the source.                                |
+| **Answer agent questions**  | Enable native questions per conversation, with described choices, free text or Skip.                                    |
 | **Find your models**        | Search by name or provider, manage favorites and choose a reasoning level.                                               |
 | **Configure subagents**     | Set the model and reasoning for future delegations, globally or per project, before the first message.                   |
 | **Connect MCP tools**       | Manage HTTP and stdio servers, OAuth, variables, allowed tools and connection tests.                                     |
@@ -125,7 +137,7 @@ Download the [Windows x64 installer](https://github.com/zerr0o/prime-agent-studi
 
 Updates are signed for Tauri; the installer does not yet carry a Windows Authenticode signature.
 
-**After updating:** the application can keep using the previous server while agents finish. Once they have finished, use **Preferences → Updates → Restart server** in the Windows application to activate 3.1.4. [Update guide](docs/en/desktop.md).
+**After updating:** the application can keep using the previous server while agents finish. Once they have finished, use **Preferences → Updates → Restart server** in the Windows application to activate 3.2.0. [Update guide](docs/en/desktop.md).
 
 ### From source
 

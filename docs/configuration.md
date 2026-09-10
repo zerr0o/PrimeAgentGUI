@@ -24,6 +24,14 @@ La [documentation des traductions](translations.md) décrit la table unique, le 
 
 ## Configurer les modèles
 
+### Questions interactives et images dans la conversation
+
+La case **Autoriser les questions**, près du niveau de réflexion, autorise l’outil de questions pour cette conversation. Elle est désactivée par défaut et se change entre deux exécutions. L’agent propose des choix avec une courte description, repliée par défaut et consultable via **Afficher la description**. Vous pouvez sélectionner une option, écrire une autre réponse ou passer. Le Studio utilise le protocole interactif natif de Prime Agent et enregistre le résultat dans son historique d’outils. Répondre sur le téléphone clôt également la demande sur le PC. Recharger la page retrouve les demandes tant que l’exécution et le serveur sont actifs ; un arrêt du moteur les annule.
+
+L’agent peut afficher un fichier PNG, JPEG, GIF ou WebP du projet avec `![Aperçu](captures/resultat.png)`. Le Studio lit le fichier original, sans créer de copie, et un clic agrandit l’image. Une image déplacée ou supprimée affiche un état indisponible. Une modification du fichier change donc l’aperçu à son prochain chargement. Les images restent soumises aux accès du projet, y compris sur mobile ; cette fonction n’expose pas les fichiers extérieurs au projet. Les pièces jointes envoyées par l’utilisateur conservent leur fonctionnement habituel.
+
+### Modèle et niveau de réflexion
+
 Les sélecteurs de modèle et de réflexion près du champ de message sont propres à chaque conversation. Le Studio retrouve ses choix à la réouverture, y compris depuis un autre appareil. Les nouvelles conversations partent des valeurs par défaut de Prime Agent ; les changements d’une conversation ne modifient pas ces valeurs globales.
 
 Vous pouvez changer le niveau de réflexion pendant que l’agent travaille. Le moteur applique le niveau compatible aux prochains appels du modèle, sans interrompre l’appel ou l’outil déjà en cours. Un message confirme la prise en compte ; en cas d’échec, le sélecteur revient à sa valeur précédente. Le modèle se choisit entre deux exécutions.

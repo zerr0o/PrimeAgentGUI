@@ -44,7 +44,17 @@
 
 Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une application Windows et une interface accessible depuis le navigateur. Suivez les réponses en direct, retrouvez vos projets et continuez une conversation sans ouvrir de terminal. Sous Windows, les agents et leurs outils démarrent en arrière-plan, sans fenêtres PowerShell intempestives.
 
-**Version 3.1.4** · [Télécharger l’installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.1.4/Prime-Agent-Studio_3.1.4_x64-setup.exe) · [Historique des versions](docs/changelog.md).
+**Version 3.2.0** · [Télécharger l’installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.2.0/Prime-Agent-Studio_3.2.0_x64-setup.exe) · [Historique des versions](docs/changelog.md).
+
+## Images et questions dans la conversation
+
+Retrouvez les images du projet directement dans la réponse de l’agent et cliquez pour les agrandir. Le Studio lit le fichier d’origine sans en créer une copie supplémentaire. S’il est déplacé ou supprimé, la conversation indique que l’image n’est plus disponible.
+
+Activez **Autoriser les questions**, près du niveau de réflexion, pour permettre à l’agent de demander votre avis. Sélectionnez une option, dépliez sa description, écrivez une autre réponse ou choisissez **Passer**. Ce réglage appartient à la conversation et reste désactivé par défaut. Les questions utilisent le mécanisme interactif natif de Prime Agent et se synchronisent entre PC et téléphone. [Guide de configuration](docs/configuration.md#questions-interactives-et-images-dans-la-conversation).
+
+![Image du projet et question native de l’agent, avec une description dépliée, un champ de réponse libre et le bouton Passer.](docs/screenshots/desktop-interactive-questions.png)
+
+_Interface réelle avec une conversation fictive. Photo de la Lotus Elise : [Exotic Car Trader](https://www.exoticcartrader.com/listing/2005-lotus-elise-1)._
 
 ## Roadmap du projet
 
@@ -71,6 +81,8 @@ Les traductions sont réunies dans **une table unique**, avec le français et l�
 | **Consulter les fichiers**         | Parcourir le projet, lire les changements Git, prévisualiser et ouvrir les fichiers sur PC ou mobile.                                        |
 | **Intervenir en direct**           | Réorienter l’agent ou préparer un message à la suite, sans arrêter son travail.                                                              |
 | **Joindre des images et fichiers** | Choisir une photo ou un document, les déposer dans la conversation ou les coller depuis le presse-papiers.                                   |
+| **Voir les images du projet** | Afficher les images dans les réponses de l’agent, les agrandir et conserver leur fichier d’origine comme source. |
+| **Répondre aux questions de l’agent** | Autoriser les questions natives par conversation, avec des choix décrits, une réponse libre ou Passer. |
 | **Retrouver vos modèles**          | Rechercher par nom ou fournisseur, gérer vos favoris et choisir le niveau de réflexion.                                                      |
 | **Régler les sous-agents**         | Définir le modèle et la réflexion des prochaines délégations, globalement ou par projet, avant le premier message.                           |
 | **Connecter des outils MCP**       | Gérer les serveurs HTTP et stdio, OAuth, les variables, les outils autorisés et les tests de connexion.                                      |
@@ -125,7 +137,7 @@ Téléchargez l’[installateur Windows x64](https://github.com/zerr0o/prime-age
 
 Les mises à jour sont signées pour Tauri ; l’installateur ne possède pas encore de signature Windows Authenticode.
 
-**Après la mise à jour :** l’application peut continuer à utiliser l’ancien serveur pendant que les agents terminent leur travail. Une fois leurs exécutions terminées, utilisez **Préférences → Mise à jour → Redémarrer le serveur** dans l’application Windows pour activer la version 3.1.4. [Guide de mise à jour](docs/desktop.md).
+**Après la mise à jour :** l’application peut continuer à utiliser l’ancien serveur pendant que les agents terminent leur travail. Une fois leurs exécutions terminées, utilisez **Préférences → Mise à jour → Redémarrer le serveur** dans l’application Windows pour activer la version 3.2.0. [Guide de mise à jour](docs/desktop.md).
 
 ### Depuis le code source
 

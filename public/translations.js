@@ -5,6 +5,51 @@ export const languages = [
   { id: 'en', label: 'English' },
 ];
 export const messages = {
+  'questions.title': { fr: 'Question de l’agent', en: 'Agent question' },
+  'questions.toggle': { fr: 'Autoriser les questions', en: 'Allow questions' },
+  'questions.allow': { fr: 'Autoriser les questions', en: 'Allow questions' },
+  'questions.scope': {
+    fr: 'Propre à cette conversation · modifiable entre deux exécutions',
+    en: 'For this conversation · editable between runs',
+  },
+  'questions.other': { fr: 'Ou écrivez une autre réponse…', en: 'Or write another answer…' },
+  'questions.answer': { fr: 'Votre réponse…', en: 'Your answer…' },
+  'questions.send': { fr: 'Envoyer la réponse', en: 'Send answer' },
+  'questions.skip': { fr: 'Passer', en: 'Skip' },
+  'questions.showDescription': { fr: 'Afficher la description', en: 'Show description' },
+  'questions.hideDescription': { fr: 'Masquer la description', en: 'Hide description' },
+  'questions.waiting': { fr: 'L’agent attend votre réponse.', en: 'The agent is waiting for your answer.' },
+  'questions.readOnly': {
+    fr: 'Répondez depuis un appareil connecté en contrôle complet.',
+    en: 'Answer from a device connected with full control.',
+  },
+  'questions.answered': { fr: 'Votre réponse :', en: 'Your answer:' },
+  'questions.closed': {
+    fr: 'Cette demande n’attend plus de réponse.',
+    en: 'This request is no longer awaiting an answer.',
+  },
+  'questions.required': {
+    fr: 'Choisissez une option ou écrivez votre réponse.',
+    en: 'Choose an option or write your answer.',
+  },
+  'questions.yes': { fr: 'Oui', en: 'Yes' },
+  'questions.no': { fr: 'Non', en: 'No' },
+  'images.open': { fr: 'Agrandir : {name}', en: 'Enlarge: {name}' },
+  'images.missing': {
+    fr: 'Image indisponible — fichier déplacé ou supprimé',
+    en: 'Image unavailable — file moved or deleted',
+  },
+  'images.unavailable': { fr: 'Impossible d’afficher cette image', en: 'Unable to display this image' },
+  'images.offline': { fr: 'Connexion au Studio indisponible', en: 'Studio connection unavailable' },
+  'images.outside': {
+    fr: 'Cette image n’est pas accessible dans le projet',
+    en: 'This image is not accessible within the project',
+  },
+  'images.unsupported': { fr: 'Format d’image non pris en charge', en: 'Unsupported image format' },
+  'images.localOnly': {
+    fr: 'Utilisez une image située dans le projet',
+    en: 'Use an image located in the project',
+  },
   'conversation.unconfirmed': {
     fr: 'Le moteur n’a pas confirmé le changement de réflexion. Réessayez lorsque la connexion est rétablie.',
     en: 'The engine did not confirm the thinking change. Try again when the connection is restored.',

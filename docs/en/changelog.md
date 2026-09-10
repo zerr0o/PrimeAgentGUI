@@ -4,6 +4,13 @@
 
 Changes by version. See [GitHub releases](https://github.com/zerr0o/prime-agent-studio/releases) for installers and source archives.
 
+## 3.2.0
+
+- **Images in agent responses**: display project images inline and click to enlarge. Studio reads the original file without storing an extra copy; moved or deleted images show an unavailable state. Available on desktop and through authenticated mobile access.
+- **Native interactive questions**: enable **Allow questions** per conversation. Select a suggested answer, write your own, or skip. Questions use Prime Agent’s native request/reply mechanism, resume the waiting agent and synchronize across connected devices.
+- **Details when you need them**: each choice has a short description, collapsed by default. The **Skip** button has a discreet outline. Image loading and incoming questions preserve your reading position.
+- **Illustrated documentation**: French and English README captures show both features in a fictional Lotus Elise conversation. [Configuration guide](configuration.md#interactive-questions-and-conversation-images).
+
 ## 3.1.4
 
 - **Collapse or expand all nested tasks** from inside each Roadmap plan. The plan stays open, with its main tasks and completion counts visible.

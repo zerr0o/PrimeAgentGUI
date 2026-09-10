@@ -10,9 +10,14 @@ export function isFileReference(value) {
   );
 }
 
-export function fileLinkRenderer(marked, references) {
+export function fileLinkRenderer(marked, references, images) {
   const renderer = new marked.Renderer();
   const original = renderer.link;
+  if (images)
+    renderer.image = function (token) {
+      const id = images.push({ href: token.href, text: token.text }) - 1;
+      return `<span data-studio-image="${id}"></span>`;
+    };
   renderer.link = function (token) {
     if (!isFileReference(token.href)) return original.call(this, token);
     const id = references.push(token.href) - 1;
