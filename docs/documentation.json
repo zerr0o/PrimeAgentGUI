@@ -25,8 +25,17 @@
       "fr": "README.fr.md",
       "en": "README.md",
       "reviewed": {
-        "fr": "4f35dfc5ab5d5a1a85e9c3d487ae33a7d5763601b562256b5017413aff22b1d3",
-        "en": "e6d0ed4446d045b3d8fc8b7bd9293e64ba932e927b35e9e0a6f972f7f4df73fa"
+        "fr": "8710225ea24934674315c8c75b9bf6ad556e3c7d978008ace8203e5e1365dbfd",
+        "en": "eccfd30952cd11dfb10fc2e915e888d76b33e6fcfe4e381fedf4087979339feb"
+      }
+    },
+    {
+      "id": "changelog",
+      "fr": "docs/changelog.md",
+      "en": "docs/en/changelog.md",
+      "reviewed": {
+        "fr": "986c7a90c06a106dae53244e3b9a58ed6c2c28fc90b32799a38b93c8d6691f21",
+        "en": "122ac330db751e9a17fa40c9f0755d42928adec553ad8fb91e893be5ef551294"
       }
     },
     {
@@ -52,8 +61,8 @@
       "fr": "docs/development.md",
       "en": "docs/en/development.md",
       "reviewed": {
-        "fr": "b704edf3c18d7f6fa56af7197d1ba3c30e1565f359b5543bf3ab2c9296b61a7d",
-        "en": "53f803fa1535557cbc636ba858131d21cf546800cea759d9acc5596d5d621960"
+        "fr": "743da1793fec8c7fa9e7de4a85ab2188b38883e3fb942ce2109eb37a59984084",
+        "en": "1d2f896de8e2cac74e70951cac3639688440844f5f2deb2e09eb6e913d87fc97"
       }
     },
     {

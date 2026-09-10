@@ -192,6 +192,8 @@ Main routes are `GET /api/bootstrap`, `GET /api/overview`, `GET /api/history?id=
 
 ## Regenerate README screenshots
 
+`node scripts/capture-roadmap.mjs` regenerates the French and English Roadmap illustrations using a fully isolated fictional project. It captures the real interface without using a user project or calling a provider.
+
 ```powershell
 node scripts/capture-readme.mjs
 ```

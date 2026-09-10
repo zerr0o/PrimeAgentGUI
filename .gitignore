@@ -12,3 +12,4 @@ __pycache__/
 /.desktop-build/
 /src-tauri/target/
 /src-tauri/gen/
+/planning/roadmap/

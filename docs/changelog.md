@@ -1,0 +1,81 @@
+# Historique des versions
+
+[English](en/changelog.md) · **Français** · [← Retour au README](../README.fr.md)
+
+Les changements par version. Retrouvez les installateurs et les archives du code source dans les [releases GitHub](https://github.com/zerr0o/prime-agent-studio/releases).
+
+## 3.1.4
+
+- **Tout replier ou tout déplier** dans chaque plan de la Roadmap. Le plan reste ouvert, avec ses tâches principales et leurs compteurs visibles.
+- **Modèle et réflexion propres à chaque conversation** : les choix sont enregistrés et retrouvés après rechargement ou depuis un autre appareil. Un ancien historique reçu en retard ne peut plus écraser une modification confirmée.
+- **Changer la réflexion pendant le travail de l’agent** : le nouveau niveau s’applique aux prochains appels du modèle, sans interrompre l’outil en cours ni modifier les réglages globaux. Le modèle reste modifiable entre deux exécutions. [Guide de configuration](configuration.md).
+
+## 3.1.3
+
+- **Sélection de dossier Windows corrigée** : le sélecteur natif est rattaché à la fenêtre Tauri. La sélection ou l’annulation permet un nouvel essai ; fermer le formulaire dans le navigateur annule sa sélection en cours et préserve les nouveaux champs saisis.
+- **Ouvrir le dossier du projet** directement depuis l’onglet **Fichiers** de l’espace de travail, à côté d’**Actualiser**. L’accès distant indique clairement le PC hôte ; l’accès en lecture seule ne peut pas ouvrir de dossier.
+
+## 3.1.2
+
+- **Roadmap agrandie** : ouvrez une vue sur tout l’espace de travail, puis retrouvez le panneau latéral avec le bouton de réduction ou Échap.
+- **Listes compactes** : repliez les catégories et les tâches parentes en gardant leur compteur de tâches terminées sur le total en bout de ligne. Les descriptions sont masquées par défaut et s’ouvrent avec **Afficher la description**.
+- **Lecture préservée** : les replis restent en place pendant les actualisations. Les contrôles s’adaptent au clavier et au téléphone. [Guide Roadmap](roadmap.md).
+
+## 3.1.1
+
+- **Les tests MCP dans l’application Windows** retrouvent désormais Python dans le dossier persistant de l’application, y compris après une mise à jour. Si Python n’a pas encore été préparé, le Studio le configure automatiquement avant de découvrir les outils. [Guide MCP](mcp.md).
+
+## 3.1.0
+
+- **Roadmap du projet** : organisez jalons, plans, checklists imbriquées et backlog dans un panneau partagé sur PC et téléphone.
+- **Du plan à la conversation** : choisissez **Travailler dessus** pour démarrer ou poursuivre un travail avec Prime Agent. Suivez l’activité déclarée des agents et retrouvez les conversations liées, y compris l’historique des sous-agents.
+- **Outils natifs pour les agents** : six outils utilisent le même document du projet que l’interface. Les contrôles de révision protègent les modifications simultanées et les brouillons restent récupérables après un conflit. Ouvrir le panneau ne lance aucun appel de modèle.
+- **Connaissances du projet accessibles** : consultez les mémoires et refinements natifs depuis le panneau, ou exportez la Roadmap en Markdown. [Guide Roadmap](roadmap.md).
+
+## 3.0.1
+
+- **Catalogue natif Prime Agent 0.9.4** : le Studio utilise les modèles disponibles dans le registre du moteur installé, avec leurs niveaux de réflexion. Le bouton d’actualisation du sélecteur permet de recharger le catalogue.
+- **Disponibilité OpenRouter** : les modèles retirés du catalogue public sont signalés comme indisponibles. Une variante gratuite disparue reste distincte de son équivalent payant ; aucun remplacement automatique n’est effectué. Les connexions à des endpoints personnalisés sont conservées.
+- **Choix préservés** : actualiser conserve la sélection, les favoris, la recherche et le brouillon. En cas de panne réseau, le catalogue reste consultable et une nouvelle tentative est possible. [Guide des fournisseurs](providers.md).
+
+## 3.0.0
+
+- **Projets et conversations réunis** : les conversations apparaissent sous leur projet dépliable, dans une seule liste, avec les projets épinglés en tête et **Afficher plus** pour les sessions anciennes. Recherche, archives, indicateurs de non-lus et réorganisation des projets restent à portée de main. Replier un projet conserve la conversation active et son brouillon ouverts. Sur téléphone, toucher le nom d’un projet le déplie ou le replie en gardant le volet ouvert ; choisir une conversation le referme. Les actions d’une conversation s’ouvrent aussi par clic droit sur PC. [Guide de navigation](navigation.md).
+- **Connaissances du projet** : retrouvez les travaux passés depuis **Session** dans le panneau de droite, la vue du projet ou son menu **⋯**. Recherchez du texte, filtrez les résultats et consultez la source native exacte, avec un lien vers la conversation d’origine lorsqu’il est disponible. La consultation fonctionne aussi sur téléphone et en accès distant authentifié en lecture seule. [Guide des connaissances](knowledge.md).
+- **Mémoires et refinements natifs** : consultez les mémoires de session et les modifications avant/après enregistrées. Les éléments globaux portent la mention **Global** et restent partagés entre projets par Prime Agent. La consultation laisse les données natives intactes.
+- **Outils d’historique pour les agents** : les nouvelles exécutions du Studio et leurs sous-agents peuvent rechercher et lire les sources utiles du projet à la demande. La recherche textuelle ne sollicite aucun modèle et un cache local évite de relire les conversations inchangées. L’historique complet n’est pas ajouté automatiquement au contexte de l’agent.
+
+## 2.9
+
+- **Mises à jour depuis les préférences en 2.9.3** : **Préférences → Mise à jour** affiche les versions de l’application et du serveur, les nouveautés et l’installation signée. Le redémarrage du serveur est optionnel ; des agents actifs demandent confirmation. Les réglages près de l’horloge conservent ces contrôles lorsqu’un ancien serveur tourne encore.
+- **Correctifs Windows 2.9.3** : les liens web et la connexion Codex s’ouvrent dans le navigateur habituel ; les fichiers et images peuvent être déposés dans la conversation. Les réponses terminées vides sont masquées sans modifier l’historique natif.
+- **Correctif 2.9.2** : les préférences système et le diagnostic lisent la version dans les métadonnées du serveur empaqueté. La version 2.9.0 affichait à tort 2.8.1 même lorsque son nouveau serveur fonctionnait. Un ancien serveur toujours actif continue d’indiquer sa propre version jusqu’à son redémarrage.
+- **Messages d’agents** : aperçus compacts et repliés, avec le nom de l’expéditeur. Un clic ouvre le message complet et ses détails de transmission. Les messages automatiques en attente sont clairement identifiés et protégés contre la modification ou la suppression.
+- **Ordre des projets** : glissez les projets directement dans la liste à la souris, ou utilisez la poignée sur écran tactile. L’ordre est conservé entre les appareils.
+- **Non-lus partagés** : lire une réponse sur PC efface son indicateur sur le téléphone et inversement, y compris en accès distant en consultation.
+- **Sessions Codex longues** : renouvellement des connexions WebSocket anciennes et inactives entre les requêtes, et suppression des états d’échec transitoires après une reprise native réussie. Les requêtes actives sont préservées.
+- **Présentation sobre** : texte lisible et libellés discrets, sans liserés colorés. Rendu vérifié sur PC/mobile, en français/anglais et dans les thèmes clair/sombre.
+
+## 2.8
+
+- **Correctif 2.8.1** : l’installateur Windows inclut désormais les workers des messages, skills, fournisseurs et MCP, ainsi que les assistants de dossiers et fichiers. La mise à jour restaure aussi les fichiers absents du cache serveur 2.8.0 d’origine sans redémarrer ses agents.
+- **Application Windows Tauri 2** : installateur pour votre utilisateur, raccourcis Bureau et Démarrer, Node.js inclus et icône nette adaptée à l’affichage Windows.
+- **Travail en arrière-plan** : le raccourci démarre le serveur ou retrouve celui déjà actif. Fermer ou quitter l’application laisse les agents travailler. Le démarrage avec Windows est facultatif et désactivé par défaut.
+- **Reprise et accès distant** : reprenez les projets et réglages d’une installation existante. Le LAN, Tailscale, HTTPS, les QR codes et la PWA mobile restent disponibles.
+
+[Installation, reprise des données et mises à jour](desktop.md).
+
+## 2.6
+
+- **Dossier du projet** : dans **Un projet à explorer.**, **Choisir un dossier** ouvre le sélecteur Windows et remplit le chemin. Le nom saisi est conservé ; une annulation laisse le formulaire intact.
+- **Skills et prompts** : les deux onglets de **Commandes et skills** proposent **Global · Tous les projets** ou **Projet sélectionné**, puis **Ouvrir le dossier**. Un dossier absent est créé à la demande.
+- **Sur PC et à distance** : le sélecteur Windows est réservé au Studio local. L’ouverture des dossiers de ressources fonctionne aussi depuis un accès distant en contrôle complet et s’effectue sur le PC hôte.
+- **Documentation bilingue** : README et guides disponibles en français et en anglais.
+
+## 2.5
+
+- **Français et anglais** : choix **Automatique / Français / English** dans les préférences et sur la page de connexion mobile, avec détection de la langue du navigateur.
+- **Changement immédiat** : les conversations, brouillons, pièces jointes et formulaires restent intacts ; une réponse en cours continue. Les onglets d’une même adresse partagent le choix de langue.
+- **Une table unique** : 1 051 textes regroupent leurs traductions côte à côte. Les paramètres, pluriels et références sont contrôlés automatiquement ; une traduction absente ou vide utilise le français.
+- **Mobile et PWA** : connexion, erreurs, déconnexion, informations d’installation et écran hors connexion suivent la langue choisie.
+- **De nouvelles langues à ajouter** : [le guide de traduction](translations.md) explique comment compléter la table et vérifier l’interface.
