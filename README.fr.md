@@ -43,7 +43,13 @@
 
 Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une application Windows et une interface accessible depuis le navigateur. Suivez les réponses en direct, retrouvez vos projets et continuez une conversation sans ouvrir de terminal. Sous Windows, les agents et leurs outils démarrent en arrière-plan, sans fenêtres PowerShell intempestives.
 
-**Version 3.1.1** · [Télécharger l’installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.1.1/Prime-Agent-Studio_3.1.1_x64-setup.exe) · [Notes de version et code source](https://github.com/zerr0o/prime-agent-studio/releases/tag/v3.1.1).
+**Version 3.1.2** · [Télécharger l’installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.1.2/Prime-Agent-Studio_3.1.2_x64-setup.exe) · [Notes de version et code source](https://github.com/zerr0o/prime-agent-studio/releases/tag/v3.1.2).
+
+## Nouveautés de la version 3.1.2
+
+- **Roadmap agrandie** : ouvrez une vue sur tout l’espace de travail, puis retrouvez le panneau latéral avec le bouton de réduction ou Échap.
+- **Listes compactes** : repliez les catégories et les tâches parentes en gardant leur compteur de tâches terminées sur le total en bout de ligne. Les descriptions sont masquées par défaut et s’ouvrent avec **Afficher la description**.
+- **Lecture préservée** : les replis restent en place pendant les actualisations. Les contrôles s’adaptent au clavier et au téléphone. [Guide Roadmap](docs/roadmap.md).
 
 ## Nouveautés de la version 3.1.1
 
@@ -69,7 +75,7 @@ Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une 
 - **Mémoires et refinements natifs** : consultez les mémoires de session et les modifications avant/après enregistrées. Les éléments globaux portent la mention **Global** et restent partagés entre projets par Prime Agent. La consultation laisse les données natives intactes.
 - **Outils d’historique pour les agents** : les nouvelles exécutions du Studio et leurs sous-agents peuvent rechercher et lire les sources utiles du projet à la demande. La recherche textuelle ne sollicite aucun modèle et un cache local évite de relire les conversations inchangées. L’historique complet n’est pas ajouté automatiquement au contexte de l’agent.
 
-**Après la mise à jour :** l’application peut continuer à utiliser l’ancien serveur pendant que les agents terminent leur travail. Une fois leurs exécutions terminées, utilisez **Préférences → Mise à jour → Redémarrer le serveur** dans l’application Windows pour activer la version 3.1.1. [Guide de mise à jour](docs/desktop.md).
+**Après la mise à jour :** l’application peut continuer à utiliser l’ancien serveur pendant que les agents terminent leur travail. Une fois leurs exécutions terminées, utilisez **Préférences → Mise à jour → Redémarrer le serveur** dans l’application Windows pour activer la version 3.1.2. [Guide de mise à jour](docs/desktop.md).
 
 ## Nouveautés de la version 2.9
 

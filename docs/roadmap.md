@@ -8,6 +8,8 @@ La Roadmap rassemble les travaux prévus, les checklists et les conversations qu
 
 Ouvrez **Roadmap** depuis le projet ou l’onglet **Session** du panneau de droite. **Projet** présente la vision facultative, les jalons et leurs plans. **Session** retrouve les plans liés à la conversation actuelle. **Backlog** conserve les idées, les tâches non engagées et les notes.
 
+Sur PC, le bouton **Agrandir la roadmap** en haut du panneau ouvre une vue sur tout l’espace de travail. **Réduire la roadmap** ou Échap revient au panneau latéral. Les jalons, plans et tâches parentes se replient en cliquant sur leur titre ; le compteur en bout de ligne reste visible et suit les tâches cochées. Les descriptions sont masquées par défaut : **Afficher la description** les ouvre, **Masquer la description** les replie. Ces choix de lecture sont conservés pendant les actualisations et les changements de taille du panneau, sans modifier les données du projet.
+
 Une Roadmap absente reste vide jusqu’à son initialisation explicite. Ajoutez un plan, puis ses tâches et notes. Les checklists acceptent trois niveaux. Les menus permettent de modifier, regrouper, déplacer ou supprimer explicitement les éléments. Des poignées de glisser-déposer réorganisent les jalons, les tâches et le backlog ; les menus gardent les actions disponibles au clavier et sur téléphone.
 
 Le compteur mesure les tâches terminales cochées, une fois chacune. Un groupe reflète ses enfants et sa case applique le même état à tous. Changer le statut d’un plan ne coche pas ses tâches. Les plans abandonnés restent consultables et sortent du compteur du projet ; les plans en pause y restent. Le backlog est compté séparément.

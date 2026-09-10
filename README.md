@@ -43,7 +43,13 @@
 
 Prime Agent Studio brings your **local Prime Agent sessions** together in a Windows application and a browser interface. Follow streaming responses, find your projects and continue a conversation without opening a terminal. On Windows, agents and their tools run in the background, without unexpected PowerShell windows.
 
-**Version 3.1.1** · [Download the Windows x64 installer](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.1.1/Prime-Agent-Studio_3.1.1_x64-setup.exe) · [Release notes and source code](https://github.com/zerr0o/prime-agent-studio/releases/tag/v3.1.1).
+**Version 3.1.2** · [Download the Windows x64 installer](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.1.2/Prime-Agent-Studio_3.1.2_x64-setup.exe) · [Release notes and source code](https://github.com/zerr0o/prime-agent-studio/releases/tag/v3.1.2).
+
+## What’s new in version 3.1.2
+
+- **Expanded Roadmap**: open a view across the workspace, then return to the side panel using the reduce button or Escape.
+- **Compact lists**: collapse categories and parent tasks while keeping their completed/total count at the end of the row. Descriptions are hidden by default and open with **Show description**.
+- **Reading state preserved**: collapsed items stay in place during refreshes. Controls work with keyboards and phones. [Roadmap guide](docs/en/roadmap.md).
 
 ## What’s new in version 3.1.1
 
@@ -69,7 +75,7 @@ Prime Agent Studio brings your **local Prime Agent sessions** together in a Wind
 - **Native memories and refinements**: read session memories and recorded before/after changes. Global records are labelled **Global** and remain shared across projects by Prime Agent. Browsing leaves the native records unchanged.
 - **History tools for agents**: new Studio runs and their subagents can search and read relevant project sources on demand. Text search needs no model call, and a local cache avoids rereading unchanged conversations. The full history is not automatically added to the agent’s context.
 
-**After updating:** the application can keep using the previous server while agents finish. Once they have finished, use **Preferences → Updates → Restart server** in the Windows application to activate 3.1.1. [Update guide](docs/en/desktop.md).
+**After updating:** the application can keep using the previous server while agents finish. Once they have finished, use **Preferences → Updates → Restart server** in the Windows application to activate 3.1.2. [Update guide](docs/en/desktop.md).
 
 ## What’s new in version 2.9
 

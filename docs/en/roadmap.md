@@ -8,6 +8,8 @@ Roadmap brings together planned work, checklists and the conversations handling 
 
 Open **Roadmap** from the project or the **Session** tab in the right panel. **Project** shows the optional vision, milestones and their plans. **Session** finds plans linked to the current conversation. **Backlog** keeps ideas, uncommitted tasks and notes.
 
+On desktop, **Expand roadmap** at the top of the panel opens a view across the workspace. **Reduce roadmap** or Escape returns to the side panel. Click milestone, plan or parent task titles to collapse their children; the counter at the end of the row stays visible and tracks checked tasks. Descriptions are hidden by default: **Show description** opens them, and **Hide description** collapses them. These reading choices survive refreshes and panel size changes without modifying project data.
+
 A missing Roadmap stays empty until explicitly initialized. Add a plan, then its tasks and notes. Checklists support three levels. Menus let you edit, group, move or explicitly delete items. Drag handles reorder milestones, tasks and backlog entries; menus keep actions available by keyboard and on phones.
 
 Progress counts checked leaf tasks once each. A group reflects its children, and its checkbox applies the same state to all of them. Changing a plan’s status does not check its tasks. Abandoned plans remain readable and leave the project counter; paused plans remain included. Backlog is counted separately.

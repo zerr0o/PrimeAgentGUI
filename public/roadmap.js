@@ -39,7 +39,10 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
   heading.append(projectName);
   const close = button('×', () => hide(), 'rm-close');
   close.setAttribute('aria-label', rt('close'));
-  header.append(heading, close);
+  const enlarge = button('', () => setEnlarged(!enlarged), 'rm-expand'),
+    headerActions = node('div', 'rm-header-actions');
+  headerActions.append(enlarge, close);
+  header.append(heading, headerActions);
   const progress = node('div', 'rm-overall'),
     tabs = node('nav', 'rm-tabs');
   tabs.setAttribute('aria-label', rt('title'));
@@ -57,7 +60,8 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
     tab = 'project',
     generation = 0,
     pending = false,
-    refreshPending = false;
+    refreshPending = false,
+    enlarged = false;
   let requestSequence = 0,
     appliedSequence = 0,
     activityEpoch = '',
@@ -71,7 +75,10 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
     workRequest = null;
   const expanded = new Set(),
     selected = new Set(),
-    foldedMilestones = new Set();
+    foldedMilestones = new Set(),
+    foldedSteps = new Set(),
+    foldedGroups = new Set(),
+    visibleDescriptions = new Set();
   const canEdit = () => !getContext().readOnly && getContext().online !== false && !pending;
   const activityFor = (kind, id) =>
     (doc?.activity || []).filter((entry) =>
@@ -195,6 +202,86 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
       box.append(track);
     } else box.append(caption);
     return box;
+  }
+  function inlineCount(value) {
+    const { done = 0, total = 0 } = value || {},
+      count = node('span', 'rm-inline-count', `${done}/${total}`),
+      label = total ? `${done}/${total} ${rt('progress')}` : rt('noSteps');
+    count.setAttribute('aria-label', label);
+    count.title = label;
+    return count;
+  }
+  // Parent checkboxes summarize descendants; counting them again would inflate progress.
+  function leafProgress(steps) {
+    return steps.reduce(
+      (value, step) => {
+        const child = step.children?.length
+          ? leafProgress(step.children)
+          : { done: step.done ? 1 : 0, total: 1 };
+        value.done += child.done;
+        value.total += child.total;
+        return value;
+      },
+      { done: 0, total: 0 },
+    );
+  }
+  function plansProgress(plans) {
+    return plans
+      .filter((plan) => plan.status !== 'abandoned')
+      .reduce(
+        (value, plan) => ({
+          done: value.done + plan.progress.done,
+          total: value.total + plan.progress.total,
+        }),
+        { done: 0, total: 0 },
+      );
+  }
+  function description(key, text) {
+    const box = node('div', 'rm-description-disclosure'),
+      copy = node('p', 'rm-description', text),
+      toggle = button(
+        '',
+        () => {
+          visibleDescriptions.has(key) ? visibleDescriptions.delete(key) : visibleDescriptions.add(key);
+          sync();
+        },
+        'rm-description-toggle',
+      );
+    box.dataset.descriptionKey = key;
+    toggle.dataset.rmFocus = `description:${key}`;
+    copy.id = `rm-description-${key}`;
+    toggle.setAttribute('aria-controls', copy.id);
+    function sync() {
+      const visible = visibleDescriptions.has(key);
+      copy.hidden = !visible;
+      toggle.textContent = rt(visible ? 'hideDescription' : 'showDescription');
+      toggle.setAttribute('aria-expanded', String(visible));
+    }
+    sync();
+    box.append(toggle, copy);
+    return box;
+  }
+  function groupHead(key, title, value) {
+    const head = node('div', 'rm-section-head'),
+      heading = node('h3'),
+      toggle = button(
+        title,
+        () => {
+          foldedGroups.has(key) ? foldedGroups.delete(key) : foldedGroups.add(key);
+          render();
+        },
+        'rm-group-toggle',
+      );
+    toggle.setAttribute('aria-label', title);
+    toggle.dataset.rmFocus = `group:${key}`;
+    toggle.setAttribute('aria-expanded', String(!foldedGroups.has(key)));
+    toggle.setAttribute('aria-controls', `rm-group-${key}`);
+    heading.append(toggle);
+    head.append(
+      heading,
+      typeof value === 'number' ? node('span', 'rm-inline-count', String(value)) : inlineCount(value),
+    );
+    return head;
   }
   function menu(actions, label = rt('actions')) {
     const details = node('details', 'rm-menu'),
@@ -326,6 +413,7 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
   }
   async function openLink(link) {
     try {
+      if (enlarged && innerWidth >= 900) setEnlarged(false);
       await onOpenSession({ cwd, ...link });
       if (innerWidth < 900) hide();
     } catch (e) {
@@ -459,7 +547,10 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
   }
   function renderStep(plan, step, depth, index, siblings) {
     const li = node('li', 'rm-step'),
-      row = node('div', 'rm-step-row');
+      row = node('div', 'rm-step-row'),
+      key = `${plan.id}:${step.id}`,
+      hasChildren = !!step.children?.length,
+      main = node('div', 'rm-step-main');
     li.dataset.stepId = step.id;
     const check = node('input');
     check.type = 'checkbox';
@@ -468,10 +559,32 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
     check.disabled = !canEdit();
     check.setAttribute('aria-label', step.text);
     check.onchange = () => act('step.check', { planId: plan.id, stepId: step.id, done: check.checked });
+    const title = node('span', `rm-step-title${step.done ? ' rm-checked' : ''}`, step.text);
+    main.append(check);
+    if (hasChildren) {
+      const toggle = button(
+        '',
+        () => {
+          foldedSteps.has(key) ? foldedSteps.delete(key) : foldedSteps.add(key);
+          render();
+        },
+        'rm-step-toggle',
+      );
+      toggle.append(node('span', 'rm-chevron', '›'), title);
+      toggle.setAttribute(
+        'aria-label',
+        `${rt(foldedSteps.has(key) ? 'expandSubtasks' : 'collapseSubtasks')} · ${step.text}`,
+      );
+      toggle.dataset.rmFocus = `step:${key}`;
+      toggle.setAttribute('aria-expanded', String(!foldedSteps.has(key)));
+      toggle.setAttribute('aria-controls', `rm-step-children-${plan.id}-${step.id}`);
+      main.append(toggle);
+    } else main.append(title);
     const text = node('div', 'rm-step-copy');
-    text.append(node('span', step.done ? 'rm-checked' : '', step.text));
-    if (step.note) text.append(node('p', 'rm-note', step.note));
-    row.append(check, text);
+    if (hasChildren) main.append(inlineCount(leafProgress(step.children)));
+    text.append(main);
+    if (step.note) text.append(description(`step:${key}`, step.note));
+    row.append(text);
     if (canEdit())
       row.append(
         menu(
@@ -506,8 +619,10 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
       );
     row.prepend(bindDrag(row, 'step', step.id, plan.id));
     li.append(row);
-    if (step.children?.length) {
+    if (hasChildren) {
       const list = node('ul', 'rm-steps');
+      list.id = `rm-step-children-${plan.id}-${step.id}`;
+      list.hidden = foldedSteps.has(key);
       step.children.forEach((child, i) => list.append(renderStep(plan, child, depth + 1, i, step.children)));
       li.append(list);
     }
@@ -528,7 +643,7 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
     toggle.setAttribute('aria-label', plan.title);
     toggle.setAttribute('aria-expanded', expanded.has(plan.id) ? 'true' : 'false');
     toggle.setAttribute('aria-controls', `rm-plan-${plan.id}`);
-    head.append(toggle);
+    head.append(toggle, inlineCount(plan.progress));
     if (canEdit())
       head.append(
         menu([
@@ -538,13 +653,13 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
       );
     section.append(head);
     const meta = node('div', 'rm-plan-meta');
-    meta.append(node('span', '', rt(plan.status)), counts(plan.progress));
+    meta.append(node('span', '', rt(plan.status)));
     if (plan.status === 'abandoned') meta.append(node('span', '', rt('excluded')));
     section.append(meta, activities('plan', plan.id));
     const body = node('div', 'rm-plan-body');
     body.id = `rm-plan-${plan.id}`;
     body.hidden = !expanded.has(plan.id);
-    if (plan.summary) body.append(node('p', 'rm-description', plan.summary));
+    if (plan.summary) body.append(description(`plan:${plan.id}`, plan.summary));
     const list = node('ul', 'rm-steps');
     plan.steps.forEach((s, i) => list.append(renderStep(plan, s, 1, i, plan.steps)));
     body.append(list);
@@ -650,7 +765,7 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
       toggle.setAttribute('aria-expanded', foldedMilestones.has(milestone.id) ? 'false' : 'true');
       toggle.setAttribute('aria-controls', `rm-milestone-${milestone.id}`);
       heading.append(toggle);
-      head.append(bindDrag(head, 'milestone', milestone.id), heading);
+      head.append(bindDrag(head, 'milestone', milestone.id), heading, inlineCount(milestone.progress));
       if (canEdit())
         head.append(
           menu([
@@ -679,19 +794,25 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
             [rt('remove'), () => confirmRemove('milestone.delete', { milestoneId: milestone.id })],
           ]),
         );
-      group.append(head, counts(milestone.progress), activities('milestone', milestone.id));
+      group.append(head, activities('milestone', milestone.id));
       const body = node('div');
       body.id = `rm-milestone-${milestone.id}`;
       body.hidden = foldedMilestones.has(milestone.id);
-      if (milestone.summary) body.append(node('p', 'rm-description', milestone.summary));
+      if (milestone.summary) body.append(description(`milestone:${milestone.id}`, milestone.summary));
       for (const plan of doc.plans.filter((p) => p.milestone === milestone.id)) body.append(renderPlan(plan));
       group.append(body);
       content.append(group);
     }
     const ungrouped = doc.plans.filter((p) => !p.milestone);
-    if (ungrouped.length && doc.overview.milestones.length)
-      content.append(node('h3', 'rm-ungrouped', rt('ungrouped')));
-    for (const plan of ungrouped) content.append(renderPlan(plan));
+    if (ungrouped.length && doc.overview.milestones.length) {
+      const group = node('section', 'rm-ungrouped-group'),
+        body = node('div');
+      body.id = 'rm-group-ungrouped';
+      body.hidden = foldedGroups.has('ungrouped');
+      for (const plan of ungrouped) body.append(renderPlan(plan));
+      group.append(groupHead('ungrouped', rt('ungrouped'), plansProgress(ungrouped)), body);
+      content.append(group);
+    } else for (const plan of ungrouped) content.append(renderPlan(plan));
     if (!doc.plans.length) content.append(node('p', 'rm-note', rt('noPlans')));
     if (canEdit()) {
       const actions = node('div', 'rm-add-actions');
@@ -721,9 +842,22 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
       ['item', doc.backlog.items, 'tasks'],
       ['note', doc.backlog.notes, 'intentions'],
     ]) {
-      const section = node('section', 'rm-backlog-group');
-      section.append(node('h3', '', `${rt(label)} · ${rows.length}`));
-      if (!rows.length) section.append(node('p', 'rm-note', rt('noBacklog')));
+      const section = node('section', 'rm-backlog-group'),
+        list = node('div', 'rm-backlog-items'),
+        groupKey = `backlog-${kind}`;
+      section.dataset.backlogKind = kind;
+      list.id = `rm-group-${groupKey}`;
+      list.hidden = foldedGroups.has(groupKey);
+      section.append(
+        groupHead(
+          groupKey,
+          rt(label),
+          kind === 'item'
+            ? { done: rows.filter((item) => item.done).length, total: rows.length }
+            : rows.length,
+        ),
+      );
+      if (!rows.length) list.append(node('p', 'rm-note', rt('noBacklog')));
       rows.forEach((item, i) => {
         const row = node('article', 'rm-backlog-row');
         row.dataset.backlogNumber = String(item.number);
@@ -742,7 +876,7 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
         }
         title.append(node('small', 'rm-number', `#${item.number}`), text);
         copy.append(title);
-        if (item.note) copy.append(node('p', 'rm-note', item.note));
+        if (item.note) copy.append(description(`backlog:${item.number}`, item.note));
         copy.append(activities('backlog', item.number));
         for (const sessionId of item.sessions || [])
           copy.append(button(sessionLabel(sessionId), () => openLink({ sessionId }), 'rm-session-link'));
@@ -791,8 +925,9 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
               [rt('remove'), () => confirmRemove('backlog.remove', { numbers: [item.number] })],
             ]),
           );
-        section.append(row);
+        list.append(row);
       });
+      section.append(list);
       content.append(section);
     }
   }
@@ -801,6 +936,7 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
     const scroll = content.scrollTop;
     const focus = panel.contains(document.activeElement) ? document.activeElement : null;
     const focusKey = focus && (focus.getAttribute('aria-label') || focus.textContent);
+    const stableFocus = focus?.dataset.rmFocus;
     const focusKind = focus?.tagName;
     const openDetails = [...content.querySelectorAll('details[open]')].map((d) => ({
       plan: d.closest('[data-plan-id]')?.dataset.planId,
@@ -808,6 +944,7 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
     }));
     projectName.textContent = getContext().name || doc?.name || cwd;
     close.setAttribute('aria-label', rt('close'));
+    updatePresentation();
     progress.replaceChildren();
     tabs.replaceChildren();
     content.replaceChildren();
@@ -843,7 +980,14 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
       for (const plan of plans) content.append(renderPlan(plan));
     }
     footer.append(
-      button(rt('knowledge'), () => onKnowledge(), 'rm-text-button'),
+      button(
+        rt('knowledge'),
+        () => {
+          if (enlarged && innerWidth >= 900) setEnlarged(false);
+          onKnowledge();
+        },
+        'rm-text-button',
+      ),
       menu(
         [
           [rt('refresh'), () => refresh()],
@@ -865,7 +1009,11 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
     if (focusKey && !panel.contains(focus))
       [...panel.querySelectorAll('button,input,summary')]
         .find(
-          (el) => el.tagName === focusKind && (el.getAttribute('aria-label') || el.textContent) === focusKey,
+          (el) =>
+            el.tagName === focusKind &&
+            (stableFocus
+              ? el.dataset.rmFocus === stableFocus
+              : (el.getAttribute('aria-label') || el.textContent) === focusKey),
         )
         ?.focus({ preventScroll: true });
   }
@@ -1051,6 +1199,56 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
       },
     });
   }
+  let inertShell = null,
+    previousInert = false;
+  function updatePresentation() {
+    const modal = opened && (enlarged || innerWidth < 900);
+    document.body.classList.toggle('roadmap-expanded', opened && enlarged);
+    enlarge.hidden = innerWidth < 900;
+    enlarge.setAttribute('aria-label', rt(enlarged ? 'reduce' : 'expand'));
+    enlarge.setAttribute('aria-pressed', String(enlarged));
+    enlarge.title = rt(enlarged ? 'reduce' : 'expand');
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'),
+      path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '1.5');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    path.setAttribute(
+      'd',
+      enlarged ? 'M4 9h5V4m11 5h-5V4M4 15h5v5m11-5h-5v5' : 'M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5',
+    );
+    svg.append(path);
+    enlarge.replaceChildren(svg);
+    if (modal) {
+      panel.setAttribute('role', 'dialog');
+      panel.setAttribute('aria-modal', 'true');
+      if (!inertShell) {
+        inertShell = document.querySelector('.app-shell');
+        if (inertShell) {
+          previousInert = inertShell.inert;
+          inertShell.inert = true;
+        }
+      }
+    } else {
+      panel.removeAttribute('role');
+      panel.removeAttribute('aria-modal');
+      if (inertShell) {
+        inertShell.inert = previousInert;
+        inertShell = null;
+      }
+    }
+  }
+  function setEnlarged(value) {
+    const scroll = content.scrollTop;
+    enlarged = value;
+    updatePresentation();
+    content.scrollTop = scroll;
+    enlarge.focus({ preventScroll: true });
+  }
   function show(trigger, nextTab = 'project') {
     if (!getContext().cwd) return;
     opener = trigger || document.activeElement;
@@ -1062,17 +1260,16 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
       expanded.clear();
       selected.clear();
       foldedMilestones.clear();
+      foldedSteps.clear();
+      foldedGroups.clear();
+      visibleDescriptions.clear();
       appliedSequence = 0;
       error = '';
     }
     opened = true;
     panel.hidden = false;
     document.body.classList.add('roadmap-open');
-    if (innerWidth < 900) {
-      panel.setAttribute('role', 'dialog');
-      panel.setAttribute('aria-modal', 'true');
-      document.querySelector('.app-shell').inert = true;
-    }
+    updatePresentation();
     render();
     close.focus();
     void refresh();
@@ -1084,20 +1281,31 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
     panel.hidden = true;
     generation++;
     document.body.classList.remove('roadmap-open');
-    document.querySelector('.app-shell').inert = false;
-    panel.removeAttribute('aria-modal');
-    panel.removeAttribute('role');
+    enlarged = false;
+    updatePresentation();
     opener?.isConnected && opener.focus({ preventScroll: true });
   }
   panel.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && !event.defaultPrevented) {
       event.preventDefault();
-      hide();
+      event.stopPropagation();
+      if (enlarged && innerWidth >= 900) setEnlarged(false);
+      else hide();
     }
-    if (event.key === 'Tab' && innerWidth < 900) {
-      const nodes = [...panel.querySelectorAll('button,summary,input,a,select,textarea')].filter(
-        (el) => !el.disabled && el.getClientRects().length && !el.closest('[hidden]'),
-      );
+    if (event.key === 'Tab' && (enlarged || innerWidth < 900)) {
+      const nodes = [...panel.querySelectorAll('button,summary,input,a,select,textarea')].filter((el) => {
+        if (el.disabled || el.tabIndex < 0 || !el.getClientRects().length || el.closest('[hidden]'))
+          return false;
+        // Closed details can still report rectangles for their content in Chromium.
+        for (let parent = el.parentElement; parent && parent !== panel; parent = parent.parentElement)
+          if (
+            parent.tagName === 'DETAILS' &&
+            !parent.open &&
+            !parent.querySelector(':scope > summary')?.contains(el)
+          )
+            return false;
+        return true;
+      });
       if (event.shiftKey && document.activeElement === nodes[0]) {
         event.preventDefault();
         nodes.at(-1)?.focus();
@@ -1131,15 +1339,7 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
   document.addEventListener('visibilitychange', update);
   window.addEventListener('resize', () => {
     if (!opened) return;
-    const mobile = innerWidth < 900;
-    document.querySelector('.app-shell').inert = mobile;
-    if (mobile) {
-      panel.setAttribute('role', 'dialog');
-      panel.setAttribute('aria-modal', 'true');
-    } else {
-      panel.removeAttribute('role');
-      panel.removeAttribute('aria-modal');
-    }
+    updatePresentation();
   });
   onLanguageChange(() => {
     if (opened) render();
@@ -1150,6 +1350,9 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
     update,
     destroy: () => {
       clearInterval(timer);
+      opened = false;
+      document.body.classList.remove('roadmap-open');
+      updatePresentation();
       panel.remove();
       editor.remove();
     },
