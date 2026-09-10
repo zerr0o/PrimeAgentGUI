@@ -4100,9 +4100,13 @@ export const messages = {
     fr: 'Deux tests MCP sont déjà en cours.',
     en: 'Two MCP tests are already running.',
   },
-  'server.le_moteur_python_manque_executez_npm_run_setup_runtime_sur_le_pc': {
-    fr: 'Le moteur Python manque. Exécutez npm run setup:runtime sur le PC.',
-    en: 'The Python engine is missing. Run npm run setup:runtime on the PC.',
+  'server.le_moteur_python_configure_est_introuvable': {
+    fr: 'Le moteur Python configuré est introuvable. Vérifiez le chemin PRIME_AGENT_KERNEL_PYTHON sur ce PC.',
+    en: 'The configured Python engine was not found. Check the PRIME_AGENT_KERNEL_PYTHON path on this PC.',
+  },
+  'server.la_preparation_automatique_de_python_a_echoue': {
+    fr: 'La préparation automatique de Python a échoué. Vérifiez que Prime Agent et uv sont installés, puis réessayez.',
+    en: 'Automatic Python setup failed. Check that Prime Agent and uv are installed, then try again.',
   },
   'server.le_test_mcp_a_depasse_le_delai_de_connexion': {
     fr: 'Le test MCP a dépassé le délai de connexion.',

@@ -13,11 +13,10 @@ import { createMcpConfigStore, mcpRevision } from '../lib/mcp-config.mjs';
 import { createMcpService } from '../lib/mcp-service.mjs';
 import { createModelDefaultsStore } from '../lib/model-defaults.mjs';
 import { discoverCli } from '../lib/agent.mjs';
+import { localKernelPython } from '../lib/kernel.mjs';
 
-const python = resolve(
-  '.local/kernel-venv',
-  process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python',
-);
+const python =
+  process.env.PRIME_AGENT_KERNEL_PYTHON || localKernelPython(process.env.PRIME_AGENT_GUI_KERNEL_ROOT);
 const installed = !!discoverCli()?.packageDir;
 const nativeOnly = { skip: !installed && 'Prime Agent natif non installé' };
 const kernelOnly = { skip: (!installed || !existsSync(python)) && 'Moteur Prime Agent absent' };
