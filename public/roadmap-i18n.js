@@ -12,6 +12,8 @@ const words = {
   hideDescription: ['Masquer la description', 'Hide description'],
   collapseSubtasks: ['Replier les sous-tâches', 'Collapse subtasks'],
   expandSubtasks: ['Déplier les sous-tâches', 'Expand subtasks'],
+  collapseAllTasks: ['Tout replier', 'Collapse all'],
+  expandAllTasks: ['Tout déplier', 'Expand all'],
   loading: ['Chargement…', 'Loading…'],
   retry: ['Réessayer', 'Retry'],
   empty: ['La suite du projet, au même endroit.', 'What comes next, in one place.'],

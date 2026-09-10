@@ -23,6 +23,7 @@ import { createProviderService } from './lib/provider-service.mjs';
 import { createCommandService, parseCommand, validateCommand } from './lib/commands.mjs';
 import { createLiveMessages, routeLiveMessages } from './lib/live-messages.mjs';
 import { createLiveSessionClient } from './lib/live-session-client.mjs';
+import { createConversationSettings } from './lib/conversation-settings.mjs';
 import { validateImages, imageBodyLimit } from './lib/images.mjs';
 import { createFileStore, validateFiles, appendFileMessage, splitFileMessage } from './lib/files.mjs';
 import { createProjectFiles } from './lib/project-files.mjs';
@@ -182,6 +183,16 @@ export function createApp(options = {}) {
         return endpoint ? createLiveSessionClient(endpoint) : null;
       },
     });
+  const conversationSettings = createConversationSettings({
+    store,
+    getRuns: () => [...runs.values()],
+    getModels: () => models(),
+    getClient: () => {
+      if (options.liveClient) return options.liveClient;
+      const endpoint = runtime.getLiveEndpoint?.();
+      return endpoint ? createLiveSessionClient(endpoint) : null;
+    },
+  });
   const liveMessages = createLiveMessages({
     fileStore,
     validateMessage: async (message, context) => {
@@ -348,13 +359,16 @@ export function createApp(options = {}) {
         throw new HttpError(409, tr('server.cette_session_appartient_a_un_autre_dossier'));
     }
     const catalog = await models();
-    const selectedModel = body.model || existing?.model || catalog.default?.model;
+    const settings = existing?.generationSettings;
+    const selectedModel = (body.model ?? settings?.model ?? existing?.model) || catalog.default?.model;
+    const selectedThinking =
+      (body.thinking ?? settings?.thinking ?? existing?.thinking) || catalog.default?.thinking;
     if (catalog.models?.find((model) => model.id === selectedModel)?.availability === 'unavailable')
       throw new HttpError(409, tr('model.unavailableSelection'));
     // Check after awaited validation so simultaneous HTTP requests cannot race the lock.
     if (activeRuns().length >= 8)
       throw new HttpError(429, tr('server.huit_sessions_tournent_deja_arretez_en_une_avant_de_continuer'));
-    if (existing && sessionLocks.has(existing.id))
+    if (existing && (sessionLocks.has(existing.id) || conversationSettings.busy(existing.id)))
       throw new HttpError(409, tr('server.cette_session_travaille_deja'));
     if (existing) sessionLocks.add(existing.id);
     const run = {
@@ -363,8 +377,8 @@ export function createApp(options = {}) {
       cwd,
       status: 'running',
       startedAt: new Date().toISOString(),
-      model: body.model || null,
-      thinking: body.thinking || null,
+      model: selectedModel || null,
+      thinking: selectedThinking || null,
       prompt: body.message.trim() || tr('ui.analyse_les_pieces_jointes'),
       seq: 0,
       events: [],
@@ -381,8 +395,8 @@ export function createApp(options = {}) {
         ...(images.length ? { images } : {}),
         sessionId: existing?.id,
         sessionFile: existing?.file,
-        model: body.model || undefined,
-        thinking: body.thinking || undefined,
+        model: selectedModel || undefined,
+        thinking: selectedThinking || undefined,
         onEvent: (event) => pushEvent(run, event),
       });
       if (run.status === 'stopping') void run.handle.cancel();
@@ -785,6 +799,8 @@ export function createApp(options = {}) {
           );
         return json(res, 200, await store.removeProject(project.cwd));
       }
+      if (method === 'PATCH' && path === '/api/conversation-settings')
+        return json(res, 200, await conversationSettings.update(await readBody(req)));
       if (method === 'PATCH' && path === '/api/sessions')
         return json(res, 200, await store.patchSession(await readBody(req)));
       if (method === 'GET' && path === '/api/runs') return json(res, 200, { runs: activeRuns() });

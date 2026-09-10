@@ -219,6 +219,91 @@ function modelDisplayName(id) {
     state.models.find((model) => model.id === id)?.name || id?.split('/').pop() || tr('ui.modele_par_defaut')
   );
 }
+const generationPending = new Map();
+const generationDrafts = new Map();
+const generationConfirmed = new Map();
+let selectedGeneration = {};
+function rememberGenerationSettings(id, settings, revision = 0) {
+  const known = generationConfirmed.get(id);
+  // A delayed history/overview must not undo an acknowledged save. Revisions
+  // also let a newer preference from another device replace the cached value.
+  if (id && settings && (!known || revision >= known.revision)) {
+    generationConfirmed.set(id, { settings: { ...settings }, revision });
+  }
+  return generationConfirmed.get(id);
+}
+function restoreGenerationSettings(history = session(), run = activeRun()) {
+  const defaults = { model: state.modelCatalogDefault || '', thinking: state.modelCatalogThinking || '' };
+  const saved =
+    rememberGenerationSettings(state.sessionId, history?.generationSettings, history?.generationRevision)
+      ?.settings || {};
+  const pending = generationPending.get(state.sessionId);
+  const draft = generationDrafts.get(normalizedPath(state.projectCwd));
+  const settings =
+    state.sessionId || run
+      ? {
+          model: saved.model ?? run?.model ?? history?.model ?? defaults.model,
+          thinking: saved.thinking ?? run?.thinking ?? history?.thinking ?? defaults.thinking,
+        }
+      : { ...defaults, ...draft };
+  selectedGeneration = { ...settings, ...pending?.settings };
+  setSelectedModel(selectedGeneration.model, false);
+  $('thinking-select').value = selectedGeneration.thinking;
+}
+async function saveGenerationSettings(patch) {
+  const id = state.sessionId,
+    cwd = state.projectCwd,
+    previous = { ...selectedGeneration };
+  if (state.readOnly || state.loading || state.sending || generationPending.has(id)) {
+    restoreGenerationSettings();
+    return;
+  }
+  const run = activeRun();
+  if (isRunning(run) && ('model' in patch || !id || run.status !== 'running')) {
+    restoreGenerationSettings();
+    return;
+  }
+  selectedGeneration = { ...selectedGeneration, ...patch };
+  if (!id) {
+    generationDrafts.set(normalizedPath(cwd), { ...selectedGeneration });
+    return;
+  }
+  const entry = { settings: { ...selectedGeneration } };
+  generationPending.set(id, entry);
+  updateComposer();
+  try {
+    const result = await api('/api/conversation-settings', {
+      method: 'PATCH',
+      body: { id, cwd, settings: patch },
+    });
+    const confirmed = rememberGenerationSettings(id, result.settings, result.revision);
+    for (const project of state.projects) {
+      const target = project.sessions?.find((s) => s.id === id);
+      if (target) {
+        target.generationSettings = confirmed.settings;
+        target.generationRevision = confirmed.revision;
+      }
+    }
+    if (result.appliedToRun && run) run.thinking = confirmed.settings.thinking;
+    if (state.sessionId === id) {
+      selectedGeneration = { ...previous, ...confirmed.settings };
+      setSelectedModel(selectedGeneration.model);
+      $('thinking-select').value = selectedGeneration.thinking;
+      if (result.appliedToRun) toast(() => tr('conversation.thinkingApplied'));
+    }
+  } catch (error) {
+    if (state.sessionId === id) {
+      selectedGeneration = previous;
+      setSelectedModel(previous.model);
+      $('thinking-select').value = previous.thinking;
+      toast(translateKnown(error.message), true);
+    }
+  } finally {
+    generationPending.delete(id);
+    if (state.sessionId === id) restoreGenerationSettings();
+    updateComposer();
+  }
+}
 function setSelectedModel(value, persist = false, render = true) {
   const id = typeof value === 'string' ? value : '',
     select = $('model-select');
@@ -244,7 +329,7 @@ function setSelectedModel(value, persist = false, render = true) {
   bindAttribute(button, 'aria-label', () =>
     tr('ui.choisir_le_modele_selection_actuelle', { value1: id ? `${name}, ${model?.id || id}` : name }),
   );
-  if (persist) savePreferences({ model: id });
+  if (persist) void saveGenerationSettings({ model: id });
   if (render && $('model-dialog').open) renderModelList();
 }
 function modelRow(model, favorite = false) {
@@ -638,14 +723,25 @@ function updateComposer() {
     imageComposer?.blocked() ||
     !state.projectCwd ||
     state.sending ||
+    generationPending.has(state.sessionId) ||
     state.loading ||
     running ||
     !state.online ||
     state.version?.available === false ||
     project()?.exists === false;
-  $('model-select').disabled = state.readOnly || running || state.sending;
-  $('model-picker-button').disabled = state.readOnly || running || state.sending;
-  $('thinking-select').disabled = state.readOnly || running || state.sending;
+  const settingsDisabled =
+    state.readOnly ||
+    !state.online ||
+    state.loading ||
+    state.sending ||
+    generationPending.has(state.sessionId);
+  $('model-select').disabled = settingsDisabled || running;
+  $('model-picker-button').disabled = settingsDisabled || running;
+  $('thinking-select').disabled =
+    settingsDisabled || (running && (!state.sessionId || activeRun()?.status !== 'running'));
+  bindAttribute($('thinking-select'), 'title', () =>
+    running ? tr('conversation.thinkingNextCall') : tr('conversation.scope'),
+  );
   $('run-status').hidden = !running;
   bindText($('run-status-label'), () =>
     activeRun()?.status === 'stopping'
@@ -1309,6 +1405,7 @@ function selectProject(cwd) {
   saveDraft();
   resetView();
   state.projectCwd = cwd;
+  restoreGenerationSettings(null, null);
   projectNavigation?.reveal(cwd);
   state.projectOverview = true;
   state.archived = false;
@@ -1339,6 +1436,10 @@ async function selectSession(id, cwd) {
   state.viewRunId = null;
   state.history = [];
   state.loading = true;
+  restoreGenerationSettings(
+    session(id),
+    [...state.runs.values()].find((r) => r.sessionId === id && isRunning(r)),
+  );
   messageNodes.clear();
   closeSidebar();
   saveSelection();
@@ -1362,7 +1463,7 @@ async function selectSession(id, cwd) {
       if (!running.initialized) initializeRun(running, state.history);
       subscribe(running);
     }
-    if (h.model && state.models.some((m) => m.id === h.model)) setSelectedModel(h.model);
+    restoreGenerationSettings(h, running);
     state.loading = false;
     renderNavigation();
     renderMessages(true);
@@ -1382,6 +1483,7 @@ async function selectRun(run) {
   state.projectCwd = run.cwd;
   projectNavigation?.reveal(run.cwd);
   state.viewRunId = run.id;
+  restoreGenerationSettings(null, run);
   if (!run.initialized) initializeRun(run, []);
   subscribe(run);
   restoreDraft();
@@ -1647,8 +1749,8 @@ async function sendMessage(event) {
         ...(images.length ? { images } : {}),
         ...(files.length ? { files } : {}),
         ...(sessionId ? { sessionId } : {}),
-        ...($('model-select').value ? { model: $('model-select').value } : {}),
-        ...($('thinking-select').value ? { thinking: $('thinking-select').value } : {}),
+        model: $('model-select').value || state.modelCatalogDefault || '',
+        thinking: $('thinking-select').value || state.modelCatalogThinking || '',
       },
     });
     Object.assign(run, {
@@ -1668,6 +1770,7 @@ async function sendMessage(event) {
       currentMessage: null,
     });
     state.runs.set(run.id, run);
+    generationDrafts.delete(normalizedPath(cwd));
     if (imageDraft) imageComposer.accepted(imageDraft);
     if (run.sessionId) upsertSession(run.sessionId, run);
     if (token === state.requestId) {
@@ -1907,7 +2010,6 @@ async function saveDefaultModel() {
       mainModel: data.mainModel,
       subagents: data.subagents,
     };
-    savePreferences({ model: data.mainModel || '' });
     if (data.catalog) populateModels(data.catalog);
     renderModelDefaults();
     toast(() =>
@@ -1981,6 +2083,7 @@ function populateModels(catalog, { preserveSelection = false } = {}) {
     thinking = $('thinking-select').value;
   state.models = Array.isArray(catalog?.models) ? catalog.models : [];
   state.modelCatalogDefault = typeof catalog?.default?.model === 'string' ? catalog.default.model : '';
+  state.modelCatalogThinking = catalog?.default?.thinking || '';
   state.modelCatalogRefreshing = catalog?.refreshing === true;
   state.modelCatalogNotice = '';
   const select = $('model-select');
@@ -2002,16 +2105,13 @@ function populateModels(catalog, { preserveSelection = false } = {}) {
     groups.get(model.provider).append(item);
   }
   if (preserveSelection) setSelectedModel(selected, false, false);
-  else selectNewConversationModel();
-  $('thinking-select').value = preserveSelection
-    ? thinking
-    : (prefs.thinking ?? catalog?.default?.thinking ?? '');
+  else restoreGenerationSettings();
+  if (preserveSelection) $('thinking-select').value = thinking;
   if ($('model-dialog').open) renderModelList({ preserveFocus: true });
   renderModelRefresh();
 }
 function selectNewConversationModel() {
-  const model = state.modelCatalogDefault;
-  setSelectedModel(state.models.some((item) => item.id === model) ? model : '');
+  restoreGenerationSettings(null, null);
 }
 async function bootstrap() {
   try {
@@ -2815,7 +2915,7 @@ $('model-dialog').addEventListener('keydown', (event) => {
   $('model-dialog').close();
 });
 $('thinking-select').onchange = () => {
-  savePreferences({ thinking: $('thinking-select').value });
+  void saveGenerationSettings({ thinking: $('thinking-select').value });
 };
 $('enter-to-send').onchange = (e) => {
   savePreferences({ enterToSend: e.target.checked });

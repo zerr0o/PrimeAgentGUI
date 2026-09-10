@@ -6,7 +6,7 @@ The **Prime Agent Studio** application, built with Tauri 2, opens Studio in a de
 
 ## Installation and first launch
 
-Run [Prime-Agent-Studio_3.1.2_x64-setup.exe](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.1.2/Prime-Agent-Studio_3.1.2_x64-setup.exe). Installation is limited to your Windows user and offers Start menu and desktop shortcuts. Node.js is included. The installer installs WebView2 when needed; this component may require an Internet connection.
+Run [Prime-Agent-Studio_3.1.4_x64-setup.exe](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.1.4/Prime-Agent-Studio_3.1.4_x64-setup.exe). Installation is limited to your Windows user and offers Start menu and desktop shortcuts. Node.js is included. The installer installs WebView2 when needed; this component may require an Internet connection.
 
 **Prime Agent and uv are still required on the PC**, with a configured provider. The installer does not reinstall or replace the Prime Agent engine, accounts or sessions. Studio prepares the Python kernel when needed for runs, as the browser version does.
 

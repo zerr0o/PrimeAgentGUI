@@ -660,6 +660,30 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
     body.id = `rm-plan-${plan.id}`;
     body.hidden = !expanded.has(plan.id);
     if (plan.summary) body.append(description(`plan:${plan.id}`, plan.summary));
+    const parents = [];
+    const visit = (steps) => {
+      for (const step of steps)
+        if (step.children?.length) {
+          parents.push(`${plan.id}:${step.id}`);
+          visit(step.children);
+        }
+    };
+    visit(plan.steps);
+    if (parents.length) {
+      const collapsed = parents.every((key) => foldedSteps.has(key));
+      const tools = node('div', 'rm-task-tools');
+      const fold = button(
+        rt(collapsed ? 'expandAllTasks' : 'collapseAllTasks'),
+        () => {
+          for (const key of parents) collapsed ? foldedSteps.delete(key) : foldedSteps.add(key);
+          render();
+        },
+        'rm-text-button',
+      );
+      fold.dataset.rmFocus = `tasks:${plan.id}`;
+      tools.append(fold);
+      body.append(tools);
+    }
     const list = node('ul', 'rm-steps');
     plan.steps.forEach((s, i) => list.append(renderStep(plan, s, 1, i, plan.steps)));
     body.append(list);

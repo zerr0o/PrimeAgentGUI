@@ -6,6 +6,8 @@ La Roadmap rassemble les travaux prévus, les checklists et les conversations qu
 
 ## Organiser le travail
 
+À l’intérieur d’un plan contenant des sous-tâches, **Tout replier / Tout déplier** agit sur tous les niveaux de tâches de ce plan. Le plan reste ouvert ; en mode replié, seules ses tâches principales et leurs compteurs restent visibles. Les autres plans et les descriptions conservent leur état.
+
 Ouvrez **Roadmap** depuis le projet ou l’onglet **Session** du panneau de droite. **Projet** présente la vision facultative, les jalons et leurs plans. **Session** retrouve les plans liés à la conversation actuelle. **Backlog** conserve les idées, les tâches non engagées et les notes.
 
 Sur PC, le bouton **Agrandir la roadmap** en haut du panneau ouvre une vue sur tout l’espace de travail. **Réduire la roadmap** ou Échap revient au panneau latéral. Les jalons, plans et tâches parentes se replient en cliquant sur leur titre ; le compteur en bout de ligne reste visible et suit les tâches cochées. Les descriptions sont masquées par défaut : **Afficher la description** les ouvre, **Masquer la description** les replie. Ces choix de lecture sont conservés pendant les actualisations et les changements de taille du panneau, sans modifier les données du projet.

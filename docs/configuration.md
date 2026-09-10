@@ -24,6 +24,10 @@ La [documentation des traductions](translations.md) décrit la table unique, le 
 
 ## Configurer les modèles
 
+Les sélecteurs de modèle et de réflexion près du champ de message sont propres à chaque conversation. Le Studio retrouve ses choix à la réouverture, y compris depuis un autre appareil. Les nouvelles conversations partent des valeurs par défaut de Prime Agent ; les changements d’une conversation ne modifient pas ces valeurs globales.
+
+Vous pouvez changer le niveau de réflexion pendant que l’agent travaille. Le moteur applique le niveau compatible aux prochains appels du modèle, sans interrompre l’appel ou l’outil déjà en cours. Un message confirme la prise en compte ; en cas d’échec, le sélecteur revient à sa valeur précédente. Le modèle se choisit entre deux exécutions.
+
 Ouvrez **Préférences → Modèles et agents → Configurer** sur le PC. La première zone choisit le modèle par défaut de l’agent principal avec le sélecteur des conversations, sa recherche intégrée et ses favoris partagés. Cliquez sur **Enregistrer** pour appliquer votre choix. Cette zone écrit uniquement les champs natifs `defaultProvider` et `defaultModel` dans `~/.prime/agent/settings.json`, comme Prime Agent 0.9.1. Le choix est appliqué au sélecteur du Studio et aux prochains lancements. **Choix automatique de Prime Agent** supprime ces deux champs. **Nouvelle session**, **Ctrl+N** et l’ouverture d’une conversation vide utilisent ce modèle par défaut, même si un autre modèle a été choisi dans la conversation précédente. Les conversations existantes retrouvent le modèle de leur historique.
 
 La zone **Sous-agents**, vérifiée avec Prime Agent **0.9.2**, définit le modèle et le niveau de réflexion par défaut pour tous les projets. Le bouton de modèle ouvre le même sélecteur que les conversations : catalogue identique, recherche intégrée par nom, fournisseur ou identifiant, et favoris partagés. Les niveaux proposés dépendent du modèle sélectionné. Les options **Modèle parent** et **Niveau parent** conservent le comportement natif de Prime Agent.

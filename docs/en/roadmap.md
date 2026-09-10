@@ -6,6 +6,8 @@ Roadmap brings together planned work, checklists and the conversations handling 
 
 ## Organize work
 
+Inside a plan with subtasks, **Collapse all / Expand all** controls every task level in that plan. The plan stays open; collapsing leaves its top-level tasks and completion counts visible. Other plans and descriptions keep their current state.
+
 Open **Roadmap** from the project or the **Session** tab in the right panel. **Project** shows the optional vision, milestones and their plans. **Session** finds plans linked to the current conversation. **Backlog** keeps ideas, uncommitted tasks and notes.
 
 On desktop, **Expand roadmap** at the top of the panel opens a view across the workspace. **Reduce roadmap** or Escape returns to the side panel. Click milestone, plan or parent task titles to collapse their children; the counter at the end of the row stays visible and tracks checked tasks. Descriptions are hidden by default: **Show description** opens them, and **Hide description** collapses them. These reading choices survive refreshes and panel size changes without modifying project data.

@@ -22,6 +22,7 @@ assert.ok(cli?.packageDir, 'Prime Agent doit être installé pour ce test natif.
 const root = fileURLToPath(new URL('..', import.meta.url));
 const smokeRoot = resolve(root, '.local', 'live-message-smoke');
 const withAttachments = process.argv.includes('--attachments');
+const withThinking = process.argv.includes('--thinking');
 const directory = withAttachments
   ? await mkdtemp(join(tmpdir(), 'pimg-'))
   : join(smokeRoot, `${Date.now()}-${randomUUID().slice(0, 8)}`);
@@ -146,7 +147,11 @@ const provider = createServer(async (request, response) => {
       .map((m) => splitFileMessage(imageMessageText(textOf(m.content))).text);
     const latest = userMessages.at(-1);
     const index = report.requests.length;
-    report.requests.push({ index, latestUserMessage: latest });
+    report.requests.push({
+      index,
+      latestUserMessage: latest,
+      ...(withThinking ? { thinking: input.reasoning_effort } : {}),
+    });
     if (withAttachments) {
       const parts = input.messages.filter((message) => message.role === 'user').at(-1).content;
       assert.ok(
@@ -213,7 +218,8 @@ await Promise.all([
               {
                 id: 'queue-smoke',
                 name: 'Queue fixture',
-                reasoning: false,
+                reasoning: withThinking,
+                ...(withThinking ? { compat: { supportsReasoningEffort: true } } : {}),
                 input: ['text', 'image'],
                 contextWindow: 131072,
                 maxTokens: 4096,
@@ -232,7 +238,7 @@ await Promise.all([
       {
         defaultProvider: 'studio-fixture',
         defaultModel: 'queue-smoke',
-        defaultThinkingLevel: 'off',
+        defaultThinkingLevel: withThinking ? 'low' : 'off',
         steeringMode: 'one-at-a-time',
         followUpMode: 'one-at-a-time',
         autoRefine: { enabled: false },
@@ -260,7 +266,7 @@ try {
     runtime.start({
       cwd,
       model: 'studio-fixture/queue-smoke',
-      thinking: 'off',
+      thinking: withThinking ? 'low' : 'off',
       message: appendFileMessage(original, uploaded),
       ...(images.length ? { images } : {}),
       onEvent: (event) => events.push(event),
@@ -292,6 +298,19 @@ try {
   });
   const initial = await client.getSnapshot(handle.sessionId, cwd);
   assert.equal(initial.state.isStreaming, true);
+  if (withThinking) {
+    assert.equal(await client.setThinking(handle.sessionId, cwd, 'high'), 'high');
+    assert.equal(report.requests.length, 1);
+    assert.equal(completed, false);
+    assert.equal((await store.history(handle.sessionId)).thinking, 'high');
+    assert.equal(
+      JSON.parse(await readFile(join(agentDir, 'settings.json'), 'utf8')).defaultThinkingLevel,
+      'low',
+    );
+    report.checks.push(
+      'Live native thinking changed during tool execution; persisted session high, global default low.',
+    );
+  }
   assert.equal(
     (
       await client.send(handle.sessionId, cwd, {
@@ -361,6 +380,21 @@ try {
   assert.equal(result.status, 'completed', result.error || result.status);
   if (providerError) throw providerError;
   const history = await store.history(handle.sessionId);
+  if (withThinking) {
+    assert.equal(report.requests[0].thinking, 'low');
+    assert.ok(
+      report.requests.slice(1).every((request) => request.thinking === 'high'),
+      JSON.stringify(report.requests),
+    );
+    assert.equal(history.thinking, 'high');
+    assert.equal(
+      JSON.parse(await readFile(join(agentDir, 'settings.json'), 'utf8')).defaultThinkingLevel,
+      'low',
+    );
+    report.checks.push(
+      'Actual next provider requests use high reasoning; original call stays low; global default preserved.',
+    );
+  }
   const delivered = history.messages.filter((message) => message.role === 'user').map((m) => m.text);
   assert.deepEqual(delivered, [original, steeringEdited, followLast, followEdited]);
   if (withAttachments) {

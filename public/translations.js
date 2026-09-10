@@ -5,6 +5,23 @@ export const languages = [
   { id: 'en', label: 'English' },
 ];
 export const messages = {
+  'conversation.unconfirmed': {
+    fr: 'Le moteur n’a pas confirmé le changement de réflexion. Réessayez lorsque la connexion est rétablie.',
+    en: 'The engine did not confirm the thinking change. Try again when the connection is restored.',
+  },
+  'conversation.scope': { fr: 'Réglage propre à cette conversation', en: 'Setting for this conversation' },
+  'conversation.thinkingNextCall': {
+    fr: 'S’applique aux prochains appels du modèle, sans interrompre l’agent',
+    en: 'Applies to the next model calls without interrupting the agent',
+  },
+  'conversation.thinkingApplied': {
+    fr: 'Réflexion mise à jour pour les prochains appels du modèle.',
+    en: 'Thinking updated for the next model calls.',
+  },
+  'conversation.liveUnavailable': {
+    fr: 'Le changement de réflexion en direct est momentanément indisponible.',
+    en: 'Live thinking changes are temporarily unavailable.',
+  },
   'roadmap.open': { fr: 'Roadmap du projet', en: 'Project roadmap' },
   'roadmap.linkWarning': {
     fr: 'Le travail a été envoyé, mais son lien n’a pas pu être enregistré. Vous pouvez réparer les liens dans la Roadmap.',

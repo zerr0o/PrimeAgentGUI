@@ -24,6 +24,10 @@ The [translation documentation](translations.md) describes the single table, fal
 
 ## Configure models
 
+The model and thinking selectors beside the message field belong to the current conversation. Studio restores its choices when reopened, including from another device. New conversations start from Prime Agent defaults; changing one conversation does not change those global defaults.
+
+You can change thinking while the agent is working. The engine applies the supported level to subsequent model calls, without interrupting the current call or tool. A message confirms acceptance; if it fails, the selector returns to its previous value. Choose the model between runs.
+
 Open **Preferences → Models & agents → Configure** on the PC. The first area chooses the main agent’s default model with the conversation selector, its integrated search and shared favorites. Click **Save** to apply the choice. This area writes only the native `defaultProvider` and `defaultModel` fields in `~/.prime/agent/settings.json`, as in Prime Agent 0.9.1. The choice applies to Studio’s selector and future launches. **Prime Agent automatic selection** removes these two fields. **New session**, **Ctrl+N** and opening an empty conversation use this default model even if a different model was selected in the previous conversation. Existing conversations restore the model from their history.
 
 The **Subagents** area, verified with Prime Agent **0.9.2**, defines the default model and reasoning level for all projects. The model button opens the same selector as conversations: identical catalog, integrated search by name, provider or ID, and shared favorites. Available levels depend on the selected model. **Parent model** and **Parent level** preserve Prime Agent’s native behavior.

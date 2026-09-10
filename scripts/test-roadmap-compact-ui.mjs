@@ -288,6 +288,25 @@ try {
     await assertNoOverflow(mobile);
     const root = step(mobile, deepParentId, deepPlanId);
     const nested = step(mobile, deepChildId, deepPlanId);
+    const foldAll = plan(mobile, deepPlanId).locator('.rm-task-tools button');
+    const beforeFolding = await stored();
+    await foldAll.tap();
+    await expect(foldAll).toHaveText('Tout déplier');
+    await expect(root).toBeVisible();
+    await expect(nested).toBeHidden();
+    await expect(plan(mobile, deepPlanId).locator('.rm-plan-toggle')).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    await foldAll.tap();
+    await expect(foldAll).toHaveText('Tout replier');
+    await expect(nested).toBeVisible();
+    await expect(nested.locator(':scope > .rm-steps')).toBeVisible();
+    expect(await stored()).toBe(beforeFolding);
+    await mobile.screenshot({ path: resolve(out, `all-tasks-${width}.png`) });
+    checks.push(
+      `Plan-local fold/unfold at ${width}px keeps root tasks, counts and plan visible, without writes.`,
+    );
     await expect(count(root, ':scope > .rm-step-row')).toHaveText('1/2');
     await expect(count(nested, ':scope > .rm-step-row')).toHaveText('1/2');
     await description(plan(mobile, deepPlanId), `step:${deepPlanId}:${deepParentId}`)

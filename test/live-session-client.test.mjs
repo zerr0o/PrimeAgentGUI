@@ -48,6 +48,9 @@ function fixture(options = {}) {
       if (options.snapshotFailsAfterSend && changed)
         throw new Error('Unknown active session C:/private-path');
       switch (command.type) {
+        case 'set_thinking_level':
+          if (options.sendThrows) throw new Error('Disconnected');
+          return { success: !options.sendRejected };
         case 'get_state':
           return {
             success: true,
@@ -146,6 +149,24 @@ function fixture(options = {}) {
   );
   return { client, queue, calls, instances };
 }
+
+test('live thinking targets the verified owner and returns the native effective level', async () => {
+  const f = fixture();
+  assert.equal(await f.client.setThinking(sessionId, cwd, 'high'), 'max');
+  assert.deepEqual(
+    f.calls.map((x) => x.type),
+    ['get_state', 'get_session_header', 'set_thinking_level', 'get_state', 'get_session_header'],
+  );
+  assert.ok(f.instances.every((x) => x.closed));
+  for (const options of [{ wrongCwd: true }, { wrongHeader: true }]) {
+    const other = fixture(options);
+    await assert.rejects(other.client.setThinking(sessionId, cwd, 'low'));
+    assert.ok(!other.calls.some((x) => x.type === 'set_thinking_level'));
+  }
+  await assert.rejects(fixture({ sendThrows: true }).client.setThinking(sessionId, cwd, 'low'), {
+    code: 'delivery_uncertain',
+  });
+});
 
 test('snapshot observes the exact native header without lifecycle commands or private metadata', async () => {
   const f = fixture();
