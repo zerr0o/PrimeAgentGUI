@@ -3,6 +3,15 @@
   "languages": ["fr", "en"],
   "pages": [
     {
+      "id": "roadmap",
+      "fr": "docs/roadmap.md",
+      "en": "docs/en/roadmap.md",
+      "reviewed": {
+        "fr": "0d44e982061eba1982250a3e7b96c1dbe2e4cec5d539ef84a8a5196024c7a889",
+        "en": "c4f9966233e31634abfc5be1e42eb7668b9e6ce055a1e0cd12cc36d583815cdb"
+      }
+    },
+    {
       "id": "desktop",
       "fr": "docs/desktop.md",
       "en": "docs/en/desktop.md",
@@ -16,8 +25,8 @@
       "fr": "README.fr.md",
       "en": "README.md",
       "reviewed": {
-        "fr": "c9f7e8c18335f93ee0700aa57ecc2e644966c78f7819bac69dab43fd13b8a110",
-        "en": "aa5eae9d0af43841806bc1abbbeb5f271e35c27ea04bf39728cd4d6aac320b8b"
+        "fr": "bd42fa44215301488de49bb85f51ac730003ca312082101a4e85419193c488a7",
+        "en": "0ac57c6c045d11e659c78e36a4b258bc8d8119d38a10326684d450619bc58b89"
       }
     },
     {

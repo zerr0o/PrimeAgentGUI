@@ -5,6 +5,13 @@ export const languages = [
   { id: 'en', label: 'English' },
 ];
 export const messages = {
+  'roadmap.open': { fr: 'Roadmap du projet', en: 'Project roadmap' },
+  'roadmap.linkWarning': {
+    fr: 'Le travail a été envoyé, mais son lien n’a pas pu être enregistré. Vous pouvez réparer les liens dans la Roadmap.',
+    en: 'The work was sent, but its link could not be saved. You can repair links in the Roadmap.',
+  },
+  'roadmap.command': { fr: 'Ouvrir la roadmap du projet', en: 'Open project roadmap' },
+  'roadmap.backlogCommand': { fr: 'Consulter le backlog du projet', en: 'View project backlog' },
   'navigation.pinned': { fr: 'Épinglés', en: 'Pinned' },
   'navigation.collapse': { fr: 'Replier {name}', en: 'Collapse {name}' },
   'navigation.expand': { fr: 'Déplier {name}', en: 'Expand {name}' },

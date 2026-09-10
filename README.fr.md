@@ -43,7 +43,14 @@
 
 Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une application Windows et une interface accessible depuis le navigateur. Suivez les réponses en direct, retrouvez vos projets et continuez une conversation sans ouvrir de terminal. Sous Windows, les agents et leurs outils démarrent en arrière-plan, sans fenêtres PowerShell intempestives.
 
-**Version 3.0.1** · [Télécharger l’installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.0.1/Prime-Agent-Studio_3.0.1_x64-setup.exe) · [Notes de version et code source](https://github.com/zerr0o/prime-agent-studio/releases/tag/v3.0.1).
+**Version 3.1.0** · [Télécharger l’installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.1.0/Prime-Agent-Studio_3.1.0_x64-setup.exe) · [Notes de version et code source](https://github.com/zerr0o/prime-agent-studio/releases/tag/v3.1.0).
+
+## Nouveautés de la version 3.1.0
+
+- **Roadmap du projet** : organisez jalons, plans, checklists imbriquées et backlog dans un panneau partagé sur PC et téléphone.
+- **Du plan à la conversation** : choisissez **Travailler dessus** pour démarrer ou poursuivre un travail avec Prime Agent. Suivez l’activité déclarée des agents et retrouvez les conversations liées, y compris l’historique des sous-agents.
+- **Outils natifs pour les agents** : six outils utilisent le même document du projet que l’interface. Les contrôles de révision protègent les modifications simultanées et les brouillons restent récupérables après un conflit. Ouvrir le panneau ne lance aucun appel de modèle.
+- **Connaissances du projet accessibles** : consultez les mémoires et refinements natifs depuis le panneau, ou exportez la Roadmap en Markdown. [Guide Roadmap](docs/roadmap.md).
 
 ## Nouveautés de la version 3.0.1
 
@@ -58,7 +65,7 @@ Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une 
 - **Mémoires et refinements natifs** : consultez les mémoires de session et les modifications avant/après enregistrées. Les éléments globaux portent la mention **Global** et restent partagés entre projets par Prime Agent. La consultation laisse les données natives intactes.
 - **Outils d’historique pour les agents** : les nouvelles exécutions du Studio et leurs sous-agents peuvent rechercher et lire les sources utiles du projet à la demande. La recherche textuelle ne sollicite aucun modèle et un cache local évite de relire les conversations inchangées. L’historique complet n’est pas ajouté automatiquement au contexte de l’agent.
 
-**Après la mise à jour :** l’application peut continuer à utiliser l’ancien serveur pendant que les agents terminent leur travail. Une fois leurs exécutions terminées, utilisez **Préférences → Mise à jour → Redémarrer le serveur** dans l’application Windows pour activer la version 3.0.1. [Guide de mise à jour](docs/desktop.md).
+**Après la mise à jour :** l’application peut continuer à utiliser l’ancien serveur pendant que les agents terminent leur travail. Une fois leurs exécutions terminées, utilisez **Préférences → Mise à jour → Redémarrer le serveur** dans l’application Windows pour activer la version 3.1.0. [Guide de mise à jour](docs/desktop.md).
 
 ## Nouveautés de la version 2.9
 
@@ -105,22 +112,22 @@ Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une 
 
 Les traductions sont réunies dans **une table unique**, avec le français et l’anglais côte à côte pour chaque texte. Une traduction manquante utilise le français, et la vérification du projet détecte les cases absentes et les paramètres incohérents. [Ajouter une langue ou une traduction](docs/translations.md).
 
-| Fonction                           | Dans le Studio                                                                                                                    |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| **Organiser vos projets**          | Ouvrir leurs dossiers sur le PC, les épingler ou les retirer du Studio avec confirmation ; organiser et reprendre leurs sessions. |
+| Fonction                           | Dans le Studio                                                                                                                               |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Organiser vos projets**          | Ouvrir leurs dossiers sur le PC, les épingler ou les retirer du Studio avec confirmation ; organiser et reprendre leurs sessions.            |
 | **Retrouver les travaux passés**   | Rechercher dans l’historique du projet, les mémoires et les refinements natifs, puis lire leurs sources ou les faire consulter par un agent. |
-| **Suivre le travail**              | Lire les réponses en streaming et déplier une activité regroupant les outils et le raisonnement.                                  |
-| **Inspecter une session**          | Consulter son état et sa consommation, suivre les sous-agents et ouvrir leurs échanges sans changer de session.                   |
-| **Consulter les fichiers**         | Parcourir le projet, lire les changements Git, prévisualiser et ouvrir les fichiers sur PC ou mobile.                             |
-| **Intervenir en direct**           | Réorienter l’agent ou préparer un message à la suite, sans arrêter son travail.                                                   |
-| **Joindre des images et fichiers** | Choisir une photo ou un document, les déposer dans la conversation ou les coller depuis le presse-papiers.                        |
-| **Retrouver vos modèles**          | Rechercher par nom ou fournisseur, gérer vos favoris et choisir le niveau de réflexion.                                           |
-| **Régler les sous-agents**         | Définir le modèle et la réflexion des prochaines délégations, globalement ou par projet, avant le premier message.                |
-| **Connecter des outils MCP**       | Gérer les serveurs HTTP et stdio, OAuth, les variables, les outils autorisés et les tests de connexion.                           |
-| **Gérer les fournisseurs**         | Sur le PC, connecter un compte, enregistrer une clé API et retirer des identifiants avec confirmation.                            |
-| **Travailler en parallèle**        | Lancer des exécutions dans plusieurs sessions et passer de l’une à l’autre.                                                       |
-| **Retrouver le Studio sur mobile** | Piloter le PC depuis un téléphone en Wi-Fi ou via Tailscale, avec un code d’accès.                                                |
-| **Installer le Studio**            | Installer l’application Windows avec ses raccourcis, ou ajouter la PWA mobile à l’écran d’accueil via HTTPS.                      |
+| **Suivre le travail**              | Lire les réponses en streaming et déplier une activité regroupant les outils et le raisonnement.                                             |
+| **Inspecter une session**          | Consulter son état et sa consommation, suivre les sous-agents et ouvrir leurs échanges sans changer de session.                              |
+| **Consulter les fichiers**         | Parcourir le projet, lire les changements Git, prévisualiser et ouvrir les fichiers sur PC ou mobile.                                        |
+| **Intervenir en direct**           | Réorienter l’agent ou préparer un message à la suite, sans arrêter son travail.                                                              |
+| **Joindre des images et fichiers** | Choisir une photo ou un document, les déposer dans la conversation ou les coller depuis le presse-papiers.                                   |
+| **Retrouver vos modèles**          | Rechercher par nom ou fournisseur, gérer vos favoris et choisir le niveau de réflexion.                                                      |
+| **Régler les sous-agents**         | Définir le modèle et la réflexion des prochaines délégations, globalement ou par projet, avant le premier message.                           |
+| **Connecter des outils MCP**       | Gérer les serveurs HTTP et stdio, OAuth, les variables, les outils autorisés et les tests de connexion.                                      |
+| **Gérer les fournisseurs**         | Sur le PC, connecter un compte, enregistrer une clé API et retirer des identifiants avec confirmation.                                       |
+| **Travailler en parallèle**        | Lancer des exécutions dans plusieurs sessions et passer de l’une à l’autre.                                                                  |
+| **Retrouver le Studio sur mobile** | Piloter le PC depuis un téléphone en Wi-Fi ou via Tailscale, avec un code d’accès.                                                           |
+| **Installer le Studio**            | Installer l’application Windows avec ses raccourcis, ou ajouter la PWA mobile à l’écran d’accueil via HTTPS.                                 |
 
 Les exécutions continuent lorsque vous changez de session, rechargez la page ou fermez l’onglet. Le serveur doit rester en marche.
 
@@ -301,19 +308,20 @@ La PWA conserve les commandes et pièces jointes du site. En cas de coupure, un 
 
 ## Documentation
 
-| Guide                                             | Contenu                                                                         |
-| ------------------------------------------------- | ------------------------------------------------------------------------------- |
-| [Configuration et données](docs/configuration.md) | Modèles, valeurs par défaut, stockage et variables d’environnement.             |
-| [Projets et conversations](docs/navigation.md)    | Projets dépliables, recherche, archives, menus et réorganisation.                |
-| [Connaissances du projet](docs/knowledge.md)      | Travaux passés, mémoires natives, refinements et outils d’historique des agents. |
-| [Fournisseurs](docs/providers.md)                 | Connexions par compte, clés API, déconnexion et accès réservé au PC.            |
-| [Accès mobile](docs/lan.md)                       | Activation, adresse réseau, authentification et permissions.                    |
-| [Application installable](docs/pwa.md)            | Installation PWA, HTTPS privé et reconnexion.                                   |
-| [Développement](docs/development.md)              | Architecture, processus Windows silencieux, tests et captures reproductibles.   |
-| [Agents et fichiers](docs/inspector.md)           | Sous-agents, consommation, changements Git, aperçus et ouverture des documents. |
-| [Commandes et skills](docs/commands.md)           | Commandes natives, raccourcis, skills et prompts du projet.                     |
-| [Connexions MCP](docs/mcp.md)                     | Serveurs, OAuth, outils autorisés et diagnostic des connexions.                 |
-| [Langues et traductions](docs/translations.md)    | Traductions de l’interface et maintien des deux langues de documentation.       |
+| Guide                                             | Contenu                                                                             |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| [Configuration et données](docs/configuration.md) | Modèles, valeurs par défaut, stockage et variables d’environnement.                 |
+| [Projets et conversations](docs/navigation.md)    | Projets dépliables, recherche, archives, menus et réorganisation.                   |
+| [Connaissances du projet](docs/knowledge.md)      | Travaux passés, mémoires natives, refinements et outils d’historique des agents.    |
+| [Roadmap du projet](docs/roadmap.md)              | Plans partagés, checklists, backlog, outils natifs et liens vers les conversations. |
+| [Fournisseurs](docs/providers.md)                 | Connexions par compte, clés API, déconnexion et accès réservé au PC.                |
+| [Accès mobile](docs/lan.md)                       | Activation, adresse réseau, authentification et permissions.                        |
+| [Application installable](docs/pwa.md)            | Installation PWA, HTTPS privé et reconnexion.                                       |
+| [Développement](docs/development.md)              | Architecture, processus Windows silencieux, tests et captures reproductibles.       |
+| [Agents et fichiers](docs/inspector.md)           | Sous-agents, consommation, changements Git, aperçus et ouverture des documents.     |
+| [Commandes et skills](docs/commands.md)           | Commandes natives, raccourcis, skills et prompts du projet.                         |
+| [Connexions MCP](docs/mcp.md)                     | Serveurs, OAuth, outils autorisés et diagnostic des connexions.                     |
+| [Langues et traductions](docs/translations.md)    | Traductions de l’interface et maintien des deux langues de documentation.           |
 
 Pour vérifier le projet :
 

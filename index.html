@@ -145,6 +145,17 @@
             ><span id="header-session" data-i18n="ui.nouvelle_session">Nouvelle session</span>
           </div>
           <div class="header-actions">
+            <button
+              id="open-roadmap"
+              class="icon-button"
+              aria-label="Roadmap du projet"
+              title="Roadmap du projet"
+              data-i18n-aria-label="roadmap.open"
+              data-i18n-title="roadmap.open"
+              aria-controls="roadmap-panel"
+              data-icon="map"
+              disabled
+            ></button>
             <span id="session-state" class="session-state" hidden></span
             ><button
               id="session-menu-button"
@@ -218,6 +229,9 @@
                   Connaissances du projet
                 </button>
                 <div class="project-overview-toolbar">
+                  <button id="project-roadmap" class="text-button" type="button" data-i18n="roadmap.open">
+                    Roadmap du projet
+                  </button>
                   <div
                     class="project-session-filters"
                     role="group"
@@ -547,6 +561,15 @@
                 </p>
                 <button id="copy-project-path" class="text-button" hidden>
                   <span data-icon="copy"></span><span data-i18n="ui.copier_le_chemin">Copier le chemin </span>
+                </button>
+                <button
+                  id="detail-project-roadmap"
+                  class="text-button"
+                  type="button"
+                  aria-controls="roadmap-panel"
+                  hidden
+                >
+                  <span data-icon="map"></span><span data-i18n="roadmap.open">Roadmap du projet</span>
                 </button>
                 <button
                   id="detail-project-knowledge"

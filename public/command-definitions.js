@@ -3,6 +3,8 @@ import { t as tr } from './i18n.js';
 // still checked against the installed Prime Agent before submission.
 export const STUDIO_COMMANDS = {
   help: [tr('ui.commandes_et_skills'), 'help'],
+  roadmap: [tr('roadmap.command'), 'roadmap'],
+  backlog: [tr('roadmap.backlogCommand'), 'backlog'],
   skills: [tr('ui.parcourir_les_skills_de_prime_agent'), 'skills'],
   settings: [tr('ui.ouvrir_les_preferences'), 'settings'],
   model: [tr('ui.choisir_un_modele'), 'model', tr('commands.searchHint')],

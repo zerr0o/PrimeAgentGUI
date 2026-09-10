@@ -27,12 +27,15 @@ import { parseAgentEnvelope } from './agent-messages.js';
 import { createProjectSorting } from './project-sorting.js';
 import { createProjectNavigation } from './project-navigation.js';
 import { createKnowledgeBrowser } from './knowledge.js';
+import { createRoadmap } from './roadmap.js';
 let imageComposer;
 let projectSorting;
 let projectNavigation;
 let liveMessagesUI;
 let commandsUI;
 let inspectorUI;
+let roadmapUI;
+let roadmapNavigationSequence = 0;
 let modelPickerTarget = null;
 let modelCatalogRequest = null;
 let modelCatalogPoll = null;
@@ -50,6 +53,7 @@ const icons = {
   more: 'M5 12h.01M12 12h.01M19 12h.01',
   grip: 'M9 5h.01M15 5h.01M9 12h.01M15 12h.01M9 19h.01M15 19h.01',
   panel: 'M3 4h18v16H3V4Zm12 0v16',
+  map: 'M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6Zm6-3v15m6-12v15',
   compass: 'M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0ZM16 8l-2 6-6 2 2-6 6-2Z',
   code: 'm8 6-6 6 6 6m8-12 6 6-6 6M14 4l-4 16',
   bug: 'M8 7V5a4 4 0 0 1 8 0v2M6 7h12v8a6 6 0 0 1-12 0V7Zm6 0v14M2 9h4m12 0h4M2 15h4m12 0h4M4 21l3-3m10 0 3 3',
@@ -494,6 +498,7 @@ async function api(path, { method = 'GET', body, signal } = {}) {
   if (!r.ok) {
     const e = new Error(translateKnown(data.error) || tr('common.httpError', { value1: r.status }));
     e.status = r.status;
+    e.code = data.code;
     if (path === '/api/remote-access/network') e.setupUrl = data.setupUrl;
     throw e;
   }
@@ -947,6 +952,9 @@ function renderNavigation() {
   renderProjectOverview();
   renderDetails();
   updateComposer();
+  if ($('open-roadmap')) $('open-roadmap').disabled = !state.projectCwd;
+  if ($('detail-project-roadmap')) $('detail-project-roadmap').hidden = !state.projectCwd;
+  roadmapUI?.update();
 }
 marked.setOptions({ gfm: true, breaks: false });
 function markdown(text, { cwd = state.projectCwd, basePath = '' } = {}) {
@@ -2411,6 +2419,51 @@ inspectorUI = createInspector({
     $('toggle-details').focus();
   },
 });
+roadmapUI = createRoadmap({
+  api,
+  toast,
+  getContext: () => ({
+    cwd: state.projectCwd,
+    name: project()?.name,
+    sessions: project()?.sessions || [],
+    sessionId: state.sessionId || activeRun()?.sessionId,
+    model: $('model-select').value || state.modelCatalogDefault,
+    thinking: $('thinking-select').value,
+    readOnly: state.readOnly,
+    online: state.online,
+  }),
+  onKnowledge: () => {
+    if (project()) knowledgeUI.open(project(), $('open-roadmap'));
+  },
+  onOpenSession: async (link) => {
+    const navigation = ++roadmapNavigationSequence;
+    const priorRequest = state.requestId;
+    const resolved = await api(
+      `/api/roadmap/session?${new URLSearchParams({ cwd: link.cwd, sessionId: link.sessionId, ...(link.rootSessionId ? { rootSessionId: link.rootSessionId } : {}) })}`,
+    );
+    if (navigation !== roadmapNavigationSequence || priorRequest !== state.requestId) return;
+    const rootSessionId = resolved.rootSessionId || resolved.sessionId;
+    await selectSession(rootSessionId, link.cwd);
+    if (
+      navigation !== roadmapNavigationSequence ||
+      !samePath(state.projectCwd, link.cwd) ||
+      state.sessionId !== rootSessionId
+    )
+      return;
+    if (resolved.agentId) await inspectorUI.openAgentById(resolved.agentId);
+  },
+  onWork: async (result) => {
+    if (result.run) {
+      const existing = state.runs.get(result.run.id);
+      const run = existing || result.run;
+      if (!existing) state.runs.set(run.id, run);
+      await selectRun(run);
+    } else if (result.sessionId) await selectSession(result.sessionId, state.projectCwd);
+    if (result.linkWarning) toast(() => tr('roadmap.linkWarning'), true);
+  },
+});
+for (const id of ['open-roadmap', 'project-roadmap', 'detail-project-roadmap'])
+  $(id).onclick = (event) => roadmapUI.open(event.currentTarget);
 imageComposer = createImageComposer({
   getContext: () => ({
     key: draftKey(),
@@ -2446,6 +2499,9 @@ commandsUI = createCommands({
     if (['name', 'session', 'export', 'copy'].includes(name) && !state.sessionId)
       throw new Error(tr('ui.ouvrez_d_abord_une_session'));
     switch (name) {
+      case 'roadmap':
+      case 'backlog':
+        return roadmapUI.open($('open-roadmap'), name === 'backlog' ? 'backlog' : 'project');
       case 'help':
         return commandsUI.open();
       case 'skills':

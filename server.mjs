@@ -29,6 +29,10 @@ import { createProjectFiles } from './lib/project-files.mjs';
 import { openFile as openLocalFile, fileLaunchMode } from './lib/open-file.mjs';
 import { createSessionInspector } from './lib/session-inspector.mjs';
 import { createKnowledge } from './lib/knowledge.mjs';
+import { createRoadmapService } from './lib/roadmap.mjs';
+import { createRoadmapBridge, createRoadmapCallerResolver } from './lib/roadmap-bridge.mjs';
+import { createRoadmapRoutes } from './lib/roadmap-routes.mjs';
+import { createRoadmapSessionResolver } from './lib/roadmap-session.mjs';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const VERSION = JSON.parse(await readFile(new URL('./package.json', import.meta.url), 'utf8')).version;
@@ -103,6 +107,29 @@ export function createApp(options = {}) {
     ...options.networkOptions,
   });
   const subagentDefaults = createSubagentDefaultsStore({ dataDir });
+  const runs = new Map(),
+    sessionLocks = new Set();
+  const roadmap =
+    options.roadmap || createRoadmapService({ resolveProject: (cwd) => store.knowledgeProject(cwd) });
+  const roadmapBridge =
+    options.roadmapBridge ||
+    createRoadmapBridge({
+      service: roadmap,
+      resolveCaller: createRoadmapCallerResolver({
+        getRuns: () => [...runs.values()],
+        store,
+        agentHome,
+        sessionDir,
+        readEdges: options.readInspectorEdges,
+      }),
+      isOwnerActive: (id) => runs.get(id)?.status === 'running',
+    });
+  const roadmapSession = createRoadmapSessionResolver({
+    store,
+    agentHome,
+    sessionDir,
+    readEdges: options.readInspectorEdges,
+  });
   const runtime =
     options.runtime ||
     createAgentRuntime({
@@ -112,13 +139,12 @@ export function createApp(options = {}) {
       kernelRoot: process.env.PRIME_AGENT_GUI_KERNEL_ROOT,
       subagentPolicyFile: subagentDefaults.file,
       knowledge: { dataDir },
+      roadmap: { config: roadmapBridge.config },
     });
   const modelConfig = options.modelConfig || createModelConfigStore({ agentHome });
   const modelDefaults = options.modelDefaults || createModelDefaultsStore({ agentHome });
   const mcp = options.mcp || createMcpService({ agentHome });
   const directoryPicker = options.directoryPicker || createDirectoryPicker();
-  const runs = new Map(),
-    sessionLocks = new Set();
   const providers =
     options.providers ||
     createProviderService({
@@ -171,6 +197,14 @@ export function createApp(options = {}) {
       const endpoint = runtime.getLiveEndpoint?.();
       return endpoint ? createLiveSessionClient(endpoint) : null;
     },
+  });
+  const roadmapRoutes = createRoadmapRoutes({
+    service: roadmap,
+    bridge: roadmapBridge,
+    store,
+    startRun,
+    liveMessages,
+    getRuns: () => [...runs.values()],
   });
   let closing = false;
   let statusCache,
@@ -237,10 +271,12 @@ export function createApp(options = {}) {
     if (event.kind === 'session' && event.sessionId) {
       run.sessionId = event.sessionId;
       sessionLocks.add(event.sessionId);
+      roadmapRoutes.onSession(run);
     }
     if (event.kind === 'done') {
       if (run.finished) return;
       run.finished = true;
+      roadmapBridge.revokeOwner(run.id);
       run.status = event.status || ((event.code ?? 0) === 0 ? 'completed' : 'failed');
       run.error = event.error || null;
       if (run.status === 'failed' && isModelAvailabilityError(run.error))
@@ -270,6 +306,7 @@ export function createApp(options = {}) {
   }
   async function startRun(body) {
     if (closing) throw new HttpError(503, tr('server.le_serveur_est_en_cours_d_arret'));
+    await roadmapBridge.ready;
     if (activeRuns().length >= 8)
       throw new HttpError(429, tr('server.huit_sessions_tournent_deja_arretez_en_une_avant_de_continuer'));
     const cwd = await validateDirectory(body.cwd);
@@ -370,6 +407,7 @@ export function createApp(options = {}) {
           }),
       );
     } catch (error) {
+      roadmapBridge.revokeOwner(run.id);
       runs.delete(run.id);
       if (existing) sessionLocks.delete(existing.id);
       throw new HttpError(503, error.message);
@@ -649,6 +687,34 @@ export function createApp(options = {}) {
         );
       if (method === 'GET' && path === '/api/overview')
         return json(res, 200, { ...(await store.overview()), runs: activeRuns() });
+      if (method === 'GET' && path === '/api/roadmap')
+        return json(res, 200, await roadmapRoutes.read(url.searchParams.get('cwd')));
+      if (method === 'GET' && path === '/api/roadmap/session')
+        return json(
+          res,
+          200,
+          await roadmapSession({
+            cwd: url.searchParams.get('cwd'),
+            sessionId: url.searchParams.get('sessionId'),
+            rootSessionId: url.searchParams.get('rootSessionId') || undefined,
+          }),
+        );
+      if (method === 'POST' && path === '/api/roadmap')
+        return json(res, 200, await roadmapRoutes.mutate(await readBody(req)));
+      if (method === 'POST' && path === '/api/roadmap/work')
+        return json(res, 201, await roadmapRoutes.work(await readBody(req)));
+      if (method === 'POST' && path === '/api/roadmap/retry-links')
+        return json(res, 200, await roadmapRoutes.retryLinks(await readBody(req)));
+      if (method === 'GET' && path === '/api/roadmap/export') {
+        const markdown = await roadmapRoutes.exportMarkdown(url.searchParams.get('cwd'));
+        res.writeHead(200, {
+          'Content-Type': 'text/markdown; charset=utf-8',
+          'Content-Disposition': 'attachment; filename="roadmap.md"',
+          'Cache-Control': 'no-store',
+        });
+        res.end(markdown);
+        return;
+      }
       if (method === 'GET' && path === '/api/knowledge')
         return json(
           res,
@@ -725,6 +791,7 @@ export function createApp(options = {}) {
         if (method === 'POST' && runRoute[2] === 'stop') {
           if (!run.finished) {
             run.status = 'stopping';
+            roadmapBridge.revokeOwner(run.id);
             await run.handle?.cancel();
           }
           return json(res, 200, { stopped: true, ...publicRun(run) });
@@ -782,6 +849,8 @@ export function createApp(options = {}) {
       json(res, error.status || 500, {
         ...(tailscaleSetupUrl(error.setupUrl) ? { setupUrl: tailscaleSetupUrl(error.setupUrl) } : {}),
         error: error.status ? error.message : tr('server.une_erreur_interne_est_survenue') + error.message,
+        ...(typeof error.code === 'string' && error.code.startsWith('roadmap_') ? { code: error.code } : {}),
+        ...(Number.isSafeInteger(error.currentRevision) ? { currentRevision: error.currentRevision } : {}),
       });
     }
   });
@@ -795,12 +864,27 @@ export function createApp(options = {}) {
     commands.close?.();
     closing = true;
     clearInterval(cleanup);
+    await roadmapBridge.close();
     await runtime.close();
+    await roadmapRoutes.close();
+    await roadmap.close();
     for (const run of runs.values()) for (const client of run.clients) client.end();
     server.closeAllConnections();
     if (server.listening) await new Promise((resolve) => server.close(resolve));
   }
-  return { server, store, runtime, modelConfig, modelDefaults, remoteAccess, remoteNetwork, runs, close };
+  return {
+    server,
+    store,
+    runtime,
+    modelConfig,
+    modelDefaults,
+    remoteAccess,
+    remoteNetwork,
+    roadmap,
+    roadmapBridge,
+    runs,
+    close,
+  };
 }
 
 if (isDirectInvocation(import.meta.url)) {

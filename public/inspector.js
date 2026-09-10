@@ -759,6 +759,16 @@ export function createInspector({
     update,
     setTab,
     openDocument,
+    async openAgentById(id) {
+      update();
+      const expectedContext = contextKey;
+      const expectedGeneration = generation;
+      const data = await api(`/api/inspector?${query({ sessionId: current.sessionId })}`);
+      if (expectedContext !== contextKey || expectedGeneration !== generation) return;
+      const agent = data.agents.find((entry) => entry.id === id);
+      if (!agent) throw new Error(tr('ui.la_conversation_sera_disponible_des_son_enregistrement_par_prime'));
+      await openAgent(agent);
+    },
     destroy() {
       clearInterval(timer);
       for (const key of [...pending.keys()]) cancel(key);

@@ -43,7 +43,14 @@
 
 Prime Agent Studio brings your **local Prime Agent sessions** together in a Windows application and a browser interface. Follow streaming responses, find your projects and continue a conversation without opening a terminal. On Windows, agents and their tools run in the background, without unexpected PowerShell windows.
 
-**Version 3.0.1** · [Download the Windows x64 installer](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.0.1/Prime-Agent-Studio_3.0.1_x64-setup.exe) · [Release notes and source code](https://github.com/zerr0o/prime-agent-studio/releases/tag/v3.0.1).
+**Version 3.1.0** · [Download the Windows x64 installer](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.1.0/Prime-Agent-Studio_3.1.0_x64-setup.exe) · [Release notes and source code](https://github.com/zerr0o/prime-agent-studio/releases/tag/v3.1.0).
+
+## What’s new in version 3.1.0
+
+- **Project Roadmap**: organize milestones, plans, nested checklists and a backlog in a shared panel on desktop and phone.
+- **From planning to conversation**: choose **Work on this** to start or continue work with Prime Agent. Follow declared agent activity and return to the linked conversation, including subagent history.
+- **Native agent tools**: six tools use the same project document as the interface. Revision checks protect concurrent edits, and drafts remain recoverable after a conflict. Opening the panel starts no model call.
+- **Project knowledge within reach**: consult native memories and refinements from the panel, or export the Roadmap as Markdown. [Roadmap guide](docs/en/roadmap.md).
 
 ## What’s new in version 3.0.1
 
@@ -58,7 +65,7 @@ Prime Agent Studio brings your **local Prime Agent sessions** together in a Wind
 - **Native memories and refinements**: read session memories and recorded before/after changes. Global records are labelled **Global** and remain shared across projects by Prime Agent. Browsing leaves the native records unchanged.
 - **History tools for agents**: new Studio runs and their subagents can search and read relevant project sources on demand. Text search needs no model call, and a local cache avoids rereading unchanged conversations. The full history is not automatically added to the agent’s context.
 
-**After updating:** the application can keep using the previous server while agents finish. Once they have finished, use **Preferences → Updates → Restart server** in the Windows application to activate 3.0.1. [Update guide](docs/en/desktop.md).
+**After updating:** the application can keep using the previous server while agents finish. Once they have finished, use **Preferences → Updates → Restart server** in the Windows application to activate 3.1.0. [Update guide](docs/en/desktop.md).
 
 ## What’s new in version 2.9
 
@@ -108,7 +115,7 @@ Translations live in **one table**, with French and English side by side for eac
 | Feature                     | In Studio                                                                                                                |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | **Organize projects**       | Open their folders on the PC, pin them or remove them from Studio with confirmation; organize and resume their sessions. |
-| **Find previous work**     | Search project history, native memories and refinements, then read their sources or let an agent consult them.          |
+| **Find previous work**      | Search project history, native memories and refinements, then read their sources or let an agent consult them.           |
 | **Follow progress**         | Read streaming responses and expand an activity block containing tools and reasoning.                                    |
 | **Inspect a session**       | Check its status and usage, follow subagents and open their conversations without switching sessions.                    |
 | **Browse files**            | Explore the project, read Git changes, preview and open files from desktop or mobile.                                    |
@@ -304,8 +311,9 @@ The PWA keeps the website’s commands and attachments. If connectivity is lost,
 | Guide                                                 | Contents                                                                    |
 | ----------------------------------------------------- | --------------------------------------------------------------------------- |
 | [Configuration and data](docs/en/configuration.md)    | Models, defaults, storage and environment variables.                        |
-| [Projects and conversations](docs/en/navigation.md)  | Collapsible projects, search, archives, menus and reordering.               |
-| [Project knowledge](docs/en/knowledge.md)             | Past work, native memories, refinements and history tools for agents.        |
+| [Projects and conversations](docs/en/navigation.md)   | Collapsible projects, search, archives, menus and reordering.               |
+| [Project knowledge](docs/en/knowledge.md)             | Past work, native memories, refinements and history tools for agents.       |
+| [Project Roadmap](docs/en/roadmap.md)                 | Shared plans, checklists, backlog, native tools and conversation links.     |
 | [Providers](docs/en/providers.md)                     | Account sign-in, API keys, sign-out and desktop-only access.                |
 | [Mobile access](docs/en/lan.md)                       | Setup, network address, authentication and permissions.                     |
 | [Installable application](docs/en/pwa.md)             | PWA installation, private HTTPS and reconnection.                           |
