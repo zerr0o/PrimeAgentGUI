@@ -75,6 +75,8 @@ The build validates module, worker and native helper references before creating 
 
 For isolated tests, `PRIME_STUDIO_DESKTOP_DATA_ROOT` and `PRIME_STUDIO_DESKTOP_PORT` override the data folder and port. Leave them unset for normal use. VBS remains available for source installations.
 
+`npm run test:desktop-folder-picker` checks the real Windows folder dialog, its Tauri owner, selection and cancellation. First build with `node scripts/build-desktop.mjs --debug --no-bundle --config test/fixtures/desktop-picker/tauri.conf.json`, then set `PRIME_STUDIO_TEST_EXE` to the resulting executable’s absolute path. The test refuses the production identity, uses temporary directories and a port, and closes only its own process.
+
 `npm run test:desktop-updates` and `npm run test:settings-updates` check both panels in French and English. `npm run test:desktop-lifecycle` validates a real Tauri restart with a busy server, confirmation, preserved data and activation of the installed version. `cargo test --manifest-path src-tauri/Cargo.toml --locked` tests the actual updater client against a local server: valid signature, tampered file, equal/older versions and invalid catalog. Tests never execute an installer.
 
 For native tests alongside your application, compile a separate test identity: `$env:TAURI_CONFIG = '{"identifier":"com.primeagent.studio.interaction-test"}'`, then `cargo build --manifest-path src-tauri/Cargo.toml --locked`. Remove the variable afterward (`Remove-Item Env:TAURI_CONFIG`) before a distribution build. `npm run test:desktop-interactions` tests web and synthetic OAuth links, attachments, clipboard, export and permissions in actual WebView2. It opens test tabs in the default browser without signing into an account.

@@ -84,6 +84,32 @@
   font-size: 11px;
   color: var(--muted);
 }
+.inspector-files-toolbar {
+  flex-wrap: wrap;
+}
+.inspector-file-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  max-width: 100%;
+}
+#open-project-folder {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  text-align: left;
+}
+#open-project-folder svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+#open-project-folder:disabled {
+  opacity: 0.5;
+}
 .project-subagent-settings {
   padding: 12px;
   margin-bottom: 16px;

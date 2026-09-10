@@ -2074,32 +2074,66 @@ function openProjectDialog() {
   $('project-cwd').focus();
 }
 let projectPickerGeneration = 0;
+let projectPickerController;
+function cancelProjectDirectoryPicker() {
+  projectPickerGeneration++;
+  projectPickerController?.abort();
+  projectPickerController = undefined;
+  $('project-browse').disabled = false;
+  $('project-browse').removeAttribute('aria-busy');
+  $('project-submit').disabled = false;
+}
 async function browseProjectDirectory() {
-  if (state.readOnly || !state.directoryPickerAvailable) return;
+  if (state.readOnly || !state.directoryPickerAvailable || projectPickerController) return;
   const generation = ++projectPickerGeneration;
+  const controller = new AbortController();
+  projectPickerController = controller;
   const button = $('project-browse');
   button.disabled = true;
   button.setAttribute('aria-busy', 'true');
   $('project-submit').disabled = true;
   $('project-error').hidden = true;
   try {
-    const result = await api('/api/projects/pick-directory', {
-      method: 'POST',
-      body: { cwd: $('project-cwd').value.trim() },
-    });
+    const cwd = $('project-cwd').value.trim();
+    const nativePicker =
+      !state.remote &&
+      window.__PRIME_STUDIO_DESKTOP__ === true &&
+      window.__PRIME_STUDIO_DIRECTORY_PICKER__ === true &&
+      typeof window.__TAURI__?.core?.invoke === 'function';
+    const result = nativePicker
+      ? {
+          cwd: await window.__TAURI__.core.invoke('desktop_pick_directory', {
+            cwd,
+            title: tr('folders.choose'),
+          }),
+        }
+      : await api('/api/projects/pick-directory', {
+          method: 'POST',
+          body: { cwd },
+          signal: controller.signal,
+        });
     if (generation === projectPickerGeneration && $('project-dialog').open && result.cwd) {
       $('project-cwd').value = result.cwd;
       $('project-cwd').focus();
     }
   } catch (error) {
-    if (generation === projectPickerGeneration && $('project-dialog').open) {
-      bindText($('project-error'), () => translateKnown(error.message));
+    if (!controller.signal.aborted && generation === projectPickerGeneration && $('project-dialog').open) {
+      const key =
+        String(error) === 'picker_busy'
+          ? 'folders.already_open'
+          : ['picker_failed', 'picker_forbidden'].includes(String(error))
+            ? 'folders.picker_failed'
+            : null;
+      bindText($('project-error'), () => (key ? tr(key) : translateKnown(error.message || String(error))));
       $('project-error').hidden = false;
     }
   } finally {
-    button.disabled = false;
-    button.removeAttribute('aria-busy');
-    $('project-submit').disabled = false;
+    if (generation === projectPickerGeneration) {
+      projectPickerController = undefined;
+      button.disabled = false;
+      button.removeAttribute('aria-busy');
+      $('project-submit').disabled = false;
+    }
   }
 }
 async function addProject(e) {
@@ -2627,7 +2661,7 @@ $('project-show-archived').onclick = () => {
 $('add-project').onclick = openProjectDialog;
 $('project-form').onsubmit = addProject;
 $('project-browse').onclick = browseProjectDirectory;
-$('project-dialog').addEventListener('close', () => projectPickerGeneration++);
+$('project-dialog').addEventListener('close', cancelProjectDirectoryPicker);
 $('rename-form').onsubmit = renameSession;
 $('composer-form').onsubmit = sendMessage;
 $('stop-button').onclick = stopRun;

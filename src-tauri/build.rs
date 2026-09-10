@@ -4,6 +4,7 @@ fn main() {
             "desktop_state",
             "desktop_autostart",
             "desktop_choose_legacy",
+            "desktop_pick_directory",
             "desktop_logs",
             "desktop_start",
             "desktop_update_status",

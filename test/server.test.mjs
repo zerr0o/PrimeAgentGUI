@@ -129,8 +129,47 @@ test('project picker returns a selection or cancellation without adding a projec
     assert.deepEqual(result.json, { cwd: selection });
     assert.equal(picked.cwd, f.cwd);
     assert.equal(picked.title, 'Choose the project folder');
+    assert.ok(picked.signal instanceof AbortSignal);
+    assert.equal(picked.signal.aborted, false, 'A completed response must not cancel its picker');
   }
   assert.deepEqual((await f.app.store.overview()).projects, before.projects);
+});
+
+test('disconnecting a project picker request cancels its helper and allows another request', async (t) => {
+  const calls = [];
+  const f = await fixture(t, {
+    directoryPicker: {
+      pick: async (input) => {
+        calls.push(input);
+        if (calls.length > 1) return { cwd: null };
+        return new Promise((done) => {
+          input.signal?.addEventListener('abort', () => done({ cwd: null }), { once: true });
+        });
+      },
+    },
+  });
+  const payload = JSON.stringify({ cwd: f.cwd });
+  const client = request({
+    hostname: '127.0.0.1',
+    port: f.port,
+    path: '/api/projects/pick-directory',
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) },
+  });
+  client.on('error', () => {});
+  t.after(() => client.destroy());
+  client.end(payload);
+  await until(() => calls.length === 1);
+  assert.ok(calls[0].signal instanceof AbortSignal);
+  assert.equal(calls[0].signal.aborted, false, 'Reading the request body must not cancel the picker');
+  client.destroy();
+  await until(() => calls[0].signal.aborted);
+  const retry = await f.api('/api/projects/pick-directory', { method: 'POST', body: { cwd: f.cwd } });
+  assert.equal(retry.status, 200);
+  assert.deepEqual(retry.json, { cwd: null });
+  assert.equal(calls.length, 2);
+  assert.notEqual(calls[0].signal, calls[1].signal);
+  assert.equal(calls[1].signal.aborted, false);
 });
 async function until(check, timeout = 2000) {
   const deadline = Date.now() + timeout;

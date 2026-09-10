@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod directory_picker;
 #[cfg(test)]
 mod update_tests;
 mod updates;
@@ -387,6 +388,7 @@ fn main() {
                 .build(),
         )
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .manage(directory_picker::DirectoryPicker::default())
         .manage(updates::Updates::default())
         .invoke_handler(tauri::generate_handler![
             desktop_state,
@@ -396,6 +398,7 @@ fn main() {
             desktop_start,
             desktop_update_status,
             desktop_server_restart,
+            directory_picker::desktop_pick_directory,
             updates::desktop_update_check,
             updates::desktop_update_install
         ])
@@ -415,14 +418,15 @@ fn main() {
             if port == 0 {
                 return Err("Invalid Studio port".into());
             }
-            // Only these four commands cross into the exact local Studio origin.
-            // No opener, filesystem, shell or launcher settings permissions.
+            // Only these commands cross into the exact local Studio origin.
+            // No general filesystem, shell, opener or launcher settings permissions.
             app.add_capability(
                 tauri::ipc::CapabilityBuilder::new("studio-updates")
                     .window("main")
                     .remote(format!("http://127.0.0.1:{port}/*"))
                     .permission("allow-desktop-update-status")
                     .permission("allow-desktop-server-restart")
+                    .permission("allow-desktop-pick-directory")
                     .permission("allow-desktop-update-check")
                     .permission("allow-desktop-update-install"),
             )?;
@@ -462,7 +466,7 @@ fn main() {
             // Otherwise Windows consumes file drops before the HTML composer.
             .disable_drag_drop_handler()
             .initialization_script(
-                "Object.defineProperty(window, '__PRIME_STUDIO_DESKTOP__', { value: true });",
+                "Object.defineProperty(window, '__PRIME_STUDIO_DESKTOP__', { value: true }); Object.defineProperty(window, '__PRIME_STUDIO_DIRECTORY_PICKER__', { value: true });",
             )
             .on_new_window(move |url, _| {
                 open_external_link(&links_app, &url);

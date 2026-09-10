@@ -663,11 +663,24 @@
               aria-labelledby="inspector-tab-files"
               hidden
             >
-              <div class="inspector-toolbar">
-                <span><span data-i18n="ui.fichiers_du_projet">Fichiers du projet</span></span
-                ><button id="refresh-files" type="button" class="inspector-refresh" data-i18n="ui.actualiser">
-                  Actualiser
-                </button>
+              <div class="inspector-toolbar inspector-files-toolbar">
+                <span data-i18n="ui.fichiers_du_projet">Fichiers du projet</span>
+                <div class="inspector-file-actions">
+                  <button id="open-project-folder" type="button" class="inspector-refresh" hidden disabled>
+                    <span data-icon="folder" aria-hidden="true"></span>
+                    <span id="open-project-folder-label" data-i18n="ui.ouvrir_le_dossier"
+                      >Ouvrir le dossier</span
+                    >
+                  </button>
+                  <button
+                    id="refresh-files"
+                    type="button"
+                    class="inspector-refresh"
+                    data-i18n="ui.actualiser"
+                  >
+                    Actualiser
+                  </button>
+                </div>
               </div>
               <div
                 class="inspector-file-filters"

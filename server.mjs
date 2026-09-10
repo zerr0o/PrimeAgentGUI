@@ -756,14 +756,21 @@ export function createApp(options = {}) {
         );
       if (method === 'POST' && path === '/api/projects/pick-directory') {
         const body = await readBody(req);
-        return json(
-          res,
-          200,
-          await directoryPicker.pick({
+        const controller = new AbortController();
+        const abort = () => controller.abort();
+        res.once('close', abort);
+        if (res.destroyed) abort();
+        try {
+          const result = await directoryPicker.pick({
             cwd: body.cwd,
             title: tr('folders.choose', {}, requestLanguage(req.headers)),
-          }),
-        );
+            signal: controller.signal,
+          });
+          if (!res.destroyed) return json(res, 200, result);
+          return;
+        } finally {
+          res.off('close', abort);
+        }
       }
       if (method === 'POST' && path === '/api/projects/open') {
         const project = await store.findProject((await readBody(req)).cwd);

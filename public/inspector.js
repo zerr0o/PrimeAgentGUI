@@ -479,6 +479,35 @@ export function createInspector({
   $('files-changes').onclick = () => changeFiles('changes');
   $('files-all').onclick = () => changeFiles('all');
   $('refresh-files').onclick = () => void loadFiles(true);
+  let openingProjectFolder = false;
+  const openProjectFolder = $('open-project-folder');
+  function syncProjectFolderButton() {
+    bindText($('open-project-folder-label'), () =>
+      current.remote ? tr('ui.ouvrir_le_dossier_sur_le_pc') : tr('ui.ouvrir_le_dossier'),
+    );
+    openProjectFolder.hidden = !current.enabled || current.readOnly || !current.nativeFileOpen;
+    openProjectFolder.disabled =
+      openProjectFolder.hidden || !current.cwd || !current.online || openingProjectFolder;
+  }
+  openProjectFolder.onclick = async () => {
+    // Navigation may have changed the selected project since the last inspector refresh.
+    update();
+    if (openProjectFolder.disabled) return;
+    const cwd = current.cwd,
+      token = generation;
+    openingProjectFolder = true;
+    syncProjectFolderButton();
+    const stillCurrent = () => generation === token && getContext().cwd === cwd;
+    try {
+      await api('/api/projects/open', { method: 'POST', body: { cwd } });
+      if (stillCurrent()) toast(() => tr('ui.ouverture_demandee_sur_le_pc'));
+    } catch (error) {
+      if (stillCurrent()) toast(translateKnown(error.message), true);
+    } finally {
+      openingProjectFolder = false;
+      update();
+    }
+  };
 
   function beginView(name) {
     cancel('viewer');
@@ -710,6 +739,7 @@ export function createInspector({
 
   function update() {
     current = getContext();
+    syncProjectFolderButton();
     syncMobilePanel();
     const key = `${current.cwd || ''}\0${current.sessionId || ''}`;
     if (key !== contextKey) {

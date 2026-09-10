@@ -43,7 +43,12 @@
 
 Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une application Windows et une interface accessible depuis le navigateur. Suivez les réponses en direct, retrouvez vos projets et continuez une conversation sans ouvrir de terminal. Sous Windows, les agents et leurs outils démarrent en arrière-plan, sans fenêtres PowerShell intempestives.
 
-**Version 3.1.2** · [Télécharger l’installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.1.2/Prime-Agent-Studio_3.1.2_x64-setup.exe) · [Notes de version et code source](https://github.com/zerr0o/prime-agent-studio/releases/tag/v3.1.2).
+**Version 3.1.3** · [Télécharger l’installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.1.3/Prime-Agent-Studio_3.1.3_x64-setup.exe) · [Notes de version et code source](https://github.com/zerr0o/prime-agent-studio/releases/tag/v3.1.3).
+
+## Nouveautés de la version 3.1.3
+
+- **Sélection de dossier Windows corrigée** : le sélecteur natif est rattaché à la fenêtre Tauri. La sélection ou l’annulation permet un nouvel essai ; fermer le formulaire dans le navigateur annule sa sélection en cours et préserve les nouveaux champs saisis.
+- **Ouvrir le dossier du projet** directement depuis l’onglet **Fichiers** de l’espace de travail, à côté d’**Actualiser**. L’accès distant indique clairement le PC hôte ; l’accès en lecture seule ne peut pas ouvrir de dossier.
 
 ## Nouveautés de la version 3.1.2
 
@@ -75,7 +80,7 @@ Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une 
 - **Mémoires et refinements natifs** : consultez les mémoires de session et les modifications avant/après enregistrées. Les éléments globaux portent la mention **Global** et restent partagés entre projets par Prime Agent. La consultation laisse les données natives intactes.
 - **Outils d’historique pour les agents** : les nouvelles exécutions du Studio et leurs sous-agents peuvent rechercher et lire les sources utiles du projet à la demande. La recherche textuelle ne sollicite aucun modèle et un cache local évite de relire les conversations inchangées. L’historique complet n’est pas ajouté automatiquement au contexte de l’agent.
 
-**Après la mise à jour :** l’application peut continuer à utiliser l’ancien serveur pendant que les agents terminent leur travail. Une fois leurs exécutions terminées, utilisez **Préférences → Mise à jour → Redémarrer le serveur** dans l’application Windows pour activer la version 3.1.2. [Guide de mise à jour](docs/desktop.md).
+**Après la mise à jour :** l’application peut continuer à utiliser l’ancien serveur pendant que les agents terminent leur travail. Une fois leurs exécutions terminées, utilisez **Préférences → Mise à jour → Redémarrer le serveur** dans l’application Windows pour activer la version 3.1.3. [Guide de mise à jour](docs/desktop.md).
 
 ## Nouveautés de la version 2.9
 
