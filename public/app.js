@@ -46,6 +46,7 @@ let modelCatalogPollsRemaining = 0;
 const $ = (id) => document.getElementById(id);
 const icons = {
   plus: 'M12 5v14M5 12h14',
+  bell: 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4',
   search: 'm21 21-4.4-4.4M19 10.5a8.5 8.5 0 1 1-17 0 8.5 8.5 0 0 1 17 0',
   folder: 'M3 7V5a1 1 0 0 1 1-1h5l2 3h9a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7Z',
   'folder-plus': 'M3 7V5h6l2 2h10v13H3V7Zm9 3v7m-3-3.5h6',
@@ -226,6 +227,12 @@ const generationPending = new Map();
 const generationDrafts = new Map();
 const generationConfirmed = new Map();
 let selectedGeneration = {};
+function applyStudioPreferences(preferences) {
+  if (!preferences || (preferences.revision || 0) < (state.studioPreferences?.revision || 0)) return;
+  const changed = preferences.allowQuestionsByDefault !== state.studioPreferences?.allowQuestionsByDefault;
+  state.studioPreferences = preferences;
+  if (changed) restoreGenerationSettings();
+}
 function rememberGenerationSettings(id, settings, revision = 0) {
   const known = generationConfirmed.get(id);
   // A delayed history/overview must not undo an acknowledged save. Revisions
@@ -239,7 +246,7 @@ function restoreGenerationSettings(history = session(), run = activeRun()) {
   const defaults = {
     model: state.modelCatalogDefault || '',
     thinking: state.modelCatalogThinking || '',
-    allowQuestions: false,
+    allowQuestions: state.studioPreferences?.allowQuestionsByDefault !== false,
   };
   const saved =
     rememberGenerationSettings(state.sessionId, history?.generationSettings, history?.generationRevision)
@@ -251,7 +258,7 @@ function restoreGenerationSettings(history = session(), run = activeRun()) {
       ? {
           model: saved.model ?? run?.model ?? history?.model ?? defaults.model,
           thinking: saved.thinking ?? run?.thinking ?? history?.thinking ?? defaults.thinking,
-          allowQuestions: saved.allowQuestions ?? run?.allowQuestions ?? false,
+          allowQuestions: saved.allowQuestions ?? run?.allowQuestions ?? defaults.allowQuestions,
         }
       : { ...defaults, ...draft };
   selectedGeneration = { ...settings, ...pending?.settings };
@@ -274,7 +281,7 @@ async function saveGenerationSettings(patch) {
   }
   selectedGeneration = { ...selectedGeneration, ...patch };
   if (!id) {
-    generationDrafts.set(normalizedPath(cwd), { ...selectedGeneration });
+    generationDrafts.set(normalizedPath(cwd), { ...generationDrafts.get(normalizedPath(cwd)), ...patch });
     return;
   }
   const entry = { settings: { ...selectedGeneration } };
@@ -1862,6 +1869,7 @@ function refreshOverview() {
       overviewQueued = false;
       try {
         const data = await api('/api/overview');
+        applyStudioPreferences(data.studioPreferences);
         state.projects = data.projects || [];
         const remoteRuns = data.runs || [];
         for (const remote of remoteRuns) {
@@ -2160,6 +2168,7 @@ function selectNewConversationModel() {
 async function bootstrap() {
   try {
     const data = await api('/api/bootstrap');
+    state.studioPreferences = data.studioPreferences;
     state.attachmentsAvailable = data.preferences?.attachments === true;
     state.inspectorAvailable = data.preferences?.inspector === true;
     state.nativeFileOpen = data.preferences?.nativeFileOpen === true;
@@ -3124,6 +3133,7 @@ createProviderSettings({
 });
 createSettings({
   api,
+  onStudioPreferences: applyStudioPreferences,
   getContext: () => ({
     remote: state.remote,
     readOnly: state.readOnly,

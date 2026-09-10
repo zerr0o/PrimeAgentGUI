@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod directory_picker;
+mod notifications;
 #[cfg(test)]
 mod update_tests;
 mod updates;
@@ -28,6 +29,8 @@ use tauri_plugin_opener::OpenerExt;
 struct Preferences {
     started: bool,
     legacy_root: Option<String>,
+    #[serde(default)]
+    notifications: notifications::Preferences,
 }
 struct Desktop {
     root: PathBuf,
@@ -388,6 +391,7 @@ fn main() {
                 .build(),
         )
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_notification::init())
         .manage(directory_picker::DirectoryPicker::default())
         .manage(updates::Updates::default())
         .invoke_handler(tauri::generate_handler![
@@ -400,7 +404,8 @@ fn main() {
             desktop_server_restart,
             directory_picker::desktop_pick_directory,
             updates::desktop_update_check,
-            updates::desktop_update_install
+            updates::desktop_update_install,
+            notifications::desktop_notification_preferences
         ])
         .setup(|app| {
             let root = std::env::var_os("PRIME_STUDIO_DESKTOP_DATA_ROOT")
@@ -427,6 +432,7 @@ fn main() {
                     .permission("allow-desktop-update-status")
                     .permission("allow-desktop-server-restart")
                     .permission("allow-desktop-pick-directory")
+                    .permission("allow-desktop-notification-preferences")
                     .permission("allow-desktop-update-check")
                     .permission("allow-desktop-update-install"),
             )?;
@@ -466,7 +472,7 @@ fn main() {
             // Otherwise Windows consumes file drops before the HTML composer.
             .disable_drag_drop_handler()
             .initialization_script(
-                "Object.defineProperty(window, '__PRIME_STUDIO_DESKTOP__', { value: true }); Object.defineProperty(window, '__PRIME_STUDIO_DIRECTORY_PICKER__', { value: true });",
+                "Object.defineProperty(window, '__PRIME_STUDIO_DESKTOP__', { value: true }); Object.defineProperty(window, '__PRIME_STUDIO_DIRECTORY_PICKER__', { value: true }); Object.defineProperty(window, '__PRIME_STUDIO_NOTIFICATIONS__', { value: true });",
             )
             .on_new_window(move |url, _| {
                 open_external_link(&links_app, &url);
@@ -546,6 +552,7 @@ fn main() {
             if std::env::args().any(|arg| arg == "--settings") {
                 show_settings(app.handle());
             }
+            notifications::start(app.handle().clone(), port);
             Ok(())
         })
         .on_window_event(|window, event| {

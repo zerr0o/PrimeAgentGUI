@@ -1,8 +1,17 @@
 import { t as tr, translateKnown, translateDOM, onLanguageChange, bindText } from './i18n.js';
 import { createDesktopUpdates } from './desktop-updates.js';
+import { createInteractionSettings } from './interaction-settings.js';
 
-export function createSettings({ api, getContext, openResources, copyText, toast }) {
+export function createSettings({
+  api,
+  getContext,
+  openResources,
+  copyText,
+  toast,
+  onStudioPreferences = () => {},
+}) {
   const updates = createDesktopUpdates({ getContext });
+  const interactions = createInteractionSettings({ api, getContext, onStudioPreferences });
   const $ = (id) => document.getElementById(id);
   const dialog = $('settings-dialog'),
     tabs = [...dialog.querySelectorAll('[data-settings-tab]')];
@@ -51,6 +60,8 @@ export function createSettings({ api, getContext, openResources, copyText, toast
     if (id === 'remote') void refreshNetwork();
     if (id === 'system') void refreshSystem();
     if (id === 'updates') void updates.refresh();
+    if (id === 'models') void interactions.refreshDefault();
+    if (id === 'notifications') void interactions.refreshNotifications();
   }
   for (const tab of tabs) tab.onclick = () => select(tab.dataset.settingsTab);
   const narrow = matchMedia('(max-width: 700px)');

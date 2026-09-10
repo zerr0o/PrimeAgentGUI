@@ -11,6 +11,7 @@ fn main() {
             "desktop_server_restart",
             "desktop_update_check",
             "desktop_update_install",
+            "desktop_notification_preferences",
         ]),
     ))
     .expect("Desktop command permissions could not be generated");

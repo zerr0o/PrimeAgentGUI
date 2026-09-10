@@ -24,6 +24,7 @@ import { createCommandService, parseCommand, validateCommand } from './lib/comma
 import { createLiveMessages, routeLiveMessages } from './lib/live-messages.mjs';
 import { createLiveSessionClient } from './lib/live-session-client.mjs';
 import { createConversationSettings } from './lib/conversation-settings.mjs';
+import { createDesktopNotifications } from './lib/desktop-notifications.mjs';
 import { validateImages, imageBodyLimit } from './lib/images.mjs';
 import { createFileStore, validateFiles, appendFileMessage, splitFileMessage } from './lib/files.mjs';
 import { createProjectFiles } from './lib/project-files.mjs';
@@ -125,6 +126,8 @@ export function createApp(options = {}) {
   const subagentDefaults = createSubagentDefaultsStore({ dataDir });
   const runs = new Map(),
     sessionLocks = new Set();
+  const desktopNotifications = createDesktopNotifications();
+  const studioPreferences = () => store.getStudioPreferences?.() || { allowQuestionsByDefault: true };
   const roadmap =
     options.roadmap || createRoadmapService({ resolveProject: (cwd) => store.knowledgeProject(cwd) });
   const roadmapBridge =
@@ -299,6 +302,8 @@ export function createApp(options = {}) {
       const index = run.interactions.findIndex((item) => item.id === event.request.id);
       if (index < 0) run.interactions.push(event.request);
       else run.interactions[index] = event.request;
+      if (index < 0 && event.request.status === 'pending')
+        desktopNotifications.publish('question', run, event.request.id);
     }
     if (event.kind === 'session' && event.sessionId) {
       run.sessionId = event.sessionId;
@@ -318,6 +323,7 @@ export function createApp(options = {}) {
       if (run.status === 'failed' && isModelAvailabilityError(run.error))
         void models({ refresh: true }).catch(() => {});
       run.endedAt = new Date().toISOString();
+      if (['completed', 'failed'].includes(run.status)) desktopNotifications.publish('turnComplete', run);
       if (run.sessionId) sessionLocks.delete(run.sessionId);
     }
     const item = { ...event, seq: ++run.seq };
@@ -390,7 +396,8 @@ export function createApp(options = {}) {
       (body.thinking ?? settings?.thinking ?? existing?.thinking) || catalog.default?.thinking;
     if (body.allowQuestions !== undefined && typeof body.allowQuestions !== 'boolean')
       throw new HttpError(400, tr('server.demande_invalide'));
-    const allowQuestions = body.allowQuestions ?? settings?.allowQuestions ?? false;
+    const allowQuestions =
+      body.allowQuestions ?? settings?.allowQuestions ?? (await studioPreferences()).allowQuestionsByDefault;
     if (catalog.models?.find((model) => model.id === selectedModel)?.availability === 'unavailable')
       throw new HttpError(409, tr('model.unavailableSelection'));
     // Check after awaited validation so simultaneous HTTP requests cannot race the lock.
@@ -522,6 +529,7 @@ export function createApp(options = {}) {
           ...overview,
           version,
           models: catalog,
+          studioPreferences: await studioPreferences(),
           runs: activeRuns(),
           preferences: {
             attachments: true,
@@ -745,7 +753,22 @@ export function createApp(options = {}) {
           }),
         );
       if (method === 'GET' && path === '/api/overview')
-        return json(res, 200, { ...(await store.overview()), runs: activeRuns() });
+        return json(res, 200, {
+          ...(await store.overview()),
+          runs: activeRuns(),
+          studioPreferences: await studioPreferences(),
+        });
+      if (path === '/api/studio-preferences') {
+        if (method === 'GET') return json(res, 200, await studioPreferences());
+        if (method === 'PATCH') return json(res, 200, await store.setStudioPreferences(await readBody(req)));
+      }
+      // Deliberately absent from the remote gateway's route allowlist.
+      if (method === 'GET' && path === '/api/desktop-notifications')
+        return json(
+          res,
+          200,
+          desktopNotifications.snapshot(Number(url.searchParams.get('after')) || 0, runs),
+        );
       if (method === 'GET' && path === '/api/roadmap')
         return json(res, 200, await roadmapRoutes.read(url.searchParams.get('cwd')));
       if (method === 'GET' && path === '/api/roadmap/session')

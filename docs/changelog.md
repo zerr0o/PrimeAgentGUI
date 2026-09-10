@@ -4,6 +4,13 @@
 
 Les changements par version. Retrouvez les installateurs et les archives du code source dans les [releases GitHub](https://github.com/zerr0o/prime-agent-studio/releases).
 
+## 3.2.1
+
+- **Questions autorisées par défaut** : choisissez la valeur initiale dans **Préférences → Modèles et agents**. Le défaut est partagé par les appareils connectés au PC, tandis que chaque conversation conserve son choix enregistré.
+- **Notifications Windows** : deux interrupteurs indépendants pour les questions en attente et les fins de tour, dans **Préférences → Notifications**. Les erreurs suivent le réglage de fin de tour ; les arrêts manuels restent silencieux.
+- **Discrétion au premier plan** : aucune notification lorsqu’une fenêtre du Studio a le focus. Les événements silencieux ne sont pas rejoués après un changement de focus. Le suivi continue lorsque la fenêtre est masquée, tant que l’application reste ouverte.
+- **Choix préservés** : un chargement reçu en retard ne remplace pas un nouveau défaut déjà enregistré. [Guide de configuration](configuration.md#notifications-windows).
+
 ## 3.2.0
 
 - **Images dans les réponses de l’agent** : affichez les images du projet dans la conversation et cliquez pour les agrandir. Le Studio lit le fichier d’origine sans copie supplémentaire ; une image déplacée ou supprimée apparaît comme indisponible. Disponible sur PC et via l’accès mobile authentifié.

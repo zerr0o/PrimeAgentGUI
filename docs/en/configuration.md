@@ -4,7 +4,7 @@
 
 ## Preferences and setting scope
 
-**Preferences** organizes settings into five categories: **Appearance**, **Models & agents**, **Tools**, **Remote access** and **System**. Navigation works on small screens and with the keyboard. Closing a manager opened from preferences returns to its category.
+**Preferences** organizes settings into seven categories: **Appearance**, **Models & agents**, **Tools**, **Remote access**, **Notifications**, **System** and **Updates**. Navigation works on small screens and with the keyboard. Closing a manager opened from preferences returns to its category.
 
 A note below each title explains scope without adding controls: appearance and typing preferences apply to this browser and address; accounts, MCP and model defaults apply to Prime Agent on this PC. Studio subagent defaults can be overridden for a project. The conversation model remains separate from the default model.
 
@@ -26,9 +26,17 @@ The [translation documentation](translations.md) describes the single table, fal
 
 ### Interactive questions and conversation images
 
-The **Allow questions** checkbox beside thinking enables the question tool for this conversation. It is off by default and can be changed between runs. The agent offers choices with short descriptions, collapsed by default and accessible via **Show description**. Select an option, write another answer, or skip. Studio uses Prime Agent’s native interactive protocol and records the result in its tool history. Answering on a phone also resolves the request on the PC. Reloading the page restores requests while the run and server remain active; stopping the engine cancels them.
+The **Allow questions** checkbox beside thinking enables the question tool for this conversation. It is checked by default and can be changed between runs. **Preferences → Models & agents → Allow questions by default** sets the initial value, shared by devices connected to this PC. Saved conversation choices take precedence. The agent offers choices with short descriptions, collapsed by default and accessible via **Show description**. Select an option, write another answer, or skip. Studio uses Prime Agent’s native interactive protocol and records the result in its tool history. Answering on a phone also resolves the request on the PC. Reloading the page restores requests while the run and server remain active; stopping the engine cancels them.
 
 The agent can display a project PNG, JPEG, GIF or WebP file with `![Preview](captures/result.png)`. Studio reads the original file without copying it, and clicking enlarges the image. Moved or deleted images show an unavailable state. Editing the file therefore changes its preview on the next load. Project access rules apply on mobile too; this feature does not expose files outside the project. User-uploaded attachments retain their existing behavior.
+
+### Windows notifications
+
+In the Windows application, **Preferences → Notifications** offers two independent switches, both initially enabled: **Agent question** and **Agent turn completed**. Agent errors follow the completed-turn setting; manual stops stay silent. Preferences are saved on this PC in `desktop.json`.
+
+Studio shows no notification while any of its windows has focus, including its app settings window. Silent events are not replayed when you switch to another application. Native monitoring continues while the window is hidden; fully quitting the app stops it. Past events are not replayed at startup. Windows notification settings and **Do not disturb** still apply.
+
+These notifications require the new installed Windows build. Browsers and the PWA do not trigger Windows notifications on the host PC. Development builds may use the PowerShell identity for notifications, as described in the [Tauri documentation](https://v2.tauri.app/plugin/notification/).
 
 ### Model and thinking level
 

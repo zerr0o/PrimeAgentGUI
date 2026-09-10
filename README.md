@@ -44,13 +44,15 @@
 
 Prime Agent Studio brings your **local Prime Agent sessions** together in a Windows application and a browser interface. Follow streaming responses, find your projects and continue a conversation without opening a terminal. On Windows, agents and their tools run in the background, without unexpected PowerShell windows.
 
-**Version 3.2.0** · [Download the Windows x64 installer](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.2.0/Prime-Agent-Studio_3.2.0_x64-setup.exe) · [Release history](docs/en/changelog.md).
+**Version 3.2.1** · [Download the Windows x64 installer](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.2.1/Prime-Agent-Studio_3.2.1_x64-setup.exe) · [Release history](docs/en/changelog.md).
 
 ## Images and questions in the conversation
 
 See project images directly in the agent’s response and click to enlarge them. Studio reads the original file without making an extra copy. If it is moved or deleted, the conversation shows that the image is no longer available.
 
-Enable **Allow questions** beside the thinking selector when you want the agent to ask for your input. Choose an option, expand its description, write another answer or **Skip**. The setting belongs to the conversation and is off by default. Questions use Prime Agent’s native interaction mechanism and stay synchronized between PC and phone. [Configuration guide](docs/en/configuration.md#interactive-questions-and-conversation-images).
+**Allow questions**, beside the thinking selector, lets the agent ask for your input. Choose an option, expand its description, write another answer or **Skip**. It is enabled by default; choose the default for new conversations in **Preferences → Models & agents**. Each conversation keeps its own saved choice. Questions use Prime Agent’s native interaction mechanism and stay synchronized between PC and phone. [Configuration guide](docs/en/configuration.md#interactive-questions-and-conversation-images).
+
+In the Windows application, **Preferences → Notifications** independently controls alerts for questions and completed turns. Studio stays silent while any of its windows is focused.
 
 ![Project image and native agent question, with an expanded option description, a free-text answer field and a Skip button.](docs/screenshots/en/desktop-interactive-questions.png)
 
@@ -137,7 +139,7 @@ Download the [Windows x64 installer](https://github.com/zerr0o/prime-agent-studi
 
 Updates are signed for Tauri; the installer does not yet carry a Windows Authenticode signature.
 
-**After updating:** the application can keep using the previous server while agents finish. Once they have finished, use **Preferences → Updates → Restart server** in the Windows application to activate 3.2.0. [Update guide](docs/en/desktop.md).
+**After updating:** the application can keep using the previous server while agents finish. Once they have finished, use **Preferences → Updates → Restart server** in the Windows application to activate 3.2.1. [Update guide](docs/en/desktop.md).
 
 ### From source
 

@@ -457,6 +457,7 @@
                     >
                       <input
                         id="allow-questions"
+                        checked
                         type="checkbox"
                         aria-label="Autoriser les questions"
                         data-i18n-aria-label="questions.allow"
@@ -983,6 +984,16 @@
             <span data-icon="shield"></span><span data-i18n="settings.remote">Accès distant</span>
           </button>
           <button
+            id="settings-tab-notifications"
+            role="tab"
+            aria-selected="false"
+            aria-controls="settings-panel-notifications"
+            tabindex="-1"
+            data-settings-tab="notifications"
+          >
+            <span data-icon="bell"></span><span data-i18n="notifications.title">Notifications</span>
+          </button>
+          <button
             id="settings-tab-system"
             role="tab"
             aria-selected="false"
@@ -1115,6 +1126,25 @@
                 Gérer les connexions
               </button>
             </div>
+            <div class="settings-row">
+              <div>
+                <label for="default-allow-questions" data-i18n="questions.defaultLabel"
+                  >Autoriser les questions par défaut</label
+                >
+                <p data-i18n="questions.defaultNote">
+                  Nouvelles conversations sur ce PC. Le choix de chaque conversation reste indépendant.
+                </p>
+              </div>
+              <input
+                id="default-allow-questions"
+                class="switch"
+                type="checkbox"
+                role="switch"
+                checked
+                disabled
+              />
+            </div>
+            <p id="default-questions-error" class="form-error" role="alert" hidden></p>
             <p class="settings-footnote" data-i18n="settings.models_note"></p>
           </section>
           <section
@@ -1156,6 +1186,63 @@
               </div>
             </div>
             <p id="settings-resource-note" class="settings-footnote" data-i18n="settings.resources_scope"></p>
+          </section>
+          <section
+            id="settings-panel-notifications"
+            class="settings-panel"
+            role="tabpanel"
+            tabindex="0"
+            aria-labelledby="settings-tab-notifications"
+            hidden
+          >
+            <div class="settings-section-heading">
+              <h3 data-i18n="notifications.title">Notifications</h3>
+              <p class="settings-scope" data-i18n="notifications.scope">Application Windows · Ce PC</p>
+            </div>
+            <p
+              id="notifications-desktop-note"
+              class="settings-footnote"
+              data-i18n="notifications.desktopOnly"
+              hidden
+            >
+              Ouvrez cette page dans l’application Windows à jour pour régler ses notifications.
+            </p>
+            <div id="notification-options" hidden>
+              <div class="settings-row">
+                <div>
+                  <label for="notify-questions" data-i18n="notifications.questions"
+                    >Question de l’agent</label
+                  >
+                  <p data-i18n="notifications.questionsNote">Quand une question attend votre réponse.</p>
+                </div>
+                <input id="notify-questions" class="switch" type="checkbox" role="switch" checked disabled />
+              </div>
+              <div class="settings-row">
+                <div>
+                  <label for="notify-turn-complete" data-i18n="notifications.turnComplete"
+                    >Fin de tour de l’agent</label
+                  >
+                  <p data-i18n="notifications.turnCompleteNote">
+                    Quand l’agent termine ou rencontre une erreur. Les arrêts manuels restent silencieux.
+                  </p>
+                </div>
+                <input
+                  id="notify-turn-complete"
+                  class="switch"
+                  type="checkbox"
+                  role="switch"
+                  checked
+                  disabled
+                />
+              </div>
+              <p class="settings-footnote" data-i18n="notifications.focusNote">
+                Aucune notification lorsque le Studio est au premier plan.
+              </p>
+              <p class="settings-footnote" data-i18n="notifications.windowsNote">
+                Les réglages de notification et le mode Ne pas déranger de Windows s’appliquent également.
+              </p>
+            </div>
+            <p id="notifications-error" class="form-error" role="alert" hidden></p>
           </section>
           <section
             id="settings-panel-remote"

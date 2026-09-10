@@ -4,7 +4,7 @@
 
 ## Préférences et portée des réglages
 
-Le panneau **Préférences** regroupe les réglages en cinq catégories : **Apparence**, **Modèles et agents**, **Outils**, **Accès distant** et **Système**. La navigation reste accessible sur les petits écrans et au clavier. Fermer un gestionnaire ouvert depuis les préférences ramène à sa catégorie.
+Le panneau **Préférences** regroupe les réglages en sept catégories : **Apparence**, **Modèles et agents**, **Outils**, **Accès distant**, **Notifications**, **Système** et **Mise à jour**. La navigation reste accessible sur les petits écrans et au clavier. Fermer un gestionnaire ouvert depuis les préférences ramène à sa catégorie.
 
 Une indication sous chaque titre rappelle la portée sans ajouter de contrôles : l’apparence et la saisie concernent ce navigateur et cette adresse ; les comptes, MCP et modèles par défaut concernent Prime Agent sur ce PC. Les défauts des sous-agents du Studio peuvent être remplacés pour un projet. Le modèle choisi pour une conversation reste distinct du modèle par défaut.
 
@@ -26,9 +26,17 @@ La [documentation des traductions](translations.md) décrit la table unique, le 
 
 ### Questions interactives et images dans la conversation
 
-La case **Autoriser les questions**, près du niveau de réflexion, autorise l’outil de questions pour cette conversation. Elle est désactivée par défaut et se change entre deux exécutions. L’agent propose des choix avec une courte description, repliée par défaut et consultable via **Afficher la description**. Vous pouvez sélectionner une option, écrire une autre réponse ou passer. Le Studio utilise le protocole interactif natif de Prime Agent et enregistre le résultat dans son historique d’outils. Répondre sur le téléphone clôt également la demande sur le PC. Recharger la page retrouve les demandes tant que l’exécution et le serveur sont actifs ; un arrêt du moteur les annule.
+La case **Autoriser les questions**, près du niveau de réflexion, autorise l’outil de questions pour cette conversation. Elle est cochée par défaut et se change entre deux exécutions. **Préférences → Modèles et agents → Autoriser les questions par défaut** définit la valeur initiale, commune aux appareils connectés à ce PC. Les choix déjà enregistrés dans les conversations restent prioritaires. L’agent propose des choix avec une courte description, repliée par défaut et consultable via **Afficher la description**. Vous pouvez sélectionner une option, écrire une autre réponse ou passer. Le Studio utilise le protocole interactif natif de Prime Agent et enregistre le résultat dans son historique d’outils. Répondre sur le téléphone clôt également la demande sur le PC. Recharger la page retrouve les demandes tant que l’exécution et le serveur sont actifs ; un arrêt du moteur les annule.
 
 L’agent peut afficher un fichier PNG, JPEG, GIF ou WebP du projet avec `![Aperçu](captures/resultat.png)`. Le Studio lit le fichier original, sans créer de copie, et un clic agrandit l’image. Une image déplacée ou supprimée affiche un état indisponible. Une modification du fichier change donc l’aperçu à son prochain chargement. Les images restent soumises aux accès du projet, y compris sur mobile ; cette fonction n’expose pas les fichiers extérieurs au projet. Les pièces jointes envoyées par l’utilisateur conservent leur fonctionnement habituel.
+
+### Notifications Windows
+
+Dans l’application Windows, **Préférences → Notifications** propose deux interrupteurs indépendants, activés initialement : **Question de l’agent** et **Fin de tour de l’agent**. Une erreur de l’agent suit le réglage de fin de tour ; les arrêts manuels restent silencieux. Les préférences sont enregistrées sur ce PC dans `desktop.json`.
+
+Le Studio n’affiche aucune notification si l’une de ses fenêtres a le focus, y compris les réglages de l’application. Les événements silencieux ne sont pas réaffichés lorsque vous passez à une autre application. Le suivi natif continue quand la fenêtre est masquée ; quitter complètement l’application l’arrête. Il ne rejoue pas les événements historiques au démarrage. Les réglages Windows et le mode **Ne pas déranger** restent applicables.
+
+Ces notifications nécessitent le nouveau build Windows installé. Le navigateur et la PWA ne déclenchent pas de notification Windows sur le PC hôte. La version de développement peut utiliser l’identité PowerShell pour les notifications, selon [la documentation Tauri](https://v2.tauri.app/plugin/notification/).
 
 ### Modèle et niveau de réflexion
 

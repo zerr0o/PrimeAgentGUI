@@ -44,13 +44,15 @@
 
 Prime Agent Studio réunit les sessions de votre **Prime Agent local** dans une application Windows et une interface accessible depuis le navigateur. Suivez les réponses en direct, retrouvez vos projets et continuez une conversation sans ouvrir de terminal. Sous Windows, les agents et leurs outils démarrent en arrière-plan, sans fenêtres PowerShell intempestives.
 
-**Version 3.2.0** · [Télécharger l’installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.2.0/Prime-Agent-Studio_3.2.0_x64-setup.exe) · [Historique des versions](docs/changelog.md).
+**Version 3.2.1** · [Télécharger l’installateur Windows x64](https://github.com/zerr0o/prime-agent-studio/releases/download/v3.2.1/Prime-Agent-Studio_3.2.1_x64-setup.exe) · [Historique des versions](docs/changelog.md).
 
 ## Images et questions dans la conversation
 
 Retrouvez les images du projet directement dans la réponse de l’agent et cliquez pour les agrandir. Le Studio lit le fichier d’origine sans en créer une copie supplémentaire. S’il est déplacé ou supprimé, la conversation indique que l’image n’est plus disponible.
 
-Activez **Autoriser les questions**, près du niveau de réflexion, pour permettre à l’agent de demander votre avis. Sélectionnez une option, dépliez sa description, écrivez une autre réponse ou choisissez **Passer**. Ce réglage appartient à la conversation et reste désactivé par défaut. Les questions utilisent le mécanisme interactif natif de Prime Agent et se synchronisent entre PC et téléphone. [Guide de configuration](docs/configuration.md#questions-interactives-et-images-dans-la-conversation).
+La case **Autoriser les questions**, près du niveau de réflexion, permet à l’agent de demander votre avis. Sélectionnez une option, dépliez sa description, écrivez une autre réponse ou choisissez **Passer**. Elle est cochée par défaut ; choisissez la valeur initiale des nouvelles conversations dans **Préférences → Modèles et agents**. Chaque conversation conserve son choix enregistré. Les questions utilisent le mécanisme interactif natif de Prime Agent et se synchronisent entre PC et téléphone. [Guide de configuration](docs/configuration.md#questions-interactives-et-images-dans-la-conversation).
+
+Dans l’application Windows, **Préférences → Notifications** permet de régler séparément les alertes pour les questions et les fins de tour. Le Studio reste silencieux lorsque l’une de ses fenêtres a le focus.
 
 ![Image du projet et question native de l’agent, avec une description dépliée, un champ de réponse libre et le bouton Passer.](docs/screenshots/desktop-interactive-questions.png)
 
@@ -137,7 +139,7 @@ Téléchargez l’[installateur Windows x64](https://github.com/zerr0o/prime-age
 
 Les mises à jour sont signées pour Tauri ; l’installateur ne possède pas encore de signature Windows Authenticode.
 
-**Après la mise à jour :** l’application peut continuer à utiliser l’ancien serveur pendant que les agents terminent leur travail. Une fois leurs exécutions terminées, utilisez **Préférences → Mise à jour → Redémarrer le serveur** dans l’application Windows pour activer la version 3.2.0. [Guide de mise à jour](docs/desktop.md).
+**Après la mise à jour :** l’application peut continuer à utiliser l’ancien serveur pendant que les agents terminent leur travail. Une fois leurs exécutions terminées, utilisez **Préférences → Mise à jour → Redémarrer le serveur** dans l’application Windows pour activer la version 3.2.1. [Guide de mise à jour](docs/desktop.md).
 
 ### Depuis le code source
 

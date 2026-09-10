@@ -5,6 +5,39 @@ export const languages = [
   { id: 'en', label: 'English' },
 ];
 export const messages = {
+  'questions.defaultLabel': { fr: 'Autoriser les questions par défaut', en: 'Allow questions by default' },
+  'questions.defaultNote': {
+    fr: 'Nouvelles conversations sur ce PC. Le choix de chaque conversation reste indépendant.',
+    en: 'New conversations on this PC. Each conversation keeps its own choice.',
+  },
+  'notifications.title': { fr: 'Notifications', en: 'Notifications' },
+  'notifications.scope': { fr: 'Application Windows · Ce PC', en: 'Windows application · This PC' },
+  'notifications.questions': { fr: 'Question de l’agent', en: 'Agent question' },
+  'notifications.questionsNote': {
+    fr: 'Quand une question attend votre réponse.',
+    en: 'When a question is waiting for your answer.',
+  },
+  'notifications.turnComplete': { fr: 'Fin de tour de l’agent', en: 'Agent turn completed' },
+  'notifications.turnCompleteNote': {
+    fr: 'Quand l’agent termine ou rencontre une erreur. Les arrêts manuels restent silencieux.',
+    en: 'When the agent finishes or encounters an error. Manual stops stay silent.',
+  },
+  'notifications.focusNote': {
+    fr: 'Aucune notification lorsque le Studio est au premier plan.',
+    en: 'No notifications while Studio is in the foreground.',
+  },
+  'notifications.windowsNote': {
+    fr: 'Les réglages de notification et le mode Ne pas déranger de Windows s’appliquent également.',
+    en: 'Windows notification settings and Do not disturb also apply.',
+  },
+  'notifications.desktopOnly': {
+    fr: 'Ouvrez cette page dans l’application Windows à jour pour régler ses notifications.',
+    en: 'Open this page in the updated Windows application to manage its notifications.',
+  },
+  'interactionSettings.saveError': {
+    fr: 'Impossible de charger ou d’enregistrer ce réglage. Réessayez en rouvrant cette catégorie.',
+    en: 'Could not load or save this setting. Open this category again to retry.',
+  },
   'questions.title': { fr: 'Question de l’agent', en: 'Agent question' },
   'questions.toggle': { fr: 'Autoriser les questions', en: 'Allow questions' },
   'questions.allow': { fr: 'Autoriser les questions', en: 'Allow questions' },

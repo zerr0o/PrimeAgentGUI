@@ -4,6 +4,13 @@
 
 Changes by version. See [GitHub releases](https://github.com/zerr0o/prime-agent-studio/releases) for installers and source archives.
 
+## 3.2.1
+
+- **Questions allowed by default**: choose the initial value in **Preferences → Models & agents**. The default is shared by devices connected to the PC, while each conversation keeps its saved choice.
+- **Windows notifications**: independent switches for pending questions and completed turns in **Preferences → Notifications**. Errors follow the completed-turn setting; manual stops stay silent.
+- **Quiet in the foreground**: no notification while any Studio window has focus. Silent events are not replayed when focus changes. Monitoring continues while the window is hidden, as long as the application remains open.
+- **Choices preserved**: a delayed response cannot replace an acknowledged default. [Configuration guide](configuration.md#windows-notifications).
+
 ## 3.2.0
 
 - **Images in agent responses**: display project images inline and click to enlarge. Studio reads the original file without storing an extra copy; moved or deleted images show an unavailable state. Available on desktop and through authenticated mobile access.
