@@ -67,6 +67,7 @@ export function createLiveMessages({
   api,
   getContext,
   imageComposer,
+  onAccepted = () => {},
   onSent = () => {},
   onError = () => {},
   onChange = () => {},
@@ -431,9 +432,10 @@ export function createLiveMessages({
         },
       });
       if (imageDraft) imageComposer.accepted(imageDraft);
+      const draftUnchanged = composerText() === originalDraft && draftRevision === originalRevision;
+      onAccepted({ key: current.draftKey, text: originalDraft });
       if (destroyed || token !== generation) return true;
       retry = null;
-      const draftUnchanged = composerText() === originalDraft && draftRevision === originalRevision;
       if (draftUnchanged) setComposerText('');
       onSent(result, { context: current, message, mode: selectedMode, draftUnchanged });
       if (inFlight) await inFlight;

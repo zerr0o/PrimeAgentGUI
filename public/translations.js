@@ -39,6 +39,7 @@ export const messages = {
     en: 'Could not load or save this setting. Open this category again to retry.',
   },
   'questions.title': { fr: 'Question de l’agent', en: 'Agent question' },
+  'questions.pending': { fr: 'Question en attente', en: 'Question awaiting an answer' },
   'questions.toggle': { fr: 'Autoriser les questions', en: 'Allow questions' },
   'questions.allow': { fr: 'Autoriser les questions', en: 'Allow questions' },
   'questions.scope': {

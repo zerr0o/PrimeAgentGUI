@@ -4,6 +4,12 @@
 
 Changes by version. See [GitHub releases](https://github.com/zerr0o/prime-agent-studio/releases) for installers and source archives.
 
+## 3.2.2
+
+- **Windows notifications restored**: fixed an initialization crash that prevented monitoring for questions and completed turns from starting. Notification preferences and silence while Studio has focus are preserved.
+- **Visible pending questions**: an amber **?** replaces the green activity dot in the conversation list and on its project, including when collapsed. The project view also shows **Question awaiting an answer**.
+- **Drafts after sending**: accepted text is cleared even if you switch conversations before sending finishes, including messages sent to an already active agent. A newer draft typed in the meantime is preserved; a failed send does not clear it.
+
 ## 3.2.1
 
 - **Questions allowed by default**: choose the initial value in **Preferences → Models & agents**. The default is shared by devices connected to the PC, while each conversation keeps its saved choice.

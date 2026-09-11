@@ -8,6 +8,9 @@ const pathKey = (value) =>
     .toLowerCase();
 const time = (value) => (typeof value === 'number' ? value : Date.parse(value)) || 0;
 
+export const hasPendingQuestion = (run) =>
+  run?.status === 'running' && run.interactions?.some((request) => request.status === 'pending');
+
 // Disclosure and pagination are view preferences. They never change the selected
 // conversation, its draft, or the lifetime of an agent.
 export function createProjectNavigation({
@@ -50,7 +53,14 @@ export function createProjectNavigation({
       archived,
       needle,
       readOnly,
-      activeRuns.map((run) => [run.id, run.cwd, run.sessionId, run.prompt, run.startedAt]),
+      activeRuns.map((run) => [
+        run.id,
+        run.cwd,
+        run.sessionId,
+        run.prompt,
+        run.startedAt,
+        hasPendingQuestion(run),
+      ]),
       unreadIds,
       expanded,
       [...limits],
@@ -134,11 +144,13 @@ export function createProjectNavigation({
       row.dataset.navigationKey = `project:${key}`;
       row.setAttribute('aria-pressed', String(key === pathKey(projectCwd)));
       bindAttribute(row, 'title', () => p.cwd);
-      const status = projectRuns.length
-        ? 'running'
-        : sessions.some((s) => unreadIds.includes(s.id))
-          ? 'unread'
-          : 'idle';
+      const status = projectRuns.some(hasPendingQuestion)
+        ? 'question'
+        : projectRuns.length
+          ? 'running'
+          : sessions.some((s) => unreadIds.includes(s.id))
+            ? 'unread'
+            : 'idle';
       row.dataset.activity = status;
       row.append(
         icon('folder'),
@@ -191,15 +203,21 @@ export function createProjectNavigation({
           const item = el('div', `session-row${active ? ' active' : ''}`);
           item.dataset.sessionId = s.id || '';
           const running = Boolean(s.runId || projectRuns.some((r) => r.sessionId === s.id));
+          const waiting = projectRuns.some(
+            (run) =>
+              ((s.runId && run.id === s.runId) || (s.id && run.sessionId === s.id)) &&
+              hasPendingQuestion(run),
+          );
           const unread = unreadIds.includes(s.id);
-          item.dataset.activity = running ? 'running' : unread ? 'unread' : 'idle';
+          const status = waiting ? 'question' : running ? 'running' : unread ? 'unread' : 'idle';
+          item.dataset.activity = status;
           const button = el('button', 'session-select');
           button.type = 'button';
           button.dataset.navigationKey = `session:${s.id || s.runId}`;
           button.setAttribute('aria-current', active ? 'page' : 'false');
           bindAttribute(button, 'title', () => s.title || t('ui.sans_titre'));
           button.append(el('span', 'session-title', () => s.title || t('ui.nouvelle_session')));
-          if (running || unread) button.append(activityDot(running ? 'running' : 'unread'));
+          if (status !== 'idle') button.append(activityDot(status));
           else if (s.pinned) button.append(icon('pin', 'session-pin'));
           button.onclick = () =>
             s.runId && !s.id

@@ -1,9 +1,6 @@
 {
   "version": 1,
-  "languages": [
-    "fr",
-    "en"
-  ],
+  "languages": ["fr", "en"],
   "pages": [
     {
       "id": "roadmap",
@@ -28,8 +25,8 @@
       "fr": "README.fr.md",
       "en": "README.md",
       "reviewed": {
-        "fr": "b5743f0dfaf9aace172e3a47c20b598041f33fc6c6d0a62df75b2f69f537c1bc",
-        "en": "c6ca44e2b6678d9baef72e3fb6812935e43cf7ed239ae7628d6e3c9568325fc9"
+        "fr": "cfcf572b42aafb5a3816d582cbb10141ea3fdf2a96d8bcc19bb04c6c5810754c",
+        "en": "88899511d283d8c6a058045667971c134a3d49c389855f666286e53584aa1f5e"
       }
     },
     {
@@ -37,8 +34,8 @@
       "fr": "docs/changelog.md",
       "en": "docs/en/changelog.md",
       "reviewed": {
-        "fr": "3474540935b423599572b896eb43a192cf6f5f1a43a141c9acbba669f0f66e18",
-        "en": "0a1ee023d7c16e68439537c6c4dd388410839fc03536092110d236d14a1c8c3b"
+        "fr": "650b24365916257281e738e0070aeb35106a78ddacbee24f9deebd8c8c64bb62",
+        "en": "ca3b55d981a6572a78ebe5ecade21b4c98f29a8b5bb9dd776e9f0bf59c1d95fa"
       }
     },
     {

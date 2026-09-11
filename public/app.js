@@ -25,7 +25,7 @@ import { fileLinkRenderer, bindFileLinks } from './file-links.js';
 import { createSessionActivity } from './session-activity.js';
 import { parseAgentEnvelope } from './agent-messages.js';
 import { createProjectSorting } from './project-sorting.js';
-import { createProjectNavigation } from './project-navigation.js';
+import { createProjectNavigation, hasPendingQuestion } from './project-navigation.js';
 import { createKnowledgeBrowser } from './knowledge.js';
 import { createRoadmap } from './roadmap.js';
 import { bindInlineImages } from './inline-images.js';
@@ -701,6 +701,20 @@ function saveDraft() {
   else delete drafts[key];
   writeStorage('drafts', drafts);
 }
+function acceptDraft(key, text) {
+  // An accepted send belongs to its original conversation, even after navigation.
+  // Only discard the submitted text; a newer draft must remain intact.
+  const drafts = readStorage('drafts', {});
+  if (drafts[key] === text) {
+    delete drafts[key];
+    writeStorage('drafts', drafts);
+  }
+  if (draftKey() === key && composerText() === text) {
+    setComposerText('');
+    saveDraft();
+    resizeComposer();
+  }
+}
 function restoreDraft() {
   setComposerText(state.readOnly ? '' : readStorage('drafts', {})[draftKey()] || '', {
     retainCommand: false,
@@ -809,11 +823,14 @@ function renderProjects() {
   });
 }
 function activityDot(status, project = false) {
-  const dot = el(
-    'span',
-    `${status === 'running' ? 'running' : 'unread'}-dot${project ? ' project-activity-dot' : ''}`,
-  );
-  const label = status === 'running' ? tr('ui.agent_en_cours') : tr('ui.reponse_terminee_non_lue');
+  const dot = el('span', `${status}-dot${project ? ' project-activity-dot' : ''}`);
+  if (status === 'question') dot.textContent = '?';
+  const label =
+    status === 'question'
+      ? tr('questions.pending')
+      : status === 'running'
+        ? tr('ui.agent_en_cours')
+        : tr('ui.reponse_terminee_non_lue');
   bindAttribute(dot, 'title', () => translateKnown(label));
   dot.setAttribute('role', 'img');
   bindAttribute(dot, 'aria-label', () => translateKnown(label));
@@ -875,6 +892,7 @@ function renderProjectOverview() {
         Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || toTime(b.updatedAt) - toTime(a.updatedAt),
     );
   const runningIds = new Set([...state.runs.values()].filter(isRunning).map((r) => r.sessionId));
+  const questionRuns = [...state.runs.values()].filter(hasPendingQuestion);
   const unreadIds = items.filter((s) => sessionActivity.isUnread(s.id)).map((s) => s.id);
   const signature = JSON.stringify([
     p.cwd,
@@ -883,6 +901,7 @@ function renderProjectOverview() {
     query,
     items,
     [...runningIds],
+    questionRuns.map((run) => [run.id, run.sessionId]),
     unreadIds,
   ]);
   if (signature === projectListSignature) return;
@@ -891,9 +910,12 @@ function renderProjectOverview() {
   root.replaceChildren();
   for (const s of items) {
     const running = Boolean(s.runId || (s.id && runningIds.has(s.id)));
+    const waiting = questionRuns.some(
+      (run) => (s.runId && run.id === s.runId) || (s.id && run.sessionId === s.id),
+    );
     const unread = unreadIds.includes(s.id);
-    const card = el('button', `project-session-card${running ? ' is-running' : ''}`);
-    card.dataset.activity = running ? 'running' : unread ? 'unread' : 'idle';
+    const card = el('button', `project-session-card${running && !waiting ? ' is-running' : ''}`);
+    card.dataset.activity = waiting ? 'question' : running ? 'running' : unread ? 'unread' : 'idle';
     card.type = 'button';
     if (s.id) card.dataset.sessionId = s.id;
     if (s.runId) card.dataset.runId = s.runId;
@@ -901,7 +923,14 @@ function renderProjectOverview() {
     const content = el('span', 'project-session-content');
     content.append(el('span', 'project-session-title', () => s.title || tr('ui.nouvelle_session')));
     const meta = el('span', 'project-session-meta');
-    if (running) {
+    if (waiting) {
+      const status = el('span', 'project-session-question');
+      status.append(
+        activityDot('question'),
+        textNode(() => tr('questions.pending')),
+      );
+      meta.append(status);
+    } else if (running) {
       const status = el('span', 'project-session-running');
       status.append(
         el('span', 'running-dot'),
@@ -1593,6 +1622,7 @@ function applyRunEvent(run, e) {
       const index = run.interactions.findIndex((item) => item.id === e.request.id);
       if (index < 0) run.interactions.push(e.request);
       else run.interactions[index] = e.request;
+      renderNavigation();
       break;
     }
     case 'session':
@@ -1781,7 +1811,8 @@ async function sendMessage(event) {
   const imageDraft = imageComposer?.snapshot();
   const images = imageDraft?.images || [];
   const files = imageDraft?.files || [];
-  const originalDraft = composerText();
+  const originalDraft = composerText(),
+    originalDraftKey = draftKey();
   const message =
       originalDraft.trim() || (images.length || files.length ? tr('ui.analyse_les_pieces_jointes') : ''),
     cwd = state.projectCwd,
@@ -1824,9 +1855,8 @@ async function sendMessage(event) {
     generationDrafts.delete(normalizedPath(cwd));
     if (imageDraft) imageComposer.accepted(imageDraft);
     if (run.sessionId) upsertSession(run.sessionId, run);
+    acceptDraft(originalDraftKey, originalDraft);
     if (token === state.requestId) {
-      if (composerText() === originalDraft) setComposerText('');
-      saveDraft();
       state.viewRunId = run.id;
       state.sessionId = run.sessionId || sessionId;
       saveSelection();
@@ -1847,12 +1877,14 @@ async function stopRun() {
   const r = activeRun();
   if (!isRunning(r) || r.status === 'stopping') return;
   r.status = 'stopping';
+  renderNavigation();
   updateComposer();
   renderDetails();
   try {
     await api(`/api/runs/${encodeURIComponent(r.id)}/stop`, { method: 'POST', body: {} });
   } catch (e) {
     r.status = 'running';
+    renderNavigation();
     toast(translateKnown(e.message), true);
     updateComposer();
   }
@@ -2764,6 +2796,7 @@ liveMessagesUI = createLiveMessages({
   getContext: () => {
     const run = activeRun();
     return {
+      draftKey: draftKey(),
       runId: run?.id,
       sessionId: run?.sessionId || state.sessionId,
       cwd: state.projectCwd,
@@ -2773,6 +2806,7 @@ liveMessagesUI = createLiveMessages({
       online: state.online,
     };
   },
+  onAccepted: ({ key, text }) => acceptDraft(key, text),
   onSent: () => {
     saveDraft();
     resizeComposer();

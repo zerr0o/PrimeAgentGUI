@@ -648,6 +648,26 @@ kbd {
 .project-activity-dot {
   margin-inline: 2px;
 }
+.question-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--amber) 14%, transparent);
+  color: var(--amber);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+.project-session-question {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--amber);
+}
 .project-session-unread {
   display: inline-flex;
   align-items: center;
@@ -918,16 +938,12 @@ kbd {
   min-height: 84px;
   padding: 18px;
   text-align: left;
-  border: 1px solid var(--line);
+  border: 0;
   border-radius: 12px;
   background: var(--surface);
 }
 .project-session-card:hover {
   background: var(--surface-hover);
-  border-color: var(--faint);
-}
-.project-session-card.is-running {
-  border-color: color-mix(in srgb, var(--green) 40%, var(--line));
 }
 .project-session-icon {
   display: grid;

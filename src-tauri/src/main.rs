@@ -370,6 +370,10 @@ async fn desktop_server_restart(
 }
 
 fn main() {
+    // The updater enables reqwest's rustls-no-provider feature process-wide,
+    // but initializes ring only when checking for updates. The notification
+    // client starts earlier (even for HTTP); initialize the same provider now.
+    let _ = rustls::crypto::ring::default_provider().install_default();
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, args, _| {
             if args.iter().any(|arg| arg == "--settings") {

@@ -4,6 +4,12 @@
 
 Les changements par version. Retrouvez les installateurs et les archives du code source dans les [releases GitHub](https://github.com/zerr0o/prime-agent-studio/releases).
 
+## 3.2.2
+
+- **Notifications Windows rétablies** : correction d’un plantage à l’initialisation qui empêchait le suivi des questions et des fins de tour de démarrer. Les préférences de notification et le silence lorsque le Studio a le focus sont conservés.
+- **Questions en attente visibles** : un **?** ambre remplace le point vert d’activité dans la liste des conversations et sur leur projet, y compris lorsqu’il est replié. La vue du projet indique également **Question en attente**.
+- **Brouillons après envoi** : le texte accepté est effacé même si vous changez de conversation avant la fin de l’envoi, y compris pour les messages transmis à un agent déjà actif. Un nouveau brouillon saisi entre-temps reste conservé ; un envoi échoué ne l’efface pas.
+
 ## 3.2.1
 
 - **Questions autorisées par défaut** : choisissez la valeur initiale dans **Préférences → Modèles et agents**. Le défaut est partagé par les appareils connectés au PC, tandis que chaque conversation conserve son choix enregistré.
