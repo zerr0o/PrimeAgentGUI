@@ -1,6 +1,8 @@
 import { t, bindText, onLanguageChange } from './i18n.js';
+import { marked } from '/vendor/marked.js';
+import DOMPurify from '/vendor/purify.js';
 
-export function createDesktopUpdates({ getContext }) {
+export function createDesktopUpdates({ api, getContext }) {
   const $ = (id) => document.getElementById('studio-update-' + id);
   const core = window.__PRIME_STUDIO_DESKTOP__ === true && window.__TAURI__?.core;
   let busy = false,
@@ -34,11 +36,164 @@ export function createDesktopUpdates({ getContext }) {
     $('restart').disabled = busy || !snapshot?.managed;
     $('native').setAttribute('aria-busy', String(busy));
   }
+  // Release notes are GitHub markdown. Render with the shared marked + DOMPurify
+  // stack (same family as the transcript renderer), never raw HTML. No file-link
+  // context here: plain links only, hardened like the transcript.
+  function renderNotesInto(body, raw) {
+    body.replaceChildren();
+    const holder = document.createElement('div');
+    holder.className = 'markdown update-notes-md';
+    holder.dataset.i18nIgnore = 'true';
+    let html = '';
+    try {
+      html = marked.parse(String(raw || ''));
+    } catch {
+      html = '';
+    }
+    holder.innerHTML = DOMPurify.sanitize(html, {
+      USE_PROFILES: { html: true },
+      FORBID_TAGS: [
+        'style',
+        'img',
+        'picture',
+        'source',
+        'form',
+        'input',
+        'button',
+        'textarea',
+        'select',
+        'iframe',
+        'video',
+        'audio',
+        'object',
+        'embed',
+        'svg',
+        'math',
+      ],
+      FORBID_ATTR: ['style', 'id', 'name', 'target'],
+      ALLOW_DATA_ATTR: false,
+    });
+    holder.querySelectorAll('a').forEach((anchor) => {
+      const href = anchor.getAttribute('href') || '';
+      if (!/^(https?:|mailto:|#|\/)/i.test(href)) anchor.removeAttribute('href');
+      else if (/^https?:/i.test(href)) {
+        anchor.target = '_blank';
+        anchor.rel = 'noopener noreferrer';
+      }
+    });
+    body.append(holder);
+  }
+  let remoteTimer = 0;
+  const clearRemoteTimer = () => {
+    if (remoteTimer) clearTimeout(remoteTimer);
+    remoteTimer = 0;
+  };
+  function remoteStage(request) {
+    if (!request) return null;
+    const map = {
+      pending: 'updates.queued',
+      checking: 'updates.stage_checking',
+      downloading: 'updates.stage_downloading',
+      verifying: 'updates.stage_verifying',
+      installing: 'updates.stage_installing',
+      installed: 'updates.stage_installed',
+      installed_pending_restart: 'updates.stage_pending_restart',
+      refused: 'updates.stage_refused',
+      failed: 'updates.stage_failed',
+      expired: 'updates.stage_expired',
+    };
+    return map[request.status] || null;
+  }
+  async function refreshRemote() {
+    const context = getContext();
+    clearRemoteTimer();
+    $('remote-request').hidden = true;
+    $('remote-notes').hidden = true;
+    bindText($('remote-hint'), () => '');
+    try {
+      const meta = await api('/api/updates/metadata');
+      $('remote-installed').textContent = meta.installed || '—';
+      $('remote-published').textContent = meta.published ? meta.published.version : t('updates.meta_unavailable');
+      const request = meta.request;
+      const stage = remoteStage(request);
+      if (stage && ['updates.stage_refused', 'updates.stage_failed'].includes(stage))
+        bindText($('remote-status'), () => t(stage, { detail: request.detail || request.status }));
+      else if (stage) bindText($('remote-status'), () => t(stage));
+      else if (!meta.published) bindText($('remote-status'), () => t('updates.meta_unavailable'));
+      else if (meta.published.version === meta.installed)
+        bindText($('remote-status'), () => t('updates.current'));
+      else bindText($('remote-status'), () => t('updates.available', { version: meta.published.version }));
+      if (meta.published?.notes) {
+        renderNotesInto($('remote-notes-body'), meta.published.notes);
+        $('remote-notes').hidden = false;
+      }
+      const live =
+        request &&
+        ['pending', 'checking', 'downloading', 'verifying', 'installing'].includes(request.status);
+      const canRequest =
+        !context.readOnly &&
+        !live &&
+        meta.published &&
+        meta.published.version !== meta.installed &&
+        meta.desktop?.alive;
+      $('remote-request').hidden = !canRequest;
+      $('remote-request').disabled = false;
+      if (context.readOnly) bindText($('remote-hint'), () => t('updates.remote_read_only'));
+      else if (!meta.desktop?.alive) bindText($('remote-hint'), () => t('updates.desktop_offline'));
+      if (live) remoteTimer = setTimeout(() => void refreshRemote().catch(() => {}), 5000);
+    } catch (error) {
+      bindText($('remote-status'), () => (error?.message ? String(error.message) : t('updates.failed')));
+    }
+  }
+  async function requestRemote() {
+    const context = getContext();
+    if (context.readOnly) return;
+    const button = $('remote-request');
+    button.disabled = true;
+    try {
+      const meta = await api('/api/updates/metadata');
+      if (!meta.published || meta.published.version === meta.installed || !meta.desktop?.alive) {
+        await refreshRemote();
+        return;
+      }
+      const dialog = $('confirm');
+      bindText($('confirm-title'), () => t('updates.request_confirm_title'));
+      bindText($('confirm-note'), () => t('updates.request_confirm_note', { version: meta.published.version }));
+      bindText($('proceed'), () => t('updates.request_confirm'));
+      const accepted = await new Promise((resolve) => {
+        dialog.returnValue = '';
+        $('cancel').onclick = () => dialog.close('cancel');
+        $('proceed').onclick = () => dialog.close('proceed');
+        dialog.addEventListener('close', () => resolve(dialog.returnValue === 'proceed'), { once: true });
+        dialog.showModal();
+        $('cancel').focus();
+      });
+      if (!accepted) return;
+      await api('/api/updates/request', {
+        method: 'POST',
+        body: { version: meta.published.version, restartServer: true, confirmed: true },
+      });
+      await refreshRemote();
+    } catch (error) {
+      // Server messages arrive pre-translated; show them verbatim as plain text.
+      const alert = $('error');
+      alert.hidden = false;
+      alert.textContent = error?.message ? String(error.message) : t('updates.failed');
+    } finally {
+      button.disabled = false;
+    }
+  }
   async function refresh() {
-    const native = Boolean(core) && !getContext().remote;
-    $('browser').hidden = native;
+    const remote = getContext().remote === true;
+    const native = Boolean(core) && !remote;
+    clearRemoteTimer();
+    $('browser').hidden = native || remote;
+    $('remote').hidden = !remote;
     $('native').hidden = !native;
-    if (!native) return;
+    if (!native) {
+      if (getContext().remote) await refreshRemote();
+      return;
+    }
     try {
       snapshot = await core.invoke('desktop_update_status');
       $('app-version').textContent = snapshot.appVersion;
@@ -93,7 +248,7 @@ export function createDesktopUpdates({ getContext }) {
       version = update.available ? update.version : undefined;
       status(version ? 'updates.available' : 'updates.current', { version });
       $('install').hidden = $('options').hidden = !version;
-      $('notes-body').textContent = update.notes || '';
+      renderNotesInto($('notes-body'), update.notes || '');
       $('notes').hidden = !version || !update.notes;
       await refresh();
     } catch (error) {
@@ -164,9 +319,13 @@ export function createDesktopUpdates({ getContext }) {
       controls();
     }
   };
+  $('remote-request').onclick = () => {
+    void requestRemote();
+  };
   status('updates.idle');
   onLanguageChange(() => {
     if (!$('native').hidden) void refresh().catch(() => {});
+    else if (!$('remote').hidden) void refreshRemote().catch(() => {});
   });
   return { refresh: () => refresh().catch(() => {}) };
 }

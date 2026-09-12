@@ -34,6 +34,91 @@ export const messages = {
     fr: 'Ouvrez cette page dans l’application Windows à jour pour régler ses notifications.',
     en: 'Open this page in the updated Windows application to manage its notifications.',
   },
+  'push.title': { fr: 'Notifications mobiles', en: 'Mobile notifications' },
+  'push.scope': { fr: 'PWA · Cet appareil', en: 'PWA · This device' },
+  'push.enable': { fr: 'Alertes sur cet appareil', en: 'Alerts on this device' },
+  'push.enableNote': {
+    fr: 'Questions et fins de tour, même si la PWA est fermée.',
+    en: 'Questions and turn ends, even when the PWA is closed.',
+  },
+  'push.questions': { fr: 'Questions', en: 'Questions' },
+  'push.questionsNote': {
+    fr: 'Quand une question attend votre réponse.',
+    en: 'When a question is waiting for your answer.',
+  },
+  'push.turnComplete': { fr: 'Fins de tour', en: 'Turn ends' },
+  'push.turnCompleteNote': {
+    fr: 'Quand le tour se termine, en succès ou en erreur.',
+    en: 'When the turn ends, on success or error.',
+  },
+  'push.consentNote': {
+    fr: 'L’inscription persiste jusqu’à désactivation. La déconnexion ne la supprime pas.',
+    en: 'Subscription persists until disabled. Sign-out does not remove it.',
+  },
+  'push.requirementsNote': {
+    fr: 'PWA installée en HTTPS, notifications autorisées, PC allumé et Tailscale connecté.',
+    en: 'Installed HTTPS PWA, notifications allowed, PC on and Tailscale connected.',
+  },
+  'push.unsupported': {
+    fr: 'Push non pris en charge ici : utilisez la PWA installée en HTTPS.',
+    en: 'Push not supported here: use the installed HTTPS PWA.',
+  },
+  'push.blocked': {
+    fr: 'Notifications bloquées dans le navigateur. Autorisez-les pour cet appareil, puis réessayez.',
+    en: 'Notifications are blocked in the browser. Allow them for this device, then try again.',
+  },
+  'push.failed': {
+    fr: 'Impossible d’activer les alertes. Vérifiez la connexion au PC, puis réessayez.',
+    en: 'Could not enable alerts. Check the connection to the PC, then try again.',
+  },
+  'push.locked': {
+    fr: 'Inscription introuvable sur cet appareil. Désactivez puis réactivez pour créer une inscription neuve.',
+    en: 'Subscription not found on this device. Disable then re-enable to create a fresh one.',
+  },
+  'push.endpoint_not_allowed': {
+    fr: 'Service de notification non reconnu. Utilisez un navigateur à jour (Chrome, Safari, Firefox).',
+    en: 'Unrecognized push service. Use an up-to-date browser (Chrome, Safari, Firefox).',
+  },
+  'push.invalid_endpoint': {
+    fr: 'Inscription invalide. Désactivez puis réactivez les alertes.',
+    en: 'Invalid subscription. Disable then re-enable alerts.',
+  },
+  'push.invalid_p256dh': {
+    fr: 'Clé d’inscription invalide. Désactivez puis réactivez les alertes.',
+    en: 'Invalid subscription key. Disable then re-enable alerts.',
+  },
+  'push.invalid_auth': {
+    fr: 'Clé d’inscription invalide. Désactivez puis réactivez les alertes.',
+    en: 'Invalid subscription key. Disable then re-enable alerts.',
+  },
+  'push.invalid_session_id': {
+    fr: 'Notification reçue avec un identifiant invalide. Elle a été ignorée.',
+    en: 'Notification received with an invalid identifier. It was ignored.',
+  },
+  'push.invalid_run_id': {
+    fr: 'Notification reçue avec un identifiant invalide. Elle a été ignorée.',
+    en: 'Notification received with an invalid identifier. It was ignored.',
+  },
+  'push.not_found': {
+    fr: 'Inscription introuvable. Désactivez puis réactivez les alertes.',
+    en: 'Subscription not found. Disable then re-enable alerts.',
+  },
+  'push.nothing_enabled': {
+    fr: 'Activez au moins les questions ou les fins de tour.',
+    en: 'Enable at least questions or turn ends.',
+  },
+  'push.too_many_subscriptions': {
+    fr: 'Trop d’appareils inscrits. Désactivez un appareil inutilisé, puis réessayez.',
+    en: 'Too many subscribed devices. Disable an unused device, then try again.',
+  },
+  'push.unauthorized': {
+    fr: 'Inscription non reconnue sur cet appareil. Désactivez puis réactivez pour en créer une neuve.',
+    en: 'Subscription not recognized on this device. Disable then re-enable to create a fresh one.',
+  },
+  'push.unavailable': {
+    fr: 'Service de notification momentanément indisponible. Réessayez dans un instant.',
+    en: 'Push service temporarily unavailable. Try again shortly.',
+  },
   'interactionSettings.saveError': {
     fr: 'Impossible de charger ou d’enregistrer ce réglage. Réessayez en rouvrant cette catégorie.',
     en: 'Could not load or save this setting. Open this category again to retry.',
@@ -336,6 +421,59 @@ export const messages = {
   'updates.failed': {
     fr: 'L’opération n’a pas abouti. Réessayez ou consultez les journaux de l’application.',
     en: 'The operation did not complete. Try again or check the application logs.',
+  },
+  'updates.remote_title': { fr: 'Mise à jour à distance', en: 'Remote update' },
+  'updates.published_version': { fr: 'Version publiée', en: 'Published version' },
+  'updates.installed_version': { fr: 'Version installée', en: 'Installed version' },
+  'updates.meta_unavailable': {
+    fr: 'Version publiée indisponible pour le moment.',
+    en: 'Published version currently unavailable.',
+  },
+  'updates.desktop_offline': {
+    fr: 'L’application de bureau semble hors ligne. Ouvrez-la sur le PC pour appliquer une mise à jour.',
+    en: 'The desktop application looks offline. Open it on the PC to apply an update.',
+  },
+  'updates.remote_read_only': {
+    fr: 'Cet accès distant est en lecture seule : la mise à jour demande un accès complet.',
+    en: 'This remote access is read-only: updating requires full access.',
+  },
+  'updates.request_install': { fr: 'Installer cette version sur le PC', en: 'Install this version on the PC' },
+  'updates.request_confirm_title': {
+    fr: 'Installer la mise à jour sur le PC ?',
+    en: 'Install the update on the PC?',
+  },
+  'updates.request_confirm_note': {
+    fr: 'La version {version} sera téléchargée, vérifiée puis installée sur le PC, qui relancera l’application. Le serveur redémarrera s’il est libre, sinon après votre confirmation sur place.',
+    en: 'Version {version} will be downloaded, verified and installed on the PC, which will relaunch the application. The server will restart if idle, otherwise after your on-site confirmation.',
+  },
+  'updates.request_confirm': { fr: 'Confirmer l’installation', en: 'Confirm installation' },
+  'updates.queued': {
+    fr: 'Demande envoyée. Suivi en cours…',
+    en: 'Request sent. Tracking progress…',
+  },
+  'updates.stage_checking': { fr: 'Vérification de la version…', en: 'Checking the version…' },
+  'updates.stage_downloading': { fr: 'Téléchargement sur le PC…', en: 'Downloading on the PC…' },
+  'updates.stage_verifying': { fr: 'Vérification de la signature…', en: 'Verifying the signature…' },
+  'updates.stage_installing': {
+    fr: 'Installation et relance sur le PC…',
+    en: 'Installing and relaunching on the PC…',
+  },
+  'updates.stage_installed': { fr: 'Version installée sur le PC.', en: 'Version installed on the PC.' },
+  'updates.stage_pending_restart': {
+    fr: 'Installée. Le serveur redémarrera après confirmation sur place.',
+    en: 'Installed. The server will restart after on-site confirmation.',
+  },
+  'updates.stage_refused': {
+    fr: 'Demande refusée : {detail}',
+    en: 'Request refused: {detail}',
+  },
+  'updates.stage_failed': {
+    fr: 'Échec de la mise à jour : {detail}',
+    en: 'Update failed: {detail}',
+  },
+  'updates.stage_expired': {
+    fr: 'Demande expirée sans réponse du PC. Renvoyez-la si besoin.',
+    en: 'Request expired with no response from the PC. Send it again if needed.',
   },
   'agents.message_title': { fr: 'Message d’agent', en: 'Agent message' },
   'agents.message_child': { fr: 'Sous-agent', en: 'Subagent' },
@@ -1189,6 +1327,14 @@ export const messages = {
   'ui.session_context_unavailable': {
     fr: 'Contexte indisponible pour le moment.',
     en: 'Context unavailable for now.',
+  },
+  'ui.session_context_idle': {
+    fr: 'Disponible pendant une session active.',
+    en: 'Available during an active session.',
+  },
+  'ui.session_context_pending': {
+    fr: 'Mesure momentanément indisponible.',
+    en: 'Measurement temporarily unavailable.',
   },
   'ui.parametres': {
     fr: 'PARAMÈTRES',
@@ -3763,6 +3909,38 @@ export const messages = {
   'server.code_incorrect_reessayez': {
     fr: 'Code incorrect. Réessayez.',
     en: 'Incorrect code. Please try again.',
+  },
+  'server.mise_a_jour_indisponible_verifiez_votre_connexion': {
+    fr: 'Version publiée indisponible. Vérifiez la connexion du Studio puis réessayez.',
+    en: 'Published version unavailable. Check the Studio connection and try again.',
+  },
+  'server.demande_de_mise_a_jour_invalide': {
+    fr: 'Demande de mise à jour invalide.',
+    en: 'Invalid update request.',
+  },
+  'server.trop_de_demandes_de_mise_a_jour_patientez': {
+    fr: 'Trop de demandes de mise à jour. Patientez avant de réessayer.',
+    en: 'Too many update requests. Wait before trying again.',
+  },
+  'server.application_deja_a_jour': {
+    fr: 'L’application installée est déjà à jour.',
+    en: 'The installed application is already up to date.',
+  },
+  'server.version_obsolete_reactualisez': {
+    fr: 'Cette version n’est plus la version publiée. Réactualisez avant de réessayer.',
+    en: 'This is no longer the published version. Refresh before trying again.',
+  },
+  'server.application_de_bureau_hors_ligne': {
+    fr: 'L’application de bureau est hors ligne. Ouvrez-la sur ce PC puis réessayez.',
+    en: 'The desktop application is offline. Open it on this PC and try again.',
+  },
+  'server.agents_en_cours_reessayez_plus_tard': {
+    fr: 'Des agents travaillent. Réessayez quand aucune exécution ne sera en cours.',
+    en: 'Agents are working. Try again when no run is active.',
+  },
+  'server.demande_deja_en_cours': {
+    fr: 'Une demande de mise à jour est déjà en cours.',
+    en: 'An update request is already in progress.',
   },
   'server.saisissez_votre_code_d_acces_sur_la_page_d_accueil': {
     fr: 'Saisissez votre code d’accès sur la page d’accueil.',

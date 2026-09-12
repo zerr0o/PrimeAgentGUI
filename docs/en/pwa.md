@@ -63,4 +63,16 @@ Disabling the **Tailscale HTTPS** switch immediately closes the local gateway wi
 
 For troubleshooting, check `.local/logs/server.log` and `tailscale serve status`. The `pwa:enable` command is reusable; it refuses to replace another service or a public Funnel configuration on the same address.
 
+## Mobile notifications (closed PWA)
+
+**Preferences → Notifications → Mobile notifications** enables **Questions** and **Turn ends** alerts on this device. Subscription is per device and off by default.
+
+How it works: the PWA subscribes via Web Push VAPID, the server sends a generic encrypted notification (no project, no prompt, no question content), the service worker always displays it and a click reopens the relevant session. If the PWA is in the foreground, sending is skipped on a best-effort basis via a short presence lease; a notification already received stays displayed (`userVisibleOnly` browser constraint).
+
+Requirements: PWA installed from the Tailscale HTTPS address, notifications allowed, PC on with active server, Tailscale connected on both sides. On iPhone/iPad: iOS 16.4+, Safari, Share → Add to Home Screen, then open from the icon and allow. Read-only devices may subscribe without gaining answer rights.
+
+Privacy and security: generic text only, browser-vendor relay (Google/Apple/Mozilla) required, only recognized push hosts accepted (no redirects, no local/private/custom hosts), bounded subscription count, per-device ownership token, no enumeration or endpoint/key logging. Subscription persists after sign-out until explicitly disabled; expired subscriptions (404/410) are purged.
+
+If the device lost its token (cleared storage): the server refuses proofless re-registration and never transfers the old registration. To recover, disable then re-enable alerts: this revokes the browser registration (the old endpoint dies with it) and creates a fresh one. Never bypass this proof server-side.
+
 [PWA installation requirements — MDN](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Making_PWAs_installable) · [Tailscale Serve](https://tailscale.com/docs/reference/tailscale-cli/serve)

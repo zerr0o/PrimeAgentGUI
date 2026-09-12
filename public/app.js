@@ -30,6 +30,7 @@ import { createKnowledgeBrowser } from './knowledge.js';
 import { createRoadmap } from './roadmap.js';
 import { bindInlineImages } from './inline-images.js';
 import { createQuestions } from './questions.js';
+import { createPushSettings } from './push.js';
 let questionsUI;
 let imageComposer;
 let projectSorting;
@@ -578,10 +579,12 @@ function banner(message, error = false) {
   $('global-banner').classList.toggle('error', error);
 }
 async function api(path, { method = 'GET', body, signal } = {}) {
+  const pushWrite = path === '/api/push/subscriptions' || path === '/api/push/focus';
   if (
     state.readOnly &&
     method.toUpperCase() !== 'GET' &&
-    !(method.toUpperCase() === 'POST' && path === '/api/sessions/read')
+    !(method.toUpperCase() === 'POST' && path === '/api/sessions/read') &&
+    !pushWrite
   )
     throw new Error(tr('ui.cette_connexion_permet_de_consulter_les_sessions'));
   const r = await fetch(path, {
@@ -3179,4 +3182,9 @@ createSettings({
   copyText,
   toast,
 });
+const pushSettings = createPushSettings();
+pushSettings.listenMessages((sessionId) => selectSession(sessionId));
+$('settings-tab-notifications')?.addEventListener('click', () => void pushSettings.refresh().catch(() => {}));
+void pushSettings.refresh().catch(() => {});
+void pushSettings.consumeDeepLink((sessionId) => selectSession(sessionId)).catch(() => {});
 void bootstrap();

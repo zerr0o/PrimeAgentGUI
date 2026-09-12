@@ -4,6 +4,13 @@
 
 Les changements par version. Retrouvez les installateurs et les archives du code source dans les [releases GitHub](https://github.com/zerr0o/prime-agent-studio/releases).
 
+## 3.2.4
+
+- **Quota et contexte aussi à distance (authentifié)** : le quota Codex et le contexte de session restent consultables depuis l’accès mobile authentifié, via des endpoints limités et assainis. Actualisation manuelle uniquement, compte Codex lié (OAuth) requis ; le contexte affiche un état honnête quand la mesure est indisponible.
+- **Notifications mobiles PWA (optionnel, par appareil)** : **Préférences → Notifications → Notifications mobiles** active les alertes **Questions** et **Fins de tour** sur cet appareil, même PWA fermée. Inscription Web Push VAPID par appareil, texte générique uniquement, désactivée par défaut. Prérequis : PWA installée depuis l’adresse HTTPS Tailscale, notifications autorisées, PC allumé et Tailscale connecté des deux côtés. Sur iPhone/iPad : iOS 16.4+, Safari, Partager → Sur l’écran d’accueil, puis ouvrir depuis l’icône. [Guide PWA](pwa.md).
+- **Mise à jour à distance via le PC** : depuis l’accès distant, **Préférences → Mise à jour** affiche la version publiée et permet de demander l’installation sur le PC. Le PC télécharge, vérifie la signature puis installe via sa mise à jour native signée ; la demande est refusée si des agents sont actifs ou si l’accès est en lecture seule. Notes de version affichées en markdown assaini.
+- **Limites validées** : push sur appareil physique et mise à jour distante réelle de bout en bout non validés.
+
 ## 3.2.3
 
 - **Activité des conversations dans la Roadmap** : chaque élément affiche **En cours · …**, avec un compteur **+N** pour déplier les autres conversations. L’activité apparaît aussi sous chaque tâche et mène à sa conversation.

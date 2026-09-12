@@ -4,6 +4,13 @@
 
 Changes by version. See [GitHub releases](https://github.com/zerr0o/prime-agent-studio/releases) for installers and source archives.
 
+## 3.2.4
+
+- **Quota and context over authenticated remote access**: Codex quota and session context stay available from authenticated mobile access through limited, sanitized endpoints. Manual refresh only, linked Codex account (OAuth) required; context shows an honest state when measurement is unavailable.
+- **Optional per-device mobile PWA push**: **Preferences → Notifications → Mobile notifications** enables **Questions** and **Turn ends** alerts on this device, even with the PWA closed. Per-device VAPID Web Push subscription, generic text only, off by default. Requirements: PWA installed from the Tailscale HTTPS address, notifications allowed, PC on with active server, Tailscale connected on both sides. On iPhone/iPad: iOS 16.4+, Safari, Share → Add to Home Screen, then open from the icon. [PWA guide](pwa.md).
+- **Remote update through the PC**: from remote access, **Preferences → Updates** shows the published version and can request installation on the PC. The PC downloads, verifies the signature, then installs through its signed native updater; the request is refused while agents are active or when access is read-only. Release notes render as sanitized markdown.
+- **Validation limits**: no physical-device push or real remote update end-to-end validated.
+
 ## 3.2.3
 
 - **Conversation activity in the Roadmap**: each item shows **In progress · …**, with a **+N** control to expand other conversations. Activity also appears under each task and opens its conversation.

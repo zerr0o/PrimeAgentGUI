@@ -11,6 +11,7 @@ import { createStore, HttpError, validateDirectory, cwdKey, validId } from './li
 import { createAgentRuntime } from './lib/agent.mjs';
 import { createRemoteNetwork } from './lib/remote-network.mjs';
 import { createRemoteAccess } from './lib/remote-access.mjs';
+import { createRemoteUpdates } from './lib/remote-updates.mjs';
 import { tailscaleSetupUrl } from './lib/tailscale-https.mjs';
 import { createModelConfigStore } from './lib/model-config.mjs';
 import { createModelDefaultsStore } from './lib/model-defaults.mjs';
@@ -25,6 +26,7 @@ import { createLiveMessages, routeLiveMessages } from './lib/live-messages.mjs';
 import { createLiveSessionClient } from './lib/live-session-client.mjs';
 import { createConversationSettings } from './lib/conversation-settings.mjs';
 import { createDesktopNotifications } from './lib/desktop-notifications.mjs';
+import { createPushService } from './lib/push.mjs';
 import { validateImages, imageBodyLimit } from './lib/images.mjs';
 import { createFileStore, validateFiles, appendFileMessage, splitFileMessage } from './lib/files.mjs';
 import { createProjectFiles } from './lib/project-files.mjs';
@@ -118,6 +120,11 @@ export function createApp(options = {}) {
     });
   const fileStore = createFileStore(join(dataDir, 'attachments'));
   const remoteAccess = createRemoteAccess({ dataDir });
+  const remoteUpdates = createRemoteUpdates({
+    dataDir,
+    installedVersion: VERSION,
+    getActiveRuns: () => activeRuns().length,
+  });
   const remoteNetwork = createRemoteNetwork({
     access: remoteAccess,
     upstreamPort: () => server.address()?.port,
@@ -127,6 +134,7 @@ export function createApp(options = {}) {
   const runs = new Map(),
     sessionLocks = new Set();
   const desktopNotifications = createDesktopNotifications();
+  const pushService = options.pushService || createPushService({ dataDir });
   const studioPreferences = () => store.getStudioPreferences?.() || { allowQuestionsByDefault: true };
   const roadmap =
     options.roadmap || createRoadmapService({ resolveProject: (cwd) => store.knowledgeProject(cwd) });
@@ -302,8 +310,12 @@ export function createApp(options = {}) {
       const index = run.interactions.findIndex((item) => item.id === event.request.id);
       if (index < 0) run.interactions.push(event.request);
       else run.interactions[index] = event.request;
-      if (index < 0 && event.request.status === 'pending')
+      if (index < 0 && event.request.status === 'pending') {
         desktopNotifications.publish('question', run, event.request.id);
+        void pushService
+          .notify('question', { sessionId: run.sessionId, runId: run.id })
+          .catch(() => {});
+      }
     }
     if (event.kind === 'session' && event.sessionId) {
       run.sessionId = event.sessionId;
@@ -323,7 +335,12 @@ export function createApp(options = {}) {
       if (run.status === 'failed' && isModelAvailabilityError(run.error))
         void models({ refresh: true }).catch(() => {});
       run.endedAt = new Date().toISOString();
-      if (['completed', 'failed'].includes(run.status)) desktopNotifications.publish('turnComplete', run);
+      if (['completed', 'failed'].includes(run.status)) {
+        desktopNotifications.publish('turnComplete', run);
+        void pushService
+          .notify('turnComplete', { sessionId: run.sessionId, runId: run.id })
+          .catch(() => {});
+      }
       if (run.sessionId) sessionLocks.delete(run.sessionId);
     }
     const item = { ...event, seq: ++run.seq };
@@ -565,6 +582,10 @@ export function createApp(options = {}) {
       if (path === '/api/remote-access' && method === 'GET') return json(res, 200, await remoteAccess.get());
       if (path === '/api/remote-access/code' && method === 'POST')
         return json(res, 200, await remoteAccess.changeCode(await readBody(req)));
+      if (method === 'GET' && path === '/api/updates/metadata')
+        return json(res, 200, await remoteUpdates.metadata());
+      if (method === 'POST' && path === '/api/updates/request')
+        return json(res, 200, await remoteUpdates.requestUpdate(await readBody(req)));
       if (method === 'GET' && path === '/api/models') return json(res, 200, await models());
       if (method === 'POST' && path === '/api/models/refresh') {
         await readBody(req);
@@ -652,6 +673,10 @@ export function createApp(options = {}) {
         return;
       }
       if (method === 'GET' && path === '/api/providers') return json(res, 200, await providers.list());
+      // Minimal safe linkage metadata for mobile/remote quota.
+      // No credentials, no full provider list. Authenticated gateway may proxy this read-only GET.
+      if (method === 'GET' && path === '/api/providers/codex-link')
+        return json(res, 200, await providers.codexLink());
       if (method === 'GET' && path === '/api/providers/codex-usage')
         return json(
           res,
@@ -778,6 +803,32 @@ export function createApp(options = {}) {
           200,
           desktopNotifications.snapshot(Number(url.searchParams.get('after')) || 0, runs),
         );
+      if (method === 'GET' && path === '/api/push/vapid-key')
+        return json(res, 200, { publicKey: await pushService.publicKey() });
+      if (method === 'GET' && path === '/api/push/subscriptions')
+        return json(res, 200, await pushService.preferences(url.searchParams.get('endpoint') || ''));
+      if (method === 'POST' && path === '/api/push/subscriptions') {
+        const body = await readBody(req);
+        const sub = body.subscription || {};
+        return json(
+          res,
+          201,
+          await pushService.subscribe({
+            endpoint: sub.endpoint,
+            p256dh: sub.keys?.p256dh,
+            auth: sub.keys?.auth,
+            questions: body.questions,
+            turnComplete: body.turnComplete,
+            token: body.token,
+          }),
+        );
+      }
+      if (method === 'PATCH' && path === '/api/push/subscriptions')
+        return json(res, 200, await pushService.update(await readBody(req)));
+      if (method === 'DELETE' && path === '/api/push/subscriptions')
+        return json(res, 200, await pushService.unsubscribe(await readBody(req)));
+      if (method === 'POST' && path === '/api/push/focus')
+        return json(res, 200, await pushService.focus(await readBody(req)));
       if (method === 'GET' && path === '/api/roadmap')
         return json(res, 200, await roadmapRoutes.read(url.searchParams.get('cwd')));
       if (method === 'GET' && path === '/api/roadmap/session')
@@ -993,6 +1044,7 @@ export function createApp(options = {}) {
     roadmap,
     roadmapBridge,
     runs,
+    pushService,
     close,
   };
 }

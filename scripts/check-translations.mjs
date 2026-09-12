@@ -68,6 +68,10 @@ export async function validateTranslationReferences() {
     )) {
       if (!(match[1] in messages)) errors.push(`${file}: unknown message ${match[1]}`);
     }
+    // Server/client push error keys thrown as Error('push.*') must stay translated too.
+    for (const match of source.matchAll(/\bError\(\s*["'](push\.[\w.-]+)["']/g)) {
+      if (!(match[1] in messages)) errors.push(`${file}: unknown message ${match[1]}`);
+    }
   }
   return errors;
 }

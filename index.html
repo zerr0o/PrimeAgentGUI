@@ -1242,6 +1242,45 @@
                 Les réglages de notification et le mode Ne pas déranger de Windows s’appliquent également.
               </p>
             </div>
+            <div id="push-options" hidden>
+              <div class="settings-section-heading">
+                <h3 data-i18n="push.title">Notifications mobiles</h3>
+                <p class="settings-scope" data-i18n="push.scope">PWA · Cet appareil</p>
+              </div>
+              <div class="settings-row">
+                <div>
+                  <label for="push-enable" data-i18n="push.enable">Alertes sur cet appareil</label>
+                  <p data-i18n="push.enableNote">Questions et fins de tour, même si la PWA est fermée.</p>
+                </div>
+                <input id="push-enable" class="switch" type="checkbox" role="switch" />
+              </div>
+              <div class="settings-row">
+                <div>
+                  <label for="push-questions" data-i18n="push.questions">Questions</label>
+                  <p data-i18n="push.questionsNote">Quand une question attend votre réponse.</p>
+                </div>
+                <input id="push-questions" class="switch" type="checkbox" role="switch" checked />
+              </div>
+              <div class="settings-row">
+                <div>
+                  <label for="push-turn-complete" data-i18n="push.turnComplete">Fins de tour</label>
+                  <p data-i18n="push.turnCompleteNote">Quand le tour se termine, en succès ou en erreur.</p>
+                </div>
+                <input id="push-turn-complete" class="switch" type="checkbox" role="switch" checked />
+              </div>
+              <p class="settings-footnote" data-i18n="push.consentNote">
+                L’inscription persiste jusqu’à désactivation. La déconnexion ne la supprime pas.
+              </p>
+              <p class="settings-footnote" data-i18n="push.requirementsNote">
+                PWA installée en HTTPS, notifications autorisées, PC allumé et Tailscale connecté.
+              </p>
+              <p id="push-error" class="form-error" role="alert" hidden></p>
+            </div>
+            <p id="push-unsupported" class="settings-footnote" hidden>
+              <span data-i18n="push.unsupported"
+                >Push non pris en charge ici : utilisez la PWA installée en HTTPS.</span
+              >
+            </p>
             <p id="notifications-error" class="form-error" role="alert" hidden></p>
           </section>
           <section
@@ -1365,6 +1404,29 @@
               <p class="settings-scope" data-i18n="updates.scope"></p>
             </div>
             <p id="studio-update-browser" class="settings-footnote" data-i18n="updates.browser" hidden></p>
+            <div id="studio-update-remote" hidden>
+              <h4 class="update-remote-title" data-i18n="updates.remote_title"></h4>
+              <dl class="update-versions">
+                <dt data-i18n="updates.installed_version"></dt>
+                <dd id="studio-update-remote-installed">—</dd>
+                <dt data-i18n="updates.published_version"></dt>
+                <dd id="studio-update-remote-published">—</dd>
+              </dl>
+              <p id="studio-update-remote-status" class="update-status" role="status" aria-live="polite"></p>
+              <details id="studio-update-remote-notes" class="update-notes" hidden>
+                <summary data-i18n="updates.notes"></summary>
+                <div id="studio-update-remote-notes-body" class="markdown update-notes-body"></div>
+              </details>
+              <div class="update-actions">
+                <button
+                  id="studio-update-remote-request"
+                  class="primary-button"
+                  data-i18n="updates.request_install"
+                  hidden
+                ></button>
+              </div>
+              <p id="studio-update-remote-hint" class="settings-footnote"></p>
+            </div>
             <div id="studio-update-native" hidden>
               <dl class="update-versions">
                 <dt data-i18n="updates.app_version"></dt>
@@ -1376,7 +1438,7 @@
               <progress id="studio-update-progress" max="100" hidden></progress>
               <details id="studio-update-notes" class="update-notes" hidden>
                 <summary data-i18n="updates.notes"></summary>
-                <p id="studio-update-notes-body"></p>
+                <div id="studio-update-notes-body" class="markdown update-notes-body"></div>
               </details>
               <div id="studio-update-options" hidden>
                 <label class="update-option"

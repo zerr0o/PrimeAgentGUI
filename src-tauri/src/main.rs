@@ -557,6 +557,7 @@ fn main() {
                 show_settings(app.handle());
             }
             notifications::start(app.handle().clone(), port);
+            updates::start_update_intent_poller(app.handle().clone());
             Ok(())
         })
         .on_window_event(|window, event| {

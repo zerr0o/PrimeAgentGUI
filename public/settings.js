@@ -10,7 +10,7 @@ export function createSettings({
   toast,
   onStudioPreferences = () => {},
 }) {
-  const updates = createDesktopUpdates({ getContext });
+  const updates = createDesktopUpdates({ api, getContext });
   const interactions = createInteractionSettings({ api, getContext, onStudioPreferences });
   const $ = (id) => document.getElementById(id);
   const dialog = $('settings-dialog'),

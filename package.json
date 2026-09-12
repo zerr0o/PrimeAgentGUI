@@ -1,6 +1,6 @@
 {
   "name": "prime-agent-studio",
-  "version": "3.2.3",
+  "version": "3.2.4",
   "private": true,
   "author": "zerr0o",
   "license": "MIT",
@@ -73,7 +73,8 @@
     "dompurify": "3.4.14",
     "marked": "18.0.11",
     "qrcode": "1.5.4",
-    "smol-toml": "1.8.0"
+    "smol-toml": "1.8.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@playwright/test": "1.62.1",

@@ -63,4 +63,16 @@ L’interrupteur **Tailscale HTTPS** ferme immédiatement la passerelle locale l
 
 En cas de problème, consultez `.local/logs/server.log` et `tailscale serve status`. La commande `pwa:enable` est réutilisable ; elle refuse de remplacer un autre service ou une configuration Funnel publique sur la même adresse.
 
+## Notifications mobiles (PWA fermée)
+
+**Préférences → Notifications → Notifications mobiles** permet d’activer les alertes **Questions** et **Fins de tour** sur cet appareil. L’inscription est par appareil et désactivée par défaut.
+
+Fonctionnement : la PWA s’inscrit via Web Push VAPID, le serveur envoie une notification générique chiffrée (sans projet, sans prompt, sans contenu de question), le service worker l’affiche toujours et un clic rouvre la session concernée. Si la PWA est au premier plan, l’envoi est évité au mieux via un bail de présence court ; une notification déjà reçue reste affichée (contrainte navigateur `userVisibleOnly`).
+
+Prérequis : PWA installée depuis l’adresse HTTPS Tailscale, notifications autorisées, PC allumé avec serveur actif, Tailscale connecté des deux côtés. Sur iPhone/iPad : iOS 16.4+, Safari, Partager → Sur l’écran d’accueil, puis ouvrir depuis l’icône et autoriser. Les appareils en lecture seule peuvent s’inscrire sans obtenir le droit de répondre.
+
+Vie privée et sécurité : texte générique uniquement, relais du fournisseur du navigateur (Google/Apple/Mozilla) obligatoire, seuls les hôtes push reconnus sont acceptés (pas de redirection ni d’hôte local/privé/personnalisé), nombre d’inscriptions borné, jeton de propriété par appareil, aucune énumération ni journal d’adresse/clé. L’inscription persiste après déconnexion jusqu’à désactivation explicite ; les inscriptions expirées (404/410) sont purgées.
+
+Si l’appareil a perdu son jeton (stockage effacé) : le serveur refuse la réinscription sans preuve, sans jamais transférer l’ancienne inscription. Pour récupérer, désactivez puis réactivez les alertes : cela révoque l’enregistrement navigateur (l’ancien point de terminaison meurt avec lui) puis crée une inscription neuve. Ne contournez jamais cette preuve côté serveur.
+
 [Prérequis d’installation PWA — MDN](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Making_PWAs_installable) · [Tailscale Serve](https://tailscale.com/docs/reference/tailscale-cli/serve)

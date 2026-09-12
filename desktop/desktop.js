@@ -147,6 +147,86 @@ for (const [id, key] of Object.entries({
 }))
   $(id).textContent = t[key];
 const invoke = window.__TAURI__?.core?.invoke;
+// Launcher has no vendor marked/DOMPurify bundle. Escape first, then allow a
+// small markdown subset (headings, lists, bold, code, allowlisted links).
+// Raw HTML such as <img onerror=...> stays inert text, never an element.
+function escapeHtml(value) {
+  return String(value).replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+  );
+}
+function inlineNotes(text) {
+  let out = escapeHtml(text);
+  out = out.replace(/`([^`\n]+?)`/g, '<code>$1</code>');
+  out = out.replace(/\*\*([^*\n]+?)\*\*/g, '<strong>$1</strong>');
+  out = out.replace(
+    /\[([^\[\]\n]+?)\]\(([^\)\s]+?)\)/g,
+    (m, label, href) => {
+      if (!/^(https?:|mailto:|#|\/)/i.test(href)) return label;
+      const safe = escapeHtml(href);
+      const extra = /^https?:/i.test(href) ? ' target="_blank" rel="noopener noreferrer"' : '';
+      return `<a href="${safe}"${extra}>${label}</a>`;
+    },
+  );
+  return out;
+}
+function renderLauncherNotes(raw) {
+  const body = $('update-notes-body');
+  body.replaceChildren();
+  const lines = String(raw || '').replace(/\r\n/g, '\n').split('\n');
+  let list = null;
+  const closeList = () => {
+    list = null;
+  };
+  let fence = null;
+  for (const line of lines) {
+    if (/^```/.test(line.trim())) {
+      if (fence) {
+        fence = null;
+      } else {
+        closeList();
+        fence = document.createElement('pre');
+        const code = document.createElement('code');
+        fence.append(code);
+        body.append(fence);
+      }
+      continue;
+    }
+    if (fence) {
+      fence.firstChild.append(document.createTextNode(line + '\n'));
+      continue;
+    }
+    const heading = line.match(/^(#{1,3})\s+(.*\S)\s*$/);
+    if (heading) {
+      closeList();
+      const level = heading[1].length;
+      const el = document.createElement(level === 1 ? 'h4' : 'h5');
+      el.innerHTML = inlineNotes(heading[2]);
+      body.append(el);
+      continue;
+    }
+    const item = line.match(/^\s*(?:[-*]|\d+[.)])\s+(.*\S)\s*$/);
+    if (item) {
+      if (!list) {
+        list = document.createElement('ul');
+        body.append(list);
+      }
+      const li = document.createElement('li');
+      li.innerHTML = inlineNotes(item[1]);
+      list.append(li);
+      continue;
+    }
+    if (!line.trim()) {
+      closeList();
+      continue;
+    }
+    closeList();
+    const p = document.createElement('p');
+    p.innerHTML = inlineNotes(line.trim());
+    body.append(p);
+  }
+}
 let updateBusy = false,
   availableVersion;
 function updateStatus(message, error = false) {
@@ -171,7 +251,7 @@ $('update-check').onclick = async () => {
       $('update-install').hidden = false;
       $('update-impact').hidden = false;
       $('update-restart-option').hidden = false;
-      $('update-notes-body').textContent = update.notes || '';
+      renderLauncherNotes(update.notes || '');
       $('update-notes').hidden = !update.notes;
     } else updateStatus(t.updateCurrent);
   } catch {

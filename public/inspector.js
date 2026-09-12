@@ -275,15 +275,19 @@ export function createInspector({
     const now = Date.now();
     if (now - providerCache.at < 30000 && providerCache.entry !== undefined) return providerCache;
     try {
-      const list = await api('/api/providers');
-      const entry = list?.providers?.find((item) => item.id === 'openai-codex') || null;
+      // Minimal safe linkage metadata: works local + mobile/remote via authenticated gateway.
+      // Never fetches the broad /api/providers list from mobile. Manual refresh only, no auto fetch.
+      const link = await api('/api/providers/codex-link');
+      const revision =
+        typeof link?.revision === 'string' && /^[a-f0-9]{64}$/.test(link.revision) ? link.revision : '';
+      const linked = link?.linked === true && revision !== '';
+      const entry =
+        link && typeof link === 'object' && revision
+          ? { credentialType: linked ? 'oauth' : null, stored: linked, revision }
+          : null;
       providerCache = { at: now, entry, remote: false };
       return providerCache;
-    } catch (error) {
-      if (error?.status === 404) {
-        providerCache = { at: now, entry: null, remote: true };
-        return providerCache;
-      }
+    } catch {
       providerCache = { at: now, entry: null, remote: false };
       return providerCache;
     }
@@ -406,11 +410,51 @@ export function createInspector({
   }
   function renderContext() {
     ensureSessionExtras();
+    if (!current.enabled) {
+      contextSection.hidden = true;
+      contextSection.replaceChildren();
+      return;
+    }
     const raw = agentData?.contextUsage ?? agentData?.session?.contextUsage;
     const usage = validContextUsage(raw);
     if (!usage) {
-      contextSection.hidden = true;
+      // Honest unknown UI: keep the section visible instead of disappearing.
+      // Idle/no native data -> idle message; null placeholders -> generic pending
+      // (compaction-specific text only with proven compaction, never inferred here).
+      // Never fabricate a stale snapshot; numeric display stays live-only.
+      contextSection.hidden = false;
       contextSection.replaceChildren();
+      const label = document.createElement('div');
+      label.className = 'context-label';
+      bindText(label, () => tr('ui.session_context_title'));
+      contextSection.append(label);
+      const windowSize =
+        raw && typeof raw === 'object' && typeof raw.contextWindow === 'number' && Number.isFinite(raw.contextWindow) && raw.contextWindow > 0 && raw.contextWindow <= 100_000_000
+          ? Math.round(raw.contextWindow)
+          : undefined;
+      if (windowSize !== undefined) {
+        const windowLine = document.createElement('p');
+        windowLine.className = 'session-context-line';
+        bindText(windowLine, () => {
+          try {
+            const total = new Intl.NumberFormat(getLanguage() === 'en' ? 'en-US' : 'fr-FR').format(windowSize);
+            return `${tr('ui.fenetre_de_contexte')} : ${total}`;
+          } catch {
+            return `${windowSize}`;
+          }
+        });
+        contextSection.append(windowLine);
+      }
+      const hasNullPlaceholder =
+        raw && typeof raw === 'object' && (raw.tokens === null || raw.percent === null);
+      const line = document.createElement('p');
+      line.className = 'session-context-line';
+      bindText(line, () => tr(hasNullPlaceholder ? 'ui.session_context_pending' : 'ui.session_context_idle'));
+      line.setAttribute('role', 'status');
+      const note = document.createElement('p');
+      note.className = 'inspector-note';
+      bindText(note, () => tr('ui.session_context_note'));
+      contextSection.append(line, note);
       return;
     }
     contextSection.hidden = false;
@@ -508,27 +552,10 @@ export function createInspector({
       return;
     }
     // Codex subscription path: require linked OAuth, manual refresh only, no fetch when unlinked.
+    // Works local + mobile/remote via sanitized read-only endpoints behind existing PIN auth.
     const provider = await codexEntry();
     if (token !== quotaGeneration) return;
     if (current.cwd !== renderCwd || mainModelId() !== renderMain) return;
-    if (provider.remote) {
-      const note = document.createElement('p');
-      note.className = 'inspector-note';
-      bindText(note, () => tr('ui.session_quota_remote'));
-      quotaSection.append(note);
-      if (quotaSnapshot && validQuotaResult(quotaSnapshot)) {
-        const line = document.createElement('p');
-        line.className = 'session-quota-line';
-        const currentSnapshot = quotaSnapshot;
-        bindText(line, () => formatQuotaText(currentSnapshot));
-        const bars = document.createElement('div');
-        bars.className = 'quota-bars';
-        renderQuotaBars(bars, currentSnapshot);
-        bars.hidden = !bars.childElementCount;
-        quotaSection.append(line, bars);
-      }
-      return;
-    }
     const entry = provider.entry;
     const linked = entry && entry.credentialType === 'oauth' && entry.stored;
     if (!linked) {
@@ -587,14 +614,7 @@ export function createInspector({
           quotaSnapshot = null;
           quotaState = 'error';
         }
-      } catch (error) {
-        if (error?.status === 404) {
-          quotaSnapshot = null;
-          quotaState = 'error';
-          bindText(line, () => tr('ui.session_quota_remote'));
-          refresh.disabled = false;
-          return;
-        }
+      } catch {
         quotaSnapshot = null;
         quotaState = 'error';
       } finally {

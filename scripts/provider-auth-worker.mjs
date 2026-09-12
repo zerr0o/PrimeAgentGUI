@@ -37,6 +37,7 @@ async function run({ agentHome, operation, body }) {
     const store = await createProviderAuth({ agentHome });
     let result;
     if (operation === 'list') result = store.list();
+    else if (operation === 'codex_link') result = store.codexLink();
     else if (operation === 'codex_usage') result = await store.codexUsage(body);
     else if (operation === 'save' || operation === 'remove') {
       const entry = store.entry(body);
