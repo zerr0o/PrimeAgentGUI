@@ -3575,6 +3575,7 @@ kbd {
   font-size: 11px;
 }
 .subagent-controls .model-picker-button {
+  display: flex;
   width: 100%;
   max-width: none;
   min-height: 43px;
@@ -3595,6 +3596,7 @@ kbd {
   height: 17px;
 }
 .subagent-controls select {
+  display: block;
   width: 100%;
   min-width: 0;
   margin-top: 8px;

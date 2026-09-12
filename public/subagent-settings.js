@@ -44,7 +44,10 @@ export function createSubagentSettings({
               <span class="model-picker-chevron"></span>
             </button>
           </div>
-          <label class="subagent-thinking-field" for="${prefix}-thinking"><span data-i18n="ui.reflexion_3">Réflexion</span><select id="${prefix}-thinking"></select></label>
+          <div class="subagent-thinking-field">
+            <label for="${prefix}-thinking" data-i18n="ui.reflexion_3">Réflexion</label>
+            <select id="${prefix}-thinking"></select>
+          </div>
         </div>
       </fieldset>
       <p class="subagent-status" role="status"></p>
