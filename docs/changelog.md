@@ -4,6 +4,12 @@
 
 Les changements par version. Retrouvez les installateurs et les archives du code source dans les [releases GitHub](https://github.com/zerr0o/prime-agent-studio/releases).
 
+## 3.2.5
+
+- **Questions interactives** : les demandes natives restent transmises pendant une resynchronisation ou une saturation du flux du moteur, au lieu d’être écartées avec les événements d’affichage.
+- **Notifications sonores** : son système activé sur Windows ; notifications PWA non muettes, selon les réglages du téléphone. Les règles de focus et les préférences Windows sont conservées.
+- **Application du correctif** : après installation, redémarrez le serveur du Studio une fois les agents terminés.
+
 ## 3.2.4
 
 - **Quota et contexte aussi à distance (authentifié)** : le quota Codex et le contexte de session restent consultables depuis l’accès mobile authentifié, via des endpoints limités et assainis. Actualisation manuelle uniquement, compte Codex lié (OAuth) requis ; le contexte affiche un état honnête quand la mesure est indisponible.

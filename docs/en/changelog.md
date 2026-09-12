@@ -4,6 +4,12 @@
 
 Changes by version. See [GitHub releases](https://github.com/zerr0o/prime-agent-studio/releases) for installers and source archives.
 
+## 3.2.5
+
+- **Interactive questions**: native requests remain delivered during engine resynchronization or stream backpressure instead of being discarded with display events.
+- **Notification sound**: system sound enabled on Windows; PWA notifications are not silent, subject to phone settings. Existing Windows focus rules and preferences are preserved.
+- **Applying the fix**: after installing, restart the Studio server once your agents have finished.
+
 ## 3.2.4
 
 - **Quota and context over authenticated remote access**: Codex quota and session context stay available from authenticated mobile access through limited, sanitized endpoints. Manual refresh only, linked Codex account (OAuth) required; context shows an honest state when measurement is unavailable.

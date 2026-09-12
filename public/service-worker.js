@@ -94,6 +94,7 @@ self.addEventListener('push', (event) => {
       body: text.body,
       tag: kind === 'question' ? `prime-question-${target.sessionId || 'studio'}` : `prime-turn-${target.runId || target.sessionId || 'studio'}`,
       renotify: kind === 'question',
+      silent: false,
       data: target,
     }),
   );

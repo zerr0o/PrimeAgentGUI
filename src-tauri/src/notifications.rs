@@ -166,6 +166,7 @@ pub fn start(app: tauri::AppHandle, port: u16) {
                             .builder()
                             .title(title)
                             .body(event.project.chars().take(100).collect::<String>())
+                            .sound("Default")
                             .show()
                         {
                             let _ = std::fs::write(

@@ -1,5 +1,6 @@
 import { relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { transformNativeUiTransport } from './native-ui-transport.mjs';
 let packageRoot;
 export function initialize(data) {
   packageRoot = resolve(data.packageRoot);
@@ -39,12 +40,19 @@ export async function load(url, context, nextLoad) {
   const result = await nextLoad(url, context);
   if (!packageRoot || !url.startsWith('file:') || result.format !== 'module') return result;
   const path = relative(packageRoot, fileURLToPath(url)).replaceAll('\\', '/');
-  if (
-    !/^dist\/bundle\/openai-codex-responses-[^/]+\.js$/.test(path) &&
-    path !== 'node_modules/@earendil-works/pi-ai/dist/providers/openai-codex-responses.js'
-  )
-    return result;
+  const codex =
+    /^dist\/bundle\/openai-codex-responses-[^/]+\.js$/.test(path) ||
+    path === 'node_modules/@earendil-works/pi-ai/dist/providers/openai-codex-responses.js';
+  const nativeUi =
+    path === 'dist/modes/daemon/daemon-mode.js'
+      ? 'worker'
+      : path === 'dist/modes/daemon/daemon-supervisor.js'
+        ? 'supervisor'
+        : undefined;
+  if (!codex && !nativeUi && !/^dist\/bundle\/[^/]+\.m?js$/.test(path)) return result;
   const source =
     typeof result.source === 'string' ? result.source : Buffer.from(result.source).toString('utf8');
-  return { ...result, source: transformCodexTransport(source) };
+  if (codex) return { ...result, source: transformCodexTransport(source) };
+  const transformed = transformNativeUiTransport(source, { required: nativeUi });
+  return transformed.changed ? { ...result, source: transformed.source } : result;
 }
