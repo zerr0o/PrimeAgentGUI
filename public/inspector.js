@@ -1,4 +1,4 @@
-import { t as tr, bindText, bindAttribute, translateKnown } from './i18n.js';
+import { t as tr, bindText, bindAttribute, translateKnown, getLanguage } from './i18n.js';
 import { filePresentation } from './file-presentation.js';
 import { thinkingLabel } from './reasoning.js';
 import { createSubagentSettings } from './subagent-settings.js';
@@ -215,6 +215,395 @@ export function createInspector({
       ),
     );
   }
+  // Session quota (Codex subscription vs API) + live Prime Agent context.
+  // Quota shows only for OpenAI family models; Codex needs linked OAuth, never API usage.
+  // Context uses live contextUsage (current vs window), never cumulative totals. Hidden when unavailable.
+  let quotaSection = null;
+  let contextSection = null;
+  let quotaSnapshot = null;
+  let quotaState = 'idle';
+  let quotaRevisionCache = '';
+  let providerCache = { at: 0, entry: null, remote: false };
+  let subagentCache = { cwd: '', at: 0, model: '' };
+  let lastQuotaKey = '';
+  let lastQuotaProbeKey = '';
+  let quotaGeneration = 0;
+  function ensureSessionExtras() {
+    if (quotaSection && contextSection) return;
+    const host = $('inspector-session');
+    const bottom = host.querySelector('.context-bottom');
+    quotaSection = document.createElement('section');
+    quotaSection.id = 'inspector-quota';
+    quotaSection.className = 'context-section';
+    quotaSection.hidden = true;
+    contextSection = document.createElement('section');
+    contextSection.id = 'inspector-context';
+    contextSection.className = 'context-section';
+    contextSection.hidden = true;
+    if (bottom) host.insertBefore(contextSection, bottom);
+    if (bottom) host.insertBefore(quotaSection, contextSection);
+    else host.append(quotaSection, contextSection);
+  }
+  function providerOf(modelId) {
+    if (typeof modelId !== 'string' || !modelId) return '';
+    try {
+      const found = getModels().find((item) => item.id === modelId);
+      if (found?.provider) return found.provider;
+    } catch {}
+    const slash = modelId.indexOf('/');
+    if (slash > 0) return modelId.slice(0, slash);
+    return '';
+  }
+  function mainModelId() {
+    return (current.mainModel || current.model || '').trim();
+  }
+  async function effectiveSubagentModel(cwd) {
+    if (!cwd) return '';
+    const now = Date.now();
+    if (subagentCache.cwd === cwd && now - subagentCache.at < 15000) return subagentCache.model;
+    try {
+      const data = await api(`/api/project-subagent-defaults?cwd=${encodeURIComponent(cwd)}`);
+      const model = typeof data?.effective?.model === 'string' ? data.effective.model : '';
+      subagentCache = { cwd, at: now, model };
+      return model;
+    } catch {
+      subagentCache = { cwd, at: now, model: '' };
+      return '';
+    }
+  }
+  async function codexEntry() {
+    const now = Date.now();
+    if (now - providerCache.at < 30000 && providerCache.entry !== undefined) return providerCache;
+    try {
+      const list = await api('/api/providers');
+      const entry = list?.providers?.find((item) => item.id === 'openai-codex') || null;
+      providerCache = { at: now, entry, remote: false };
+      return providerCache;
+    } catch (error) {
+      if (error?.status === 404) {
+        providerCache = { at: now, entry: null, remote: true };
+        return providerCache;
+      }
+      providerCache = { at: now, entry: null, remote: false };
+      return providerCache;
+    }
+  }
+  function quotaDate(value) {
+    const time = new Date(value);
+    if (!Number.isFinite(time.getTime())) return '';
+    const locale = getLanguage() === 'en' ? 'en-US' : 'fr-FR';
+    try {
+      return time.toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' });
+    } catch {
+      return time.toLocaleString();
+    }
+  }
+  function quotaTime(value) {
+    const time = new Date(value);
+    if (!Number.isFinite(time.getTime())) return '';
+    const locale = getLanguage() === 'en' ? 'en-US' : 'fr-FR';
+    try {
+      return time.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return '';
+    }
+  }
+  function validQuotaWindow(window) {
+    return (
+      window &&
+      typeof window.usedPercent === 'number' &&
+      Number.isFinite(window.usedPercent) &&
+      typeof window.remainingPercent === 'number' &&
+      Number.isFinite(window.remainingPercent)
+    );
+  }
+  function validQuotaResult(result) {
+    return result && result.available === true && (validQuotaWindow(result.short) || validQuotaWindow(result.weekly));
+  }
+  function validContextUsage(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+    const contextWindow = value.contextWindow;
+    if (
+      typeof contextWindow !== 'number' ||
+      !Number.isFinite(contextWindow) ||
+      contextWindow <= 0 ||
+      contextWindow > 100_000_000
+    )
+      return undefined;
+    const tokens =
+      value.tokens === null
+        ? null
+        : typeof value.tokens === 'number' && Number.isFinite(value.tokens) && value.tokens >= 0
+          ? Math.round(value.tokens)
+          : undefined;
+    const percent =
+      value.percent === null
+        ? null
+        : typeof value.percent === 'number' && Number.isFinite(value.percent)
+          ? Math.min(100, Math.max(0, Math.round(value.percent * 10) / 10))
+          : undefined;
+    if (tokens === undefined && percent === undefined) return undefined;
+    if (tokens === null || percent === null) return undefined;
+    return { tokens, contextWindow: Math.round(contextWindow), percent };
+  }
+  function quotaBar(label, usedPercent) {
+    const row = document.createElement('div');
+    row.className = 'session-quota-row';
+    const head = document.createElement('div');
+    head.className = 'session-quota-head';
+    const name = document.createElement('span');
+    bindText(name, label);
+    const value = document.createElement('span');
+    bindText(value, () => `${usedPercent}%`);
+    head.append(name, value);
+    const track = document.createElement('div');
+    track.className = 'quota-bar';
+    track.setAttribute('role', 'progressbar');
+    track.setAttribute('aria-valuemin', '0');
+    track.setAttribute('aria-valuemax', '100');
+    track.setAttribute('aria-valuenow', String(usedPercent));
+    bindAttribute(track, 'aria-label', label);
+    const fill = document.createElement('div');
+    fill.className = 'quota-bar-fill';
+    fill.style.width = `${Math.min(100, Math.max(0, usedPercent))}%`;
+    track.append(fill);
+    row.append(head, track);
+    return row;
+  }
+  function renderQuotaBars(container, result) {
+    container.replaceChildren();
+    if (!validQuotaResult(result)) return;
+    for (const [window, label] of [
+      [result.short, () => tr('ui.quota_short_label')],
+      [result.weekly, () => tr('ui.quota_weekly_label')],
+    ]) {
+      if (!validQuotaWindow(window)) continue;
+      const used = Math.min(100, Math.max(0, Math.round(window.usedPercent * 10) / 10));
+      container.append(quotaBar(label, used));
+    }
+  }
+  function formatQuotaText(result) {
+    if (!validQuotaResult(result)) return tr('ui.quota_indisponible');
+    const parts = [];
+    if (typeof result.plan === 'string' && result.plan) parts.push(tr('ui.quota_plan', { plan: result.plan }));
+    for (const [window, key] of [
+      [result.short, 'ui.quota_courte'],
+      [result.weekly, 'ui.quota_hebdo'],
+    ]) {
+      if (!validQuotaWindow(window)) continue;
+      const reset =
+        typeof window.resetAt === 'number' && Number.isFinite(window.resetAt)
+          ? tr('ui.quota_reinitialisation', { date: quotaDate(window.resetAt) })
+          : '';
+      parts.push(tr(key, { used: window.usedPercent, remaining: window.remainingPercent, reset }));
+    }
+    if (!parts.length) return tr('ui.quota_indisponible');
+    if (typeof result.fetchedAt === 'number' && Number.isFinite(result.fetchedAt)) {
+      const time = quotaTime(result.fetchedAt);
+      if (time) parts.push(tr('ui.quota_actualisee', { time }));
+    }
+    return parts.join('\n');
+  }
+  function renderContext() {
+    ensureSessionExtras();
+    const raw = agentData?.contextUsage ?? agentData?.session?.contextUsage;
+    const usage = validContextUsage(raw);
+    if (!usage) {
+      contextSection.hidden = true;
+      contextSection.replaceChildren();
+      return;
+    }
+    contextSection.hidden = false;
+    contextSection.replaceChildren();
+    const label = document.createElement('div');
+    label.className = 'context-label';
+    bindText(label, () => tr('ui.session_context_title'));
+    const locale = getLanguage() === 'en' ? 'en-US' : 'fr-FR';
+    let formatted = '';
+    try {
+      const number = (value) => new Intl.NumberFormat(locale).format(value);
+      formatted = tr('ui.session_context_detail', {
+        used: number(usage.tokens),
+        total: number(usage.contextWindow),
+        percent: usage.percent,
+      });
+    } catch {
+      formatted = `${usage.tokens} / ${usage.contextWindow} (${usage.percent}%)`;
+    }
+    const line = document.createElement('p');
+    line.className = 'session-context-line';
+    bindText(line, () => {
+      try {
+        const number = (value) => new Intl.NumberFormat(getLanguage() === 'en' ? 'en-US' : 'fr-FR').format(value);
+        return tr('ui.session_context_detail', {
+          used: number(usage.tokens),
+          total: number(usage.contextWindow),
+          percent: usage.percent,
+        });
+      } catch {
+        return `${usage.tokens} / ${usage.contextWindow} (${usage.percent}%)`;
+      }
+    });
+    line.setAttribute('role', 'status');
+    const track = document.createElement('div');
+    track.className = 'quota-bar';
+    track.setAttribute('role', 'progressbar');
+    track.setAttribute('aria-valuemin', '0');
+    track.setAttribute('aria-valuemax', '100');
+    track.setAttribute('aria-valuenow', String(usage.percent));
+    bindAttribute(track, 'aria-label', () => tr('ui.session_context_title'));
+    const fill = document.createElement('div');
+    fill.className = 'quota-bar-fill';
+    fill.style.width = `${Math.min(100, Math.max(0, usage.percent))}%`;
+    track.append(fill);
+    const note = document.createElement('p');
+    note.className = 'inspector-note';
+    bindText(note, () => tr('ui.session_context_note'));
+    contextSection.append(label, line, track, note);
+  }
+  async function renderQuota() {
+    ensureSessionExtras();
+    const token = ++quotaGeneration;
+    const mainId = mainModelId();
+    const renderCwd = current.cwd;
+    const renderMain = mainId;
+    const mainProvider = providerOf(mainId);
+    let subModel = '';
+    if (current.cwd) {
+      try {
+        subModel = await effectiveSubagentModel(current.cwd);
+      } catch {
+        subModel = '';
+      }
+    }
+    if (token !== quotaGeneration) return;
+    if (current.cwd !== renderCwd || mainModelId() !== renderMain) return;
+    const effectiveId = subModel || mainId;
+    const effectiveProvider = providerOf(effectiveId);
+    const hasCodex = mainProvider === 'openai-codex' || effectiveProvider === 'openai-codex';
+    const hasApi = mainProvider === 'openai' || effectiveProvider === 'openai';
+    const key = `${mainId}\0${effectiveId}\0${current.cwd || ''}`;
+    if (key !== lastQuotaKey) {
+      lastQuotaKey = key;
+      quotaSnapshot = null;
+      quotaState = 'idle';
+    }
+    if (!hasCodex && !hasApi) {
+      quotaSection.hidden = true;
+      quotaSection.replaceChildren();
+      return;
+    }
+    quotaSection.hidden = false;
+    quotaSection.replaceChildren();
+    const label = document.createElement('div');
+    label.className = 'context-label';
+    if (hasCodex) bindText(label, () => tr('ui.session_quota_codex_title'));
+    else bindText(label, () => tr('ui.session_quota_api_title'));
+    quotaSection.append(label);
+    if (!hasCodex && hasApi) {
+      const note = document.createElement('p');
+      note.className = 'inspector-note';
+      bindText(note, () => tr('ui.session_quota_api_note'));
+      quotaSection.append(note);
+      return;
+    }
+    // Codex subscription path: require linked OAuth, manual refresh only, no fetch when unlinked.
+    const provider = await codexEntry();
+    if (token !== quotaGeneration) return;
+    if (current.cwd !== renderCwd || mainModelId() !== renderMain) return;
+    if (provider.remote) {
+      const note = document.createElement('p');
+      note.className = 'inspector-note';
+      bindText(note, () => tr('ui.session_quota_remote'));
+      quotaSection.append(note);
+      if (quotaSnapshot && validQuotaResult(quotaSnapshot)) {
+        const line = document.createElement('p');
+        line.className = 'session-quota-line';
+        const currentSnapshot = quotaSnapshot;
+        bindText(line, () => formatQuotaText(currentSnapshot));
+        const bars = document.createElement('div');
+        bars.className = 'quota-bars';
+        renderQuotaBars(bars, currentSnapshot);
+        bars.hidden = !bars.childElementCount;
+        quotaSection.append(line, bars);
+      }
+      return;
+    }
+    const entry = provider.entry;
+    const linked = entry && entry.credentialType === 'oauth' && entry.stored;
+    if (!linked) {
+      const note = document.createElement('p');
+      note.className = 'inspector-note';
+      bindText(note, () => tr('ui.session_quota_unlinked'));
+      quotaSection.append(note);
+      return;
+    }
+    quotaRevisionCache = entry.revision || quotaRevisionCache;
+    const line = document.createElement('p');
+    line.className = 'session-quota-line';
+    line.setAttribute('role', 'status');
+    const bars = document.createElement('div');
+    bars.className = 'quota-bars';
+    const refresh = document.createElement('button');
+    refresh.type = 'button';
+    refresh.className = 'secondary-button session-quota-refresh';
+    bindText(refresh, () => tr('ui.quota_actualiser'));
+    const paint = () => {
+      const currentSnapshot = quotaSnapshot;
+      const state = quotaState;
+      bindText(line, () => {
+        if (currentSnapshot && validQuotaResult(currentSnapshot)) return formatQuotaText(currentSnapshot);
+        if (state === 'loading') return tr('ui.quota_chargement');
+        if (state === 'auth') return tr('ui.session_quota_auth');
+        if (state === 'error') return tr('ui.quota_indisponible');
+        return tr('ui.quota_non_consulte');
+      });
+      renderQuotaBars(bars, currentSnapshot);
+      bars.hidden = !bars.childElementCount;
+    };
+    paint();
+    refresh.onclick = async () => {
+      if (refresh.disabled) return;
+      refresh.disabled = true;
+      quotaState = 'loading';
+      paint();
+      try {
+        const params = new URLSearchParams({ provider: 'openai-codex', revision: quotaRevisionCache || entry.revision || '' });
+        const result = await api(`/api/providers/codex-usage?${params}`);
+        if (validQuotaResult(result)) {
+          quotaSnapshot = result;
+          quotaState = 'done';
+          if (result && typeof result.provider === 'string') {
+            // Never falsely attribute API usage: only Codex provider snapshots apply here.
+            if (result.provider !== 'openai-codex') {
+              quotaSnapshot = null;
+              quotaState = 'error';
+            }
+          }
+        } else if (result && result.available === false && result.reason === 'auth') {
+          quotaSnapshot = null;
+          quotaState = 'auth';
+        } else {
+          quotaSnapshot = null;
+          quotaState = 'error';
+        }
+      } catch (error) {
+        if (error?.status === 404) {
+          quotaSnapshot = null;
+          quotaState = 'error';
+          bindText(line, () => tr('ui.session_quota_remote'));
+          refresh.disabled = false;
+          return;
+        }
+        quotaSnapshot = null;
+        quotaState = 'error';
+      } finally {
+        refresh.disabled = false;
+        paint();
+      }
+    };
+    quotaSection.append(line, bars, refresh);
+  }
   function renderAgents() {
     const data = agentData,
       list = $('inspector-agent-list');
@@ -307,6 +696,8 @@ export function createInspector({
       agentData = await request('agents', `/api/inspector?${query({ sessionId: current.sessionId })}`);
       renderAgents();
       showUsage();
+      renderContext();
+      void renderQuota();
       if (agentData.session) $('detail-status').replaceChildren(statusNode(agentData.session.status));
     } catch (error) {
       if (error.name !== 'AbortError')
@@ -776,6 +1167,23 @@ export function createInspector({
     $('inspector-tab-agents').disabled = !current.enabled;
     $('inspector-tab-files').disabled = !current.enabled;
     subagentSettings.update({ ...current, active: tab === 'agents' && visible() && !document.hidden });
+    // Session quota depends on the selected main model even without an open session.
+    // Refresh it on model/cwd change; context needs live agent data.
+    try {
+      ensureSessionExtras();
+      const quotaKey = `${mainModelId()}\0${current.cwd || ''}`;
+      if (quotaKey !== lastQuotaProbeKey) {
+        lastQuotaProbeKey = quotaKey;
+        // Defer async fetch; renderQuota guards its own race via lastQuotaKey.
+        if (current.enabled && current.online && visible() && !document.hidden && tab === 'session')
+          void renderQuota();
+      }
+      if (!current.enabled) {
+        quotaSection.hidden = true;
+        contextSection.hidden = true;
+      }
+      renderContext();
+    } catch {}
     if (!current.enabled) return;
     if (!visible() || document.hidden || !current.online) return;
     if (tab === 'files') {

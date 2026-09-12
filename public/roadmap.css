@@ -572,6 +572,41 @@
   margin-right: 6px;
   color: var(--green);
 }
+.rm-activities button:hover {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.rm-plan > .rm-activities {
+  margin: 4px 0 0 18px;
+}
+.rm-milestone > .rm-activities {
+  margin: 4px 0 8px;
+}
+.rm-step-copy > .rm-activities {
+  margin: 2px 0 2px 24px;
+}
+.rm-backlog-copy > .rm-activities {
+  margin: 2px 0;
+}
+.rm-activities .rm-activity-more {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 2px 8px;
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.rm-activities .rm-activity-more:before {
+  content: none;
+  margin: 0;
+}
+.rm-activities .rm-activity-more:hover {
+  text-decoration: none;
+  border-color: var(--line);
+}
 .rm-empty {
   padding: 40px 3px;
 }

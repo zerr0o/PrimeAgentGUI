@@ -652,6 +652,15 @@ export function createApp(options = {}) {
         return;
       }
       if (method === 'GET' && path === '/api/providers') return json(res, 200, await providers.list());
+      if (method === 'GET' && path === '/api/providers/codex-usage')
+        return json(
+          res,
+          200,
+          await providers.codexUsage({
+            provider: url.searchParams.get('provider') || 'openai-codex',
+            revision: url.searchParams.get('revision') || '',
+          }),
+        );
       if (method === 'POST' && path === '/api/providers/key')
         return json(res, 200, await providers.save(await readBody(req)));
       if (method === 'POST' && path === '/api/providers/disconnect')

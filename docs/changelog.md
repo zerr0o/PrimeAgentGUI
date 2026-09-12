@@ -4,6 +4,13 @@
 
 Les changements par version. Retrouvez les installateurs et les archives du code source dans les [releases GitHub](https://github.com/zerr0o/prime-agent-studio/releases).
 
+## 3.2.3
+
+- **Activité des conversations dans la Roadmap** : chaque élément affiche **En cours · …**, avec un compteur **+N** pour déplier les autres conversations. L’activité apparaît aussi sous chaque tâche et mène à sa conversation.
+- **Champ Réflexion des sous-agents** : l’étiquette et la liste restent alignées et pleine largeur avec le sélecteur de modèle, sans chevauchement.
+- **Quota Codex (optionnel)** : pour les modèles OpenAI/Codex, un bloc avec barres courte et hebdomadaire et bouton **Actualiser le quota**. Consultation manuelle uniquement, compte Codex lié (OAuth) requis ; les modèles via clé API affichent une note sans quota. Indisponible depuis l’accès distant.
+- **Contexte Prime Agent** : la session affiche **X / Y jetons (Z %)** avec barre, depuis le contexte actuel natif, jamais le total cumulé. Masqué quand indisponible.
+
 ## 3.2.2
 
 - **Notifications Windows rétablies** : correction d’un plantage à l’initialisation qui empêchait le suivi des questions et des fins de tour de démarrer. Les préférences de notification et le silence lorsque le Studio a le focus sont conservés.

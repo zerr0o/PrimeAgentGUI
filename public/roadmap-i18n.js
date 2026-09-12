@@ -113,6 +113,12 @@ const words = {
   progress: ['tâches cochées', 'tasks checked'],
   noSteps: ['Aucune tâche définie', 'No tasks defined'],
   activity: ['Activité déclarée', 'Declared activity'],
+  working: ['En cours', 'In progress'],
+  showMoreActivity: [
+    'Afficher les autres conversations en cours',
+    'Show other active conversations',
+  ],
+  hideMoreActivity: ['Masquer les autres conversations en cours', 'Hide other active conversations'],
   openConversation: ['Ouvrir la conversation', 'Open conversation'],
   more: ['Options de la roadmap', 'Roadmap options'],
   refresh: ['Actualiser', 'Refresh'],

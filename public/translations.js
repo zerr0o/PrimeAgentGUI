@@ -1102,6 +1102,94 @@ export const messages = {
     fr: 'Terminé',
     en: 'Done',
   },
+  'ui.quota_codex_label': {
+    fr: 'Quota Codex (optionnel)',
+    en: 'Codex quota (optional)',
+  },
+  'ui.quota_non_consulte': {
+    fr: 'Quota non consulté — actualisation manuelle uniquement.',
+    en: 'Quota not checked — manual refresh only.',
+  },
+  'ui.quota_actualiser': {
+    fr: 'Actualiser le quota',
+    en: 'Refresh quota',
+  },
+  'ui.quota_chargement': {
+    fr: 'Consultation du quota…',
+    en: 'Checking quota…',
+  },
+  'ui.quota_indisponible': {
+    fr: 'Quota indisponible pour le moment.',
+    en: 'Quota unavailable for now.',
+  },
+  'ui.quota_courte': {
+    fr: 'Fenêtre courte : {used}% utilisés ({remaining}% restants){reset}',
+    en: 'Short window: {used}% used ({remaining}% left){reset}',
+  },
+  'ui.quota_hebdo': {
+    fr: 'Fenêtre hebdomadaire : {used}% utilisés ({remaining}% restants){reset}',
+    en: 'Weekly window: {used}% used ({remaining}% left){reset}',
+  },
+  'ui.quota_reinitialisation': {
+    fr: ' — réinitialisation {date}',
+    en: ' — resets {date}',
+  },
+  'ui.quota_plan': {
+    fr: 'Formule : {plan}',
+    en: 'Plan: {plan}',
+  },
+  'ui.quota_actualisee': {
+    fr: 'Actualisé {time}.',
+    en: 'Updated {time}.',
+  },
+  'ui.quota_short_label': {
+    fr: 'Fenêtre courte',
+    en: 'Short window',
+  },
+  'ui.quota_weekly_label': {
+    fr: 'Fenêtre hebdomadaire',
+    en: 'Weekly window',
+  },
+  'ui.session_quota_codex_title': {
+    fr: 'Quota Codex — session',
+    en: 'Codex quota — session',
+  },
+  'ui.session_quota_api_title': {
+    fr: 'Usage OpenAI (API)',
+    en: 'OpenAI usage (API)',
+  },
+  'ui.session_quota_api_note': {
+    fr: 'Modèle OpenAI via clé API : facturation à l’usage, sans quota d’abonnement Codex.',
+    en: 'OpenAI model via API key: usage-based billing, no Codex subscription quota.',
+  },
+  'ui.session_quota_unlinked': {
+    fr: 'Compte Codex non lié — liez votre compte (OAuth) dans Fournisseurs pour voir le quota. Aucune consultation automatique.',
+    en: 'Codex account not linked — link your account (OAuth) in Providers to see quota. No automatic check.',
+  },
+  'ui.session_quota_remote': {
+    fr: 'Quota indisponible depuis l’accès à distance (local uniquement).',
+    en: 'Quota unavailable from remote access (local only).',
+  },
+  'ui.session_quota_auth': {
+    fr: 'Quota indisponible — reconnectez votre compte Codex.',
+    en: 'Quota unavailable — reconnect your Codex account.',
+  },
+  'ui.session_context_title': {
+    fr: 'Contexte Prime Agent',
+    en: 'Prime Agent context',
+  },
+  'ui.session_context_detail': {
+    fr: '{used} / {total} jetons ({percent} %)',
+    en: '{used} / {total} tokens ({percent}%)',
+  },
+  'ui.session_context_note': {
+    fr: 'Contexte actuel / fenêtre du modèle — pas le total cumulé.',
+    en: 'Current context / model window — not cumulative total.',
+  },
+  'ui.session_context_unavailable': {
+    fr: 'Contexte indisponible pour le moment.',
+    en: 'Context unavailable for now.',
+  },
   'ui.parametres': {
     fr: 'PARAMÈTRES',
     en: 'PARAMETERS',

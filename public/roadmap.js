@@ -78,15 +78,16 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
     foldedMilestones = new Set(),
     foldedSteps = new Set(),
     foldedGroups = new Set(),
-    visibleDescriptions = new Set();
+    visibleDescriptions = new Set(),
+    expandedActivities = new Set();
   const canEdit = () => !getContext().readOnly && getContext().online !== false && !pending;
-  const activityFor = (kind, id) =>
+  const activityFor = (kind, id, stepId) =>
     (doc?.activity || []).filter((entry) =>
       entry.targets?.some(
         (target) =>
           target.kind === kind &&
           (kind === 'plan'
-            ? target.planId === id
+            ? target.planId === id && (stepId ? target.stepId === stepId : true)
             : kind === 'milestone'
               ? target.milestoneId === id
               : target.number === id),
@@ -402,12 +403,41 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
     };
     return handle;
   }
-  function activities(kind, id) {
+  function activityName(entry) {
+    const known = getContext().sessions?.find((item) => item.id === entry.sessionId);
+    if (known?.title) return known.title;
+    if (entry.name) return entry.name;
+    return sessionLabel(entry.sessionId);
+  }
+  function activities(kind, id, stepId) {
     const box = node('div', 'rm-activities');
-    for (const a of activityFor(kind, id)) {
-      const b = button(`${a.name || rt('session')} · ${rt('activity')}`, () => openLink(a));
-      b.title = rt('openConversation');
-      box.append(b);
+    const list = activityFor(kind, id, stepId);
+    if (!list.length) return box;
+    const key = `${kind}:${id}${stepId ? `:${stepId}` : ''}`;
+    const isOpen = expandedActivities.has(key);
+    const visible = isOpen ? list : list.slice(0, 1);
+    for (const item of visible) {
+      const label = `${rt('working')} · ${activityName(item)}`;
+      const link = button(label, () => openLink(item), 'rm-activity-link');
+      link.title = rt('openConversation');
+      link.setAttribute('aria-label', `${label} — ${rt('openConversation')}`);
+      box.append(link);
+    }
+    if (list.length > 1) {
+      const toggle = button(
+        isOpen ? `− ${list.length}` : `+${list.length - 1}`,
+        () => {
+          if (isOpen) expandedActivities.delete(key);
+          else expandedActivities.add(key);
+          render();
+        },
+        'rm-activity-more',
+      );
+      toggle.setAttribute('aria-expanded', String(isOpen));
+      toggle.setAttribute('aria-label', rt(isOpen ? 'hideMoreActivity' : 'showMoreActivity'));
+      toggle.title = rt(isOpen ? 'hideMoreActivity' : 'showMoreActivity');
+      toggle.dataset.rmFocus = `activity:${key}`;
+      box.append(toggle);
     }
     return box;
   }
@@ -584,6 +614,7 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
     if (hasChildren) main.append(inlineCount(leafProgress(step.children)));
     text.append(main);
     if (step.note) text.append(description(`step:${key}`, step.note));
+    text.append(activities('plan', plan.id, step.id));
     row.append(text);
     if (canEdit())
       row.append(
@@ -1287,6 +1318,7 @@ export function createRoadmap({ api, getContext, onOpenSession, onWork, onKnowle
       foldedSteps.clear();
       foldedGroups.clear();
       visibleDescriptions.clear();
+      expandedActivities.clear();
       appliedSequence = 0;
       error = '';
     }

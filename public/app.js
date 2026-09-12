@@ -2632,6 +2632,7 @@ inspectorUI = createInspector({
     remote: state.remote,
     nativeFileOpen: state.nativeFileOpen,
     online: state.online,
+    mainModel: $('model-select').value || state.modelCatalogDefault || '',
   }),
   onClose: () => {
     $('toggle-details').click();

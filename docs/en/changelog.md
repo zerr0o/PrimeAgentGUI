@@ -4,6 +4,13 @@
 
 Changes by version. See [GitHub releases](https://github.com/zerr0o/prime-agent-studio/releases) for installers and source archives.
 
+## 3.2.3
+
+- **Conversation activity in the Roadmap**: each item shows **In progress · …**, with a **+N** control to expand other conversations. Activity also appears under each task and opens its conversation.
+- **Subagent thinking field**: label and dropdown stay aligned and full width with the model picker, without overlap.
+- **Optional Codex quota**: for OpenAI/Codex models, a block with short and weekly bars and a **Refresh quota** button. Manual checks only, linked Codex account (OAuth) required; API-key models show a note without quota. Unavailable from remote access.
+- **Prime Agent context**: the session shows **X / Y tokens (Z%)** with a bar, from the native current context, never the cumulative total. Hidden when unavailable.
+
 ## 3.2.2
 
 - **Windows notifications restored**: fixed an initialization crash that prevented monitoring for questions and completed turns from starting. Notification preferences and silence while Studio has focus are preserved.

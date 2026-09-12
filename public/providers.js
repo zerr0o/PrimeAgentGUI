@@ -1,4 +1,4 @@
-import { t as tr, bindText, bindAttribute, translatedOption, translateKnown } from './i18n.js';
+import { t as tr, bindText, bindAttribute, translatedOption, translateKnown, getLanguage } from './i18n.js';
 const node = (tag, className, text) => {
   const item = document.createElement(tag);
   if (className) item.className = className;
@@ -206,6 +206,7 @@ export function createProviderSettings({ api, toast, allowed, onChanged }) {
         bindAttribute(action, 'title', () => tr('ui.disponible_a_la_fin_des_executions'));
       }
     if (actions.children.length) item.append(actions);
+    if (entry.id === 'openai-codex' && entry.credentialType === 'oauth') item.append(quotaBlock(entry));
     if (translateKnown(entry.guidance))
       item.append(node('p', 'provider-guidance', () => translateKnown(entry.guidance)));
     if (entry.source && entry.source !== 'stored')
@@ -215,6 +216,140 @@ export function createProviderSettings({ api, toast, allowed, onChanged }) {
         ),
       );
     return item;
+  }
+  function formatQuotaDate(value) {
+    const time = new Date(value);
+    if (!Number.isFinite(time.getTime())) return '';
+    const locale = getLanguage() === 'en' ? 'en-US' : 'fr-FR';
+    try {
+      return time.toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' });
+    } catch {
+      return time.toLocaleString();
+    }
+  }
+  function formatQuotaTime(value) {
+    const time = new Date(value);
+    if (!Number.isFinite(time.getTime())) return '';
+    const locale = getLanguage() === 'en' ? 'en-US' : 'fr-FR';
+    try {
+      return time.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return '';
+    }
+  }
+  function formatQuota(result) {
+    if (!result || result.available !== true || (!result.short && !result.weekly))
+      return tr('ui.quota_indisponible');
+    const parts = [];
+    if (typeof result.plan === 'string' && result.plan) parts.push(tr('ui.quota_plan', { plan: result.plan }));
+    for (const [window, key] of [
+      [result.short, 'ui.quota_courte'],
+      [result.weekly, 'ui.quota_hebdo'],
+    ]) {
+      if (!window || typeof window.usedPercent !== 'number' || typeof window.remainingPercent !== 'number')
+        continue;
+      const reset =
+        typeof window.resetAt === 'number' && Number.isFinite(window.resetAt)
+          ? tr('ui.quota_reinitialisation', { date: formatQuotaDate(window.resetAt) })
+          : '';
+      parts.push(tr(key, { used: window.usedPercent, remaining: window.remainingPercent, reset }));
+    }
+    if (!parts.length) return tr('ui.quota_indisponible');
+    if (typeof result.fetchedAt === 'number' && Number.isFinite(result.fetchedAt)) {
+      const time = formatQuotaTime(result.fetchedAt);
+      if (time) parts.push(tr('ui.quota_actualisee', { time }));
+    }
+    return parts.join('\n');
+  }
+  function quotaBar(label, usedPercent) {
+    const row = document.createElement('div');
+    row.className = 'quota-row';
+    const head = document.createElement('div');
+    head.className = 'quota-row-head';
+    const name = document.createElement('span');
+    bindText(name, label);
+    const value = document.createElement('span');
+    bindText(value, () => `${usedPercent}%`);
+    head.append(name, value);
+    const track = document.createElement('div');
+    track.className = 'quota-bar';
+    track.setAttribute('role', 'progressbar');
+    track.setAttribute('aria-valuemin', '0');
+    track.setAttribute('aria-valuemax', '100');
+    track.setAttribute('aria-valuenow', String(usedPercent));
+    bindAttribute(track, 'aria-label', label);
+    const fill = document.createElement('div');
+    fill.className = 'quota-bar-fill';
+    fill.style.width = `${Math.min(100, Math.max(0, usedPercent))}%`;
+    track.append(fill);
+    row.append(head, track);
+    return row;
+  }
+  function renderQuotaBars(container, result) {
+    container.replaceChildren();
+    if (!result || result.available !== true) return;
+    for (const [window, label] of [
+      [result.short, () => tr('ui.quota_short_label')],
+      [result.weekly, () => tr('ui.quota_weekly_label')],
+    ]) {
+      if (!window || typeof window.usedPercent !== 'number' || !Number.isFinite(window.usedPercent))
+        continue;
+      const used = Math.min(100, Math.max(0, Math.round(window.usedPercent * 10) / 10));
+      container.append(quotaBar(label, used));
+    }
+  }
+  function quotaBlock(entry) {
+    const wrap = node('div', 'provider-quota');
+    let snapshot = null;
+    let failed = false;
+    const line = node('p', 'provider-quota-line', () => {
+      if (snapshot) return formatQuota(snapshot);
+      if (failed) return tr('ui.quota_indisponible');
+      return tr('ui.quota_non_consulte');
+    });
+    line.setAttribute('role', 'status');
+    const bars = document.createElement('div');
+    bars.className = 'quota-bars';
+    bars.hidden = true;
+    const refresh = button(
+      () => tr('ui.quota_actualiser'),
+      async () => {
+        if (refresh.disabled) return;
+        refresh.disabled = true;
+        bindText(line, () => tr('ui.quota_chargement'));
+        bars.hidden = true;
+        bars.replaceChildren();
+        try {
+          const params = new URLSearchParams({ provider: entry.id, revision: entry.revision });
+          const result = await api(`/api/providers/codex-usage?${params}`);
+          if (result && result.available === true && (result.short || result.weekly)) {
+            snapshot = result;
+            failed = false;
+          } else {
+            snapshot = null;
+            failed = true;
+          }
+        } catch {
+          snapshot = null;
+          failed = true;
+        } finally {
+          refresh.disabled = false;
+          const current = snapshot;
+          const wasFailed = failed;
+          bindText(line, () => {
+            if (current) return formatQuota(current);
+            if (wasFailed) return tr('ui.quota_indisponible');
+            return tr('ui.quota_non_consulte');
+          });
+          renderQuotaBars(bars, current);
+          bars.hidden = !bars.childElementCount;
+        }
+      },
+      'secondary-button provider-quota-refresh',
+    );
+    refresh.type = 'button';
+    wrap.append(node('p', 'provider-quota-label', () => tr('ui.quota_codex_label')), line, bars, refresh);
+    return wrap;
   }
   function formShell(title) {
     mode = 'form';
