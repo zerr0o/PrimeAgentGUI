@@ -29,6 +29,7 @@ import { createProjectNavigation, hasPendingQuestion } from './project-navigatio
 import { createKnowledgeBrowser } from './knowledge.js';
 import { createRoadmap } from './roadmap.js';
 import { bindInlineImages } from './inline-images.js';
+import { createPasskeySettings } from './passkeys.js';
 import { createQuestions } from './questions.js';
 import { createPushSettings } from './push.js';
 let questionsUI;
@@ -667,9 +668,7 @@ function applyAccessMode() {
   bindText($('remote-view-detail'), () =>
     state.readOnly ? tr('ui.lecture_seule') : tr('ui.controle_complet'),
   );
-  bindText($('session-location'), () =>
-    state.remote ? tr('ui.sessions_sur_le_pc_connecte') : tr('ui.sessions_sur_ce_pc'),
-  );
+
   $('composer').disabled = state.readOnly;
   $('enter-to-send').closest('.settings-row').hidden = state.readOnly;
   $('model-config-settings').hidden = state.remote;
@@ -797,6 +796,11 @@ function updateComposer() {
   liveMessagesUI?.update();
 }
 function renderProjects() {
+  const pendingQuestionRuns = [...state.runs.values()].filter(hasPendingQuestion);
+  $('workspace-question-alert').hidden = !pendingQuestionRuns.length;
+  bindAttribute($('workspace-question-alert'), 'aria-label', () => tr('passkeys.pendingQuestions', { count: pendingQuestionRuns.length }));
+  bindAttribute($('workspace-question-alert'), 'title', () => tr('passkeys.pendingQuestions', { count: pendingQuestionRuns.length }));
+  $('workspace-question-alert').onclick = () => { const run = pendingQuestionRuns[0]; if (run?.sessionId) void selectSession(run.sessionId, run.cwd); };
   if (projectSorting?.active || !projectNavigation) return;
   const query = $('session-search').value.trim();
   bindText($('session-list-label'), () =>
@@ -3019,6 +3023,7 @@ $('model-dialog').addEventListener('keydown', (event) => {
 $('thinking-select').onchange = () => {
   void saveGenerationSettings({ thinking: $('thinking-select').value });
 };
+createPasskeySettings({ getContext: () => ({ remote: state.remote, readOnly: state.readOnly }) });
 $('allow-questions').onchange = () =>
   void saveGenerationSettings({ allowQuestions: $('allow-questions').checked });
 questionsUI = createQuestions({

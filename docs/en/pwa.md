@@ -76,3 +76,9 @@ Privacy and security: generic text only, browser-vendor relay (Google/Apple/Mozi
 If the device lost its token (cleared storage): the server refuses proofless re-registration and never transfers the old registration. To recover, disable then re-enable alerts: this revokes the browser registration (the old endpoint dies with it) and creates a fresh one. Never bypass this proof server-side.
 
 [PWA installation requirements — MDN](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Making_PWAs_installable) · [Tailscale Serve](https://tailscale.com/docs/reference/tailscale-cli/serve)
+
+## Optional passkey sign-in
+
+On the mobile Tailscale HTTPS address, sign in with your Studio code, then open **Preferences → Remote access → Create a passkey**. Name the key, confirm the current eight-digit access code, and approve the device prompt. Depending on the device, this uses Face ID, a fingerprint or its unlock PIN. Your password manager may synchronize the key.
+
+Next time, choose **Sign in with a passkey** on the sign-in page. The access code remains available as a fallback. From the PC, the same preferences section lets you revoke keys and disconnect sessions authenticated with them. Changing the Studio access code invalidates existing keys; register again afterward. Passkeys are tied to the exact HTTPS address and are unavailable over LAN HTTP.

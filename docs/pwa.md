@@ -76,3 +76,9 @@ Vie privée et sécurité : texte générique uniquement, relais du fournisseur 
 Si l’appareil a perdu son jeton (stockage effacé) : le serveur refuse la réinscription sans preuve, sans jamais transférer l’ancienne inscription. Pour récupérer, désactivez puis réactivez les alertes : cela révoque l’enregistrement navigateur (l’ancien point de terminaison meurt avec lui) puis crée une inscription neuve. Ne contournez jamais cette preuve côté serveur.
 
 [Prérequis d’installation PWA — MDN](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Making_PWAs_installable) · [Tailscale Serve](https://tailscale.com/docs/reference/tailscale-cli/serve)
+
+## Connexion optionnelle avec une clé d’accès
+
+Sur l’adresse HTTPS Tailscale du téléphone, connectez-vous avec votre code Studio, puis ouvrez **Préférences → Accès distant → Créer une clé d’accès**. Nommez la clé, confirmez le code actuel à huit chiffres et validez sur votre appareil. Selon le téléphone, la validation utilise Face ID, une empreinte ou son code de déverrouillage. Votre gestionnaire de mots de passe peut synchroniser la clé.
+
+À la prochaine connexion, choisissez **Se connecter avec une clé d’accès**. Le code Studio reste disponible en secours. Depuis le PC, cette même section permet de révoquer les clés et de déconnecter leurs sessions. Changer le code Studio invalide les clés existantes : il faut les enregistrer à nouveau. Les clés sont liées à l’adresse HTTPS exacte et ne sont pas disponibles sur le réseau local en HTTP.

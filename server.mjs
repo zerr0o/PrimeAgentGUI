@@ -580,6 +580,8 @@ export function createApp(options = {}) {
       if (path === '/api/remote-access/qr' && method === 'GET')
         return json(res, 200, await remoteNetwork.qr(url.searchParams.get('channel')));
       if (path === '/api/remote-access' && method === 'GET') return json(res, 200, await remoteAccess.get());
+      if (path === '/api/passkeys' && method === 'GET') return json(res, 200, await remoteAccess.listPasskeys());
+      if (path === '/api/passkeys/revoke' && method === 'POST') return json(res, 200, await remoteAccess.revokePasskey((await readBody(req)).id));
       if (path === '/api/remote-access/code' && method === 'POST')
         return json(res, 200, await remoteAccess.changeCode(await readBody(req)));
       if (method === 'GET' && path === '/api/updates/metadata')
@@ -965,6 +967,8 @@ export function createApp(options = {}) {
           file = join(ROOT, 'node_modules', 'marked', 'lib', 'marked.esm.js');
         else if (path === '/vendor/purify.js')
           file = join(ROOT, 'node_modules', 'dompurify', 'dist', 'purify.es.mjs');
+        else if (path === '/vendor/passkeys.js')
+          file = join(ROOT, 'node_modules', '@simplewebauthn', 'browser', 'dist', 'bundle', 'index.umd.min.js');
         else if (path === '/favicon.ico') file = join(ROOT, 'assets', 'prime-agent.ico');
         else if (path === '/manifest.webmanifest') {
           const locale = requestLanguage(req.headers, url.searchParams.get('lang'));

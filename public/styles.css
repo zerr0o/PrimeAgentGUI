@@ -3914,3 +3914,36 @@ kbd {
   font: inherit;
   cursor: pointer;
 }
+.workspace-question-alert {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  color: #e6ad50;
+  background: transparent;
+  border: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+.workspace-question-alert:hover { background: var(--surface-hover); }
+.composer-footnote { justify-content: flex-end; }
+.passkey-settings { margin-top: 28px; }
+.passkey-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; }
+.passkey-row > span { min-width: 0; overflow-wrap: anywhere; }
+#passkey-dialog { width: min(480px, calc(100vw - 32px)); padding: 0; }
+.passkey-form { padding: 28px; }
+.passkey-form h2 { margin-top: 0; font-size: 20px; }
+.passkey-form p { color: var(--muted); line-height: 1.6; }
+.passkey-form fieldset { border: 0; padding: 0; margin: 22px 0; }
+.passkey-form label { display: block; margin: 16px 0 8px; font-size: 12px; }
+.passkey-form input { width: 100%; }
+.passkey-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+@media (min-width: 641px) and (max-width: 1280px) {
+  .workspace-header { height: 48px; min-height: 48px; padding: 0 16px; gap: 10px; }
+  .remote-view-banner { padding: 4px 16px; font-size: 10px; }
+}
+@media (pointer: coarse) {
+  .composer-footnote { display: none; }
+}

@@ -4,6 +4,14 @@
 
 Les changements par version. Retrouvez les installateurs et les archives du code source dans les [releases GitHub](https://github.com/zerr0o/prime-agent-studio/releases).
 
+## 3.2.7
+
+- **Connexion optionnelle par clé d’accès** : enregistrement depuis Préférences → Accès distant sur l’adresse HTTPS Tailscale du téléphone. Validation par biométrie ou code de déverrouillage ; le code Studio reste disponible. Gestion et révocation des clés depuis le PC. Changer le code Studio invalide les clés existantes.
+- **Interface tablette plus compacte** : barre supérieure réduite, mention redondante sous le champ de saisie et fausse version du panneau Session supprimées.
+- **Questions en attente** : un point d’interrogation ambre près d’Espace de travail permet d’ouvrir une conversation en attente de réponse.
+- **Activité roadmap** : texte et indicateur en cours en bleu pulsant, avec respect de la réduction des animations.
+- **Après installation** : redémarrez le serveur dans Préférences → Mise à jour une fois les agents terminés.
+
 ## 3.2.6
 
 - **Mises à jour sur mobile** : bouton permanent pour relancer la recherche et contourner le cache. Le bouton redevient disponible après une erreur ou un délai dépassé ; les erreurs de demande d’installation sont visibles dans le panneau mobile.

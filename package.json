@@ -1,6 +1,6 @@
 {
   "name": "prime-agent-studio",
-  "version": "3.2.6",
+  "version": "3.2.7",
   "private": true,
   "author": "zerr0o",
   "license": "MIT",
@@ -70,6 +70,8 @@
     "node": ">=22.8.0"
   },
   "dependencies": {
+    "@simplewebauthn/browser": "^14.0.0",
+    "@simplewebauthn/server": "^14.0.1",
     "dompurify": "3.4.14",
     "marked": "18.0.11",
     "qrcode": "1.5.4",

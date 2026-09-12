@@ -4,6 +4,14 @@
 
 Changes by version. See [GitHub releases](https://github.com/zerr0o/prime-agent-studio/releases) for installers and source archives.
 
+## 3.2.7
+
+- **Optional passkey sign-in**: register a passkey from Preferences → Remote access on the mobile Tailscale HTTPS address. Confirm with your device biometrics or unlock PIN; the Studio access code remains available. Manage and revoke keys from the PC. Changing the Studio access code invalidates existing keys.
+- **Compact tablet layout**: reduced top bar height, removed the redundant location label below the composer and the incorrect version in the session panel.
+- **Pending questions**: an amber question mark beside Workspace opens a conversation awaiting your answer.
+- **Roadmap activity**: current activity text and indicator pulse blue, respecting reduced-motion settings.
+- **After installation**: restart the Studio server from Preferences → Updates once your agents have finished.
+
 ## 3.2.6
 
 - **Mobile updates**: a permanent button checks again and bypasses the cache. The button becomes available again after an error or timeout; installation request errors are visible in the mobile panel.

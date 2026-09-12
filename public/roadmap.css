@@ -925,3 +925,16 @@
   justify-content: flex-end;
   margin-bottom: 4px;
 }
+.rm-activities .rm-activity-link,
+.rm-activities .rm-activity-link:before {
+  color: #559fe8;
+  animation: roadmap-active-pulse 2.2s ease-in-out infinite;
+}
+@keyframes roadmap-active-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .65; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rm-activities .rm-activity-link,
+  .rm-activities .rm-activity-link:before { animation: none; }
+}

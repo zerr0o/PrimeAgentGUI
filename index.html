@@ -75,7 +75,7 @@
           >
         </div>
         <div class="sidebar-section-heading workspace-heading">
-          <span id="session-list-label" data-i18n="ui.espace_de_travail_2">ESPACE DE TRAVAIL</span>
+          <button id="workspace-question-alert" type="button" class="workspace-question-alert" hidden>?</button><span id="session-list-label" data-i18n="ui.espace_de_travail_2">ESPACE DE TRAVAIL</span>
           <div class="workspace-heading-actions">
             <button
               id="show-archived"
@@ -490,12 +490,7 @@
                 </div>
               </form>
               <div class="composer-footnote">
-                <span
-                  ><span class="tiny-shield" data-icon="shield"></span
-                  ><span id="session-location" data-i18n="ui.sessions_sur_ce_pc"
-                    >Sessions sur ce PC</span
-                  ></span
-                ><span id="send-hint" data-i18n="ui.entree_pour_envoyer_maj_entree_pour_un_saut_de_ligne"
+                <span id="send-hint" data-i18n="ui.entree_pour_envoyer_maj_entree_pour_un_saut_de_ligne"
                   >Entrée pour envoyer · Maj Entrée pour un saut de ligne</span
                 >
               </div>
@@ -639,7 +634,7 @@
                   conversation.
                 </p>
                 <div class="context-footer">
-                  <span>PRIME AGENT STUDIO</span><span id="studio-version">3.0.0</span>
+                  <span>PRIME AGENT STUDIO</span>
                 </div>
               </div>
             </div>
@@ -1347,7 +1342,10 @@
                 </div>
               </div>
             </div>
-          </section>
+          <section class="passkey-settings" aria-labelledby="passkey-heading">
+<h4 id="passkey-heading" data-i18n="passkeys.title"></h4><p id="passkey-hint" class="settings-footnote"></p>
+<button id="passkey-add" class="secondary-button" type="button" data-i18n="passkeys.add" hidden></button>
+<div id="passkey-list"></div><p id="passkey-status" class="settings-footnote" role="status"></p></section></section>
           <section
             id="settings-panel-system"
             class="settings-panel"
@@ -1799,5 +1797,5 @@
     <div id="toasts" class="toasts" aria-live="polite" aria-atomic="false"></div>
     <script type="module" src="/public/app.js"></script>
     <script type="module" src="/public/pwa.js"></script>
-  </body>
+  <dialog id="passkey-dialog" class="modal" aria-labelledby="passkey-title"><form id="passkey-form" class="passkey-form"><h2 id="passkey-title"></h2><p id="passkey-note"></p><fieldset id="passkey-fields"><label for="passkey-name" data-i18n="passkeys.name"></label><input id="passkey-name" maxlength="80" required autocomplete="off"><label for="passkey-code" data-i18n="login.code"></label><input id="passkey-code" type="password" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" required autocomplete="one-time-code"></fieldset><p id="passkey-error" role="alert" class="form-error"></p><div class="passkey-actions"><button id="passkey-cancel" type="button" class="secondary-button" data-i18n="passkeys.cancel"></button><button id="passkey-submit" class="primary-button" type="submit"></button></div></form></dialog></body>
 </html>

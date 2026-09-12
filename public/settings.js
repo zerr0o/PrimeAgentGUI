@@ -57,7 +57,7 @@ export function createSettings({
       if (active && matchMedia('(max-width: 700px)').matches)
         tab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     }
-    if (id === 'remote') void refreshNetwork();
+    if (id === 'remote' && !getContext().remote) void refreshNetwork();
     if (id === 'system') void refreshSystem();
     if (id === 'updates') void updates.refresh();
     if (id === 'models') void interactions.refreshDefault();
@@ -90,7 +90,7 @@ export function createSettings({
     const context = getContext();
     for (const tab of tabs)
       tab.hidden =
-        (context.remote && ['models', 'remote'].includes(tab.dataset.settingsTab)) ||
+        (context.remote && tab.dataset.settingsTab === 'models') ||
         (context.readOnly && tab.dataset.settingsTab === 'tools');
     if (tabs.find((tab) => tab.dataset.settingsTab === selected)?.hidden) selected = 'appearance';
     const unavailable = !context.projectCwd || context.readOnly;
@@ -313,6 +313,7 @@ export function createSettings({
     return row;
   }
   async function refreshNetwork({ silent = false } = {}) {
+    if (getContext().remote) return;
     if (getContext().remote || busy || loading) return;
     loading = true;
     const turn = generation;
