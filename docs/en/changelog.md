@@ -4,6 +4,12 @@
 
 Changes by version. See [GitHub releases](https://github.com/zerr0o/prime-agent-studio/releases) for installers and source archives.
 
+## 3.2.6
+
+- **Mobile updates**: a permanent button checks again and bypasses the cache. The button becomes available again after an error or timeout; installation request errors are visible in the mobile panel.
+- **Questions in the conversation**: interactive questions and their answers stay beside their tool call while subsequent messages stream below, instead of remaining at the bottom until the turn ends.
+- **After installation**: restart the server from preferences once your agents have finished.
+
 ## 3.2.5
 
 - **Interactive questions**: native requests remain delivered during engine resynchronization or stream backpressure instead of being discarded with display events.

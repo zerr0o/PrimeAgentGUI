@@ -13,6 +13,7 @@ export function createQuestions({ root, api, getContext }) {
     const { run, readOnly, hidden } = getContext();
     root.hidden = !!hidden;
     if (currentRun !== run?.id) {
+      for (const entry of nodes.values()) entry.form.remove();
       root.replaceChildren();
       nodes.clear();
       currentRun = run?.id;
@@ -133,6 +134,7 @@ export function createQuestions({ root, api, getContext }) {
         nodes.set(request.id, entry);
       }
       const pending = request.status === 'pending' && run.status === 'running';
+      entry.form.hidden = !!hidden;
       entry.statusKey = pending ? 'pending' : request.status;
       entry.form.classList.toggle('question-resolved', !pending);
       entry.fields.hidden = entry.actions.hidden = !pending;
@@ -150,5 +152,11 @@ export function createQuestions({ root, api, getContext }) {
         );
     }
   }
-  return { update };
+  function partsFor(message) {
+    const toolIds = new Set((message.tools || []).map((tool) => tool.id));
+    return (getContext().run?.interactions || [])
+      .filter((request) => request.toolId && toolIds.has(request.toolId) && nodes.has(request.id))
+      .map((request) => ({ key: `question:${request.id}`, node: nodes.get(request.id).form }));
+  }
+  return { update, partsFor };
 }

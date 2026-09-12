@@ -23,6 +23,7 @@ export function createConversationRenderer({
   copyText,
   reasoningMode,
   renderMessage,
+  renderInteractions = () => [],
 }) {
   const turns = new Map();
   let reasoningPreference = reasoningMode();
@@ -240,6 +241,13 @@ export function createConversationRenderer({
       else {
         flush();
         parts.push(textPart(turn, m));
+      }
+      // Keep the native dialog beside its tool call. Later streamed messages
+      // belong after this point, including while the answer is being confirmed.
+      const interactions = renderInteractions(m);
+      if (interactions.length) {
+        flush();
+        parts.push(...interactions);
       }
     }
     flush();

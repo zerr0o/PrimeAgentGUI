@@ -4,6 +4,12 @@
 
 Les changements par version. Retrouvez les installateurs et les archives du code source dans les [releases GitHub](https://github.com/zerr0o/prime-agent-studio/releases).
 
+## 3.2.6
+
+- **Mises à jour sur mobile** : bouton permanent pour relancer la recherche et contourner le cache. Le bouton redevient disponible après une erreur ou un délai dépassé ; les erreurs de demande d’installation sont visibles dans le panneau mobile.
+- **Questions dans le fil** : la question interactive et sa réponse restent à la position de leur appel d’outil pendant que les messages suivants arrivent, au lieu de rester en bas de la conversation jusqu’à la fin du tour.
+- **Après installation** : redémarrez le serveur depuis les préférences, une fois les agents terminés.
+
 ## 3.2.5
 
 - **Questions interactives** : les demandes natives restent transmises pendant une resynchronisation ou une saturation du flux du moteur, au lieu d’être écartées avec les événements d’affichage.

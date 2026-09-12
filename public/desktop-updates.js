@@ -84,6 +84,17 @@ export function createDesktopUpdates({ api, getContext }) {
     body.append(holder);
   }
   let remoteTimer = 0;
+  let remoteBusy = false;
+  let remoteRequestBusy = false;
+  async function remoteApi(path, options = {}) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+    try {
+      return await api(path, { ...options, signal: controller.signal });
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
   const clearRemoteTimer = () => {
     if (remoteTimer) clearTimeout(remoteTimer);
     remoteTimer = 0;
@@ -104,21 +115,32 @@ export function createDesktopUpdates({ api, getContext }) {
     };
     return map[request.status] || null;
   }
-  async function refreshRemote() {
+  async function refreshRemote({ force = false } = {}) {
+    if (remoteBusy) return;
+    remoteBusy = true;
+    $('remote-check').disabled = true;
+    $('remote').setAttribute('aria-busy', 'true');
+    if (force) bindText($('remote-status'), () => t('updates.checking'));
     const context = getContext();
     clearRemoteTimer();
     $('remote-request').hidden = true;
     $('remote-notes').hidden = true;
     bindText($('remote-hint'), () => '');
     try {
-      const meta = await api('/api/updates/metadata');
+      const meta = await remoteApi(`/api/updates/metadata${force ? '?refresh=1' : ''}`);
       $('remote-installed').textContent = meta.installed || '—';
-      $('remote-published').textContent = meta.published ? meta.published.version : t('updates.meta_unavailable');
+      $('remote-published').textContent = meta.published
+        ? meta.published.version
+        : t('updates.meta_unavailable');
       const request = meta.request;
-      const stage = remoteStage(request);
+      const live =
+        request && ['pending', 'checking', 'downloading', 'verifying', 'installing'].includes(request.status);
+      const stage =
+        live || (!force && request?.version === meta.published?.version) ? remoteStage(request) : null;
       if (stage && ['updates.stage_refused', 'updates.stage_failed'].includes(stage))
         bindText($('remote-status'), () => t(stage, { detail: request.detail || request.status }));
       else if (stage) bindText($('remote-status'), () => t(stage));
+      else if (meta.metaError) bindText($('remote-status'), () => meta.metaError);
       else if (!meta.published) bindText($('remote-status'), () => t('updates.meta_unavailable'));
       else if (meta.published.version === meta.installed)
         bindText($('remote-status'), () => t('updates.current'));
@@ -127,9 +149,6 @@ export function createDesktopUpdates({ api, getContext }) {
         renderNotesInto($('remote-notes-body'), meta.published.notes);
         $('remote-notes').hidden = false;
       }
-      const live =
-        request &&
-        ['pending', 'checking', 'downloading', 'verifying', 'installing'].includes(request.status);
       const canRequest =
         !context.readOnly &&
         !live &&
@@ -137,28 +156,36 @@ export function createDesktopUpdates({ api, getContext }) {
         meta.published.version !== meta.installed &&
         meta.desktop?.alive;
       $('remote-request').hidden = !canRequest;
-      $('remote-request').disabled = false;
+      $('remote-request').disabled = remoteRequestBusy;
       if (context.readOnly) bindText($('remote-hint'), () => t('updates.remote_read_only'));
       else if (!meta.desktop?.alive) bindText($('remote-hint'), () => t('updates.desktop_offline'));
       if (live) remoteTimer = setTimeout(() => void refreshRemote().catch(() => {}), 5000);
     } catch (error) {
       bindText($('remote-status'), () => (error?.message ? String(error.message) : t('updates.failed')));
+    } finally {
+      remoteBusy = false;
+      $('remote-check').disabled = false;
+      $('remote').setAttribute('aria-busy', 'false');
     }
   }
   async function requestRemote() {
     const context = getContext();
-    if (context.readOnly) return;
+    if (context.readOnly || remoteRequestBusy) return;
+    remoteRequestBusy = true;
+    clearRemoteTimer();
     const button = $('remote-request');
     button.disabled = true;
     try {
-      const meta = await api('/api/updates/metadata');
+      const meta = await remoteApi('/api/updates/metadata');
       if (!meta.published || meta.published.version === meta.installed || !meta.desktop?.alive) {
         await refreshRemote();
         return;
       }
       const dialog = $('confirm');
       bindText($('confirm-title'), () => t('updates.request_confirm_title'));
-      bindText($('confirm-note'), () => t('updates.request_confirm_note', { version: meta.published.version }));
+      bindText($('confirm-note'), () =>
+        t('updates.request_confirm_note', { version: meta.published.version }),
+      );
       bindText($('proceed'), () => t('updates.request_confirm'));
       const accepted = await new Promise((resolve) => {
         dialog.returnValue = '';
@@ -169,17 +196,16 @@ export function createDesktopUpdates({ api, getContext }) {
         $('cancel').focus();
       });
       if (!accepted) return;
-      await api('/api/updates/request', {
+      await remoteApi('/api/updates/request', {
         method: 'POST',
         body: { version: meta.published.version, restartServer: true, confirmed: true },
       });
       await refreshRemote();
     } catch (error) {
       // Server messages arrive pre-translated; show them verbatim as plain text.
-      const alert = $('error');
-      alert.hidden = false;
-      alert.textContent = error?.message ? String(error.message) : t('updates.failed');
+      bindText($('remote-status'), () => (error?.message ? String(error.message) : t('updates.failed')));
     } finally {
+      remoteRequestBusy = false;
       button.disabled = false;
     }
   }
@@ -322,6 +348,7 @@ export function createDesktopUpdates({ api, getContext }) {
   $('remote-request').onclick = () => {
     void requestRemote();
   };
+  $('remote-check').onclick = () => void refreshRemote({ force: true });
   status('updates.idle');
   onLanguageChange(() => {
     if (!$('native').hidden) void refresh().catch(() => {});

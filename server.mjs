@@ -583,7 +583,7 @@ export function createApp(options = {}) {
       if (path === '/api/remote-access/code' && method === 'POST')
         return json(res, 200, await remoteAccess.changeCode(await readBody(req)));
       if (method === 'GET' && path === '/api/updates/metadata')
-        return json(res, 200, await remoteUpdates.metadata());
+        return json(res, 200, await remoteUpdates.metadata({ force: url.searchParams.get('refresh') === '1' }));
       if (method === 'POST' && path === '/api/updates/request')
         return json(res, 200, await remoteUpdates.requestUpdate(await readBody(req)));
       if (method === 'GET' && path === '/api/models') return json(res, 200, await models());

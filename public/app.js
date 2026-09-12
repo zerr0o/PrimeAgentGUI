@@ -1360,6 +1360,7 @@ function renderMessage(m, index) {
   return n;
 }
 const conversationRenderer = createConversationRenderer({
+  renderInteractions: (message) => questionsUI?.partsFor(message) || [],
   el,
   icon,
   markdown,
@@ -1435,8 +1436,8 @@ function renderMessages(forceScroll = false) {
   $('messages').hidden = state.projectOverview || state.loading;
   const root = $('messages'),
     keep = new Set();
-  conversationRenderer.render(root, messages);
   questionsUI?.update();
+  conversationRenderer.render(root, messages);
   messages.forEach((m, i) => keep.add(m.id || `history-${i}`));
   for (const key of messageNodes.keys()) if (!keep.has(key)) messageNodes.delete(key);
   if (!messages.length && !state.loading) {
